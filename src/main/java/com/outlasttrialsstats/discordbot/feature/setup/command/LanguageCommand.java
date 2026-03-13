@@ -19,7 +19,7 @@ public class LanguageCommand {
     private final MessageService messageService;
 
     @CommandConfig(enabledFor = Permission.ADMINISTRATOR)
-    @Command(value = "setup language", desc = "Change the bot's response language for this server")
+    @Command("setup language")
     public void onLanguage(CommandEvent event,
                            @Choices({"English:en", "Deutsch:de"})
                            @Param("Language") String language) {

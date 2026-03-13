@@ -27,8 +27,11 @@ public class RoleAssignmentService {
     private final ReagentSkillRoleMappingRepository skillRoleRepo;
 
     public RoleAssignmentResult assignRoles(Guild guild, Member member) {
+        log.debug("Assigning roles for member {} in guild {}", member.getId(), guild.getId());
+
         var profileOpt = statsApiClient.getProfile(member.getId());
         if (profileOpt.isEmpty()) {
+            log.debug("Member {} is not verified, skipping", member.getId());
             return RoleAssignmentResult.notVerified();
         }
 
@@ -37,26 +40,52 @@ public class RoleAssignmentService {
         List<String> addedRoles = new ArrayList<>();
         List<String> removedRoles = new ArrayList<>();
 
-        assignPrestigeRoles(guild, member, profile, guildId, addedRoles);
+        log.debug("Member {} has prestige {} and active skill {}",
+                member.getId(), profile.getPrestigeLevel(), profile.getActiveReagentSkill());
+
+        assignPrestigeRoles(guild, member, profile, guildId, addedRoles, removedRoles);
         assignReagentSkillRoles(guild, member, profile, guildId, addedRoles, removedRoles);
+
+        if (!addedRoles.isEmpty() || !removedRoles.isEmpty()) {
+            log.info("Member {} in guild {}: added [{}], removed [{}]",
+                    member.getId(), guildId, String.join(", ", addedRoles), String.join(", ", removedRoles));
+        }
 
         return RoleAssignmentResult.of(addedRoles, removedRoles);
     }
 
     private void assignPrestigeRoles(Guild guild, Member member, DiscordProfileResponse profile,
-                                     String guildId, List<String> addedRoles) {
-        var matchingMappings = prestigeRoleRepo
-                .findByGuildIdAndMinPrestigeLessThanEqual(guildId, profile.getPrestigeLevel());
+                                     String guildId, List<String> addedRoles, List<String> removedRoles) {
+        var allMappings = prestigeRoleRepo.findByGuildId(guildId);
+        if (allMappings.isEmpty()) {
+            log.debug("No prestige role mappings configured for guild {}", guildId);
+            return;
+        }
 
-        for (var mapping : matchingMappings) {
+        var bestMapping = prestigeRoleRepo
+                .findFirstByGuildIdAndMinPrestigeLessThanEqualOrderByMinPrestigeDesc(guildId, profile.getPrestigeLevel());
+
+        String bestRoleId = bestMapping.map(m -> m.getRoleId()).orElse(null);
+        log.debug("Best prestige mapping for member {} (prestige {}): {}",
+                member.getId(), profile.getPrestigeLevel(),
+                bestMapping.map(m -> "Prestige " + m.getMinPrestige() + "+").orElse("none"));
+
+        for (var mapping : allMappings) {
             Role role = guild.getRoleById(mapping.getRoleId());
             if (role == null) {
-                log.warn("Role {} not found in guild {}", mapping.getRoleId(), guildId);
+                log.warn("Prestige role {} not found in guild {}", mapping.getRoleId(), guildId);
                 continue;
             }
-            if (!member.getRoles().contains(role)) {
+
+            boolean hasRole = member.getRoles().contains(role);
+            boolean shouldHaveRole = mapping.getRoleId().equals(bestRoleId);
+
+            if (shouldHaveRole && !hasRole) {
                 guild.addRoleToMember(member, role).queue();
                 addedRoles.add(role.getName());
+            } else if (!shouldHaveRole && hasRole) {
+                guild.removeRoleFromMember(member, role).queue();
+                removedRoles.add(role.getName());
             }
         }
     }
@@ -65,6 +94,7 @@ public class RoleAssignmentService {
                                          String guildId, List<String> addedRoles, List<String> removedRoles) {
         List<ReagentSkillRoleMapping> allSkillMappings = skillRoleRepo.findByGuildId(guildId);
         if (allSkillMappings.isEmpty()) {
+            log.debug("No skill role mappings configured for guild {}", guildId);
             return;
         }
 
@@ -73,9 +103,13 @@ public class RoleAssignmentService {
                 .map(ReagentSkillRoleMapping::getRoleId)
                 .collect(Collectors.toSet());
 
+        log.debug("Active skill for member {}: {}, matching role IDs: {}",
+                member.getId(), profile.getActiveReagentSkill(), matchingRoleIds);
+
         for (var mapping : allSkillMappings) {
             Role role = guild.getRoleById(mapping.getRoleId());
             if (role == null) {
+                log.warn("Skill role {} not found in guild {}", mapping.getRoleId(), guildId);
                 continue;
             }
 

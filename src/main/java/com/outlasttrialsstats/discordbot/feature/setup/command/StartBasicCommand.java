@@ -21,7 +21,7 @@ public class StartBasicCommand {
     private final MessageService messageService;
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup start", desc = "Automatically create all prestige and reagent skill roles for this server")
+    @Command("setup start")
     public void onStartBasic(CommandEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();

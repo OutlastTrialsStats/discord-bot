@@ -1,9 +1,11 @@
 package com.outlasttrialsstats.discordbot.feature.setup.service;
 
 import com.outlasttrialsstats.backend.api.model.ActiveReagentSkillType;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,15 @@ import org.springframework.stereotype.Service;
 public class BasicSetupService {
 
     private static final int[] PRESTIGE_THRESHOLDS = {1, 10, 20, 30, 40, 50, 60, 70, 80, 90};
+
+    private static final Map<ActiveReagentSkillType, Color> SKILL_COLORS = Map.of(
+            ActiveReagentSkillType.STUN, new Color(179, 8, 29),
+            ActiveReagentSkillType.XRAY, new Color(3, 170, 13),
+            ActiveReagentSkillType.MINE, new Color(116, 0, 198),
+            ActiveReagentSkillType.DOOR_BLOCKER, new Color(216, 155, 0),
+            ActiveReagentSkillType.HACKER, new Color(213, 85, 7),
+            ActiveReagentSkillType.HEAL, new Color(7, 87, 165)
+    );
 
     private final RoleMappingService roleMappingService;
 
@@ -47,6 +58,7 @@ public class BasicSetupService {
                 pendingTasks.incrementAndGet();
                 guild.createRole()
                         .setName(roleName)
+                        .setHoisted(true)
                         .setPermissions(EnumSet.noneOf(Permission.class))
                         .queue(createdRole -> {
                             roleMappingService.savePrestigeMapping(guildId, threshold, createdRole.getId());
@@ -72,6 +84,7 @@ public class BasicSetupService {
                 pendingTasks.incrementAndGet();
                 guild.createRole()
                         .setName(roleName)
+                        .setColor(SKILL_COLORS.get(skill))
                         .setPermissions(EnumSet.noneOf(Permission.class))
                         .queue(createdRole -> {
                             roleMappingService.saveSkillMapping(guildId, skill, createdRole.getId());
@@ -96,8 +109,8 @@ public class BasicSetupService {
             case STUN -> "Stun";
             case XRAY -> "X-Ray";
             case MINE -> "Mine";
-            case DOOR_BLOCKER -> "Door Blocker";
-            case HACKER -> "Hacker";
+            case DOOR_BLOCKER -> "Barricade";
+            case HACKER -> "Jammer";
             case HEAL -> "Heal";
         };
     }

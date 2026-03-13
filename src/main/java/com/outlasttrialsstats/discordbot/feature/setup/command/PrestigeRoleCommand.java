@@ -24,7 +24,7 @@ public class PrestigeRoleCommand {
     private final MessageService messageService;
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup prestige-role", desc = "Link a Discord role to a prestige threshold (auto-creates if not provided)")
+    @Command("setup prestige-role")
     public void onPrestigeRole(CommandEvent event,
                                @Param("Minimum prestige level (e.g. 10 for Prestige 10+)") int threshold,
                                @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
@@ -51,7 +51,7 @@ public class PrestigeRoleCommand {
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup remove-prestige-role", desc = "Remove a prestige role mapping from this server")
+    @Command("setup remove-prestige-role")
     public void onRemovePrestigeRole(CommandEvent event,
                                      @Param("Prestige threshold to remove") int threshold) {
         String guildId = event.getGuild().getId();

@@ -27,7 +27,7 @@ public class SkillRoleCommand {
     private final MessageService messageService;
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup skill-role", desc = "Link a Discord role to a reagent skill (auto-creates if not provided)")
+    @Command("setup skill-role")
     public void onSkillRole(CommandEvent event,
                             @Choices({"STUN", "XRAY", "MINE", "DOOR_BLOCKER", "HACKER", "HEAL"})
                             @Param("Reagent skill") String skill,
@@ -57,7 +57,7 @@ public class SkillRoleCommand {
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup remove-skill-role", desc = "Remove a reagent skill role mapping from this server")
+    @Command("setup remove-skill-role")
     public void onRemoveSkillRole(CommandEvent event,
                                   @Choices({"STUN", "XRAY", "MINE", "DOOR_BLOCKER", "HACKER", "HEAL"})
                                   @Param("Reagent skill") String skill) {

@@ -9,7 +9,7 @@ public interface PrestigeRoleMappingRepository extends JpaRepository<PrestigeRol
 
     List<PrestigeRoleMapping> findByGuildId(String guildId);
 
-    List<PrestigeRoleMapping> findByGuildIdAndMinPrestigeLessThanEqual(String guildId, int prestige);
+    Optional<PrestigeRoleMapping> findFirstByGuildIdAndMinPrestigeLessThanEqualOrderByMinPrestigeDesc(String guildId, int prestige);
 
     Optional<PrestigeRoleMapping> findByGuildIdAndMinPrestige(String guildId, int minPrestige);
 

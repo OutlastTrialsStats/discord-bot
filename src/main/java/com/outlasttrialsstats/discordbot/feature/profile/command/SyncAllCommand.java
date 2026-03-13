@@ -25,7 +25,7 @@ public class SyncAllCommand {
     private final MessageService messageService;
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "sync-all", desc = "Scan all server members and assign roles based on their stats")
+    @Command("sync-all")
     public void onSyncAll(CommandEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();

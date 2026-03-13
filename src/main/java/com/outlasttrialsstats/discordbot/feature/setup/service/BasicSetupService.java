@@ -2,10 +2,10 @@ package com.outlasttrialsstats.discordbot.feature.setup.service;
 
 import com.outlasttrialsstats.backend.api.model.ActiveReagentSkillType;
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class BasicSetupService {
     private static final int[] PRESTIGE_THRESHOLDS = {1, 10, 20, 30, 40, 50, 60, 70, 80, 90};
 
     private static final Map<ActiveReagentSkillType, Color> SKILL_COLORS = Map.of(
-            ActiveReagentSkillType.STUN, new Color(179, 8, 29),
+            ActiveReagentSkillType.STUN, new Color(237, 17, 44),
             ActiveReagentSkillType.XRAY, new Color(3, 170, 13),
             ActiveReagentSkillType.MINE, new Color(116, 0, 198),
             ActiveReagentSkillType.DOOR_BLOCKER, new Color(216, 155, 0),
@@ -35,7 +35,7 @@ public class BasicSetupService {
         String guildId = guild.getId();
         List<Role> existingRoles = guild.getRoles();
         AtomicInteger pendingTasks = new AtomicInteger(0);
-        List<String> createdRoles = new ArrayList<>();
+        List<String> createdRoles = new CopyOnWriteArrayList<>();
 
         setupPrestigeRoles(guild, guildId, existingRoles, pendingTasks, createdRoles, onComplete);
         setupSkillRoles(guild, guildId, existingRoles, pendingTasks, createdRoles, onComplete);

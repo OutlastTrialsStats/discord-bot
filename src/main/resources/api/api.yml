@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: Outlast Trials Stats API
+  version: 1.0.0
+  contact:
+    name: SuprexDE
+    url: https://github.com/SuprexDE
+
+tags:
+  - name: Discord
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  # Discord Bot endpoints
+  /api/discord/leaderboard:
+    $ref: './discord.yml#/paths/~1discord~1leaderboard'
+  /api/discord/profile/{discordUserId}:
+    $ref: './discord.yml#/paths/~1discord~1profile~1{discordUserId}'

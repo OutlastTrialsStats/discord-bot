@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: totstats-discord-bot
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: jdbc:postgresql://localhost:5432/totstats
+    username: dev
+    password: dev
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  messages:
+    basename: messages/messages
+
+discord:
+  bot:
+    token: ${DISCORD_BOT_TOKEN}
+
+totstats:
+  api:
+    base-url: https://outlasttrialsstats.com

@@ -1,0 +1,37 @@
+components:
+  schemas:
+    PlatformType:
+      type: string
+      enum:
+        - STEAM
+        - PLAYSTATION
+        - XBOX
+        - EPIC_GAMES
+      description: Gaming platform
+
+    StatisticType:
+      type: string
+      enum:
+        - COMPLETED_TRIALS
+        - REAGENTS_RELEASED
+        - TRIALS_IN_HOURS
+        - ESCALATION_PEAK
+        - FAILED_TRIALS
+        - DEATHS
+        - PRESTIGE
+        - STAMPS
+        - EVENT_TOKENS
+        - CHESS_WINS
+        - CHESS_RATING
+        - ARMWRESTLING_WINS
+        - ARMWRESTLING_LOSES
+        - ARMWRESTLING_RATING
+        - STROOP_RATING
+        - TENNIS_WINS
+        - TENNIS_LOSES
+        - TENNIS_RATING
+        - INVASION_IMPOSTER_WON_MATCHES
+        - INVASION_IMPOSTER_LOST_MATCHES
+        - INVASION_REAGENT_WON_MATCHES
+        - INVASION_REAGENT_LOST_MATCHES
+      description: Type of statistic to use for ranking

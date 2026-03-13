@@ -15,12 +15,16 @@ A Discord bot that automatically assigns roles based on player stats from [The O
 | `/setup remove-prestige-role` | Remove a prestige role mapping |
 | `/setup skill-role` | Link a role to a reagent skill (auto-creates if not provided) |
 | `/setup remove-skill-role` | Remove a reagent skill role mapping |
+| `/setup messages-upload` | Upload a custom `.properties` file to override bot messages |
+| `/setup messages-download` | Download all current messages as a `.properties` file |
+| `/setup messages-reset` | Reset custom messages to defaults |
 
 ### Profile
 
 | Command | Description |
 |---|---|
 | `/profile-update` | Sync your Discord roles with your Outlast Trials stats |
+| `/sync-all` | Scan all server members and assign roles based on their stats |
 
 Roles are also automatically assigned when a verified member joins the server.
 

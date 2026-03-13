@@ -28,6 +28,13 @@ A Discord bot that automatically assigns roles based on player stats from [The O
 
 Roles are also automatically assigned when a verified member joins the server.
 
+## TODO
+
+- [ ] More role types (Count of Invasion Types)
+- [ ] Live Leaderboard
+- [ ] Announcements
+- [ ] Build and deploy process (Registry and main Discord bot)
+
 ## Prerequisites
 
 - Java 25+

@@ -33,15 +33,64 @@ Roles are also automatically assigned when a verified member joins the server.
 - [ ] More role types (Count of Invasion Types)
 - [ ] Live Leaderboard
 - [ ] Announcements
-- [ ] Build and deploy process (Registry and main Discord bot)
 
-## Prerequisites
+## Self-Hosting with Docker
+
+The easiest way to run the bot is with Docker.
+
+### 1. Create a Discord Bot
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create a new application and add a bot
+3. Enable **Server Members Intent** under *Bot → Privileged Gateway Intents*
+4. Copy the bot token
+
+### 2. Set up `docker-compose.yml`
+
+```yaml
+services:
+  bot:
+    image: ghcr.io/outlasttrialsstats/discord-bot:latest
+    restart: always
+    environment:
+      DISCORD_BOT_TOKEN: "your-bot-token"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/totstats"
+      SPRING_DATASOURCE_USERNAME: "totstats"
+      SPRING_DATASOURCE_PASSWORD: "change-me"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_USER: totstats
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: totstats
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+### 3. Start the bot
+
+```bash
+docker compose up -d
+```
+
+### 4. Invite the bot
+
+Invite the bot to your server using the OAuth2 URL from the Developer Portal with the `bot` and `applications.commands` scopes.
+
+## Development
+
+### Prerequisites
 
 - Java 25+
 - Docker (for PostgreSQL)
 - A [Discord Bot Token](https://discord.com/developers/applications) with **Server Members Intent** enabled
-
-## Getting Started
 
 ### 1. Start the database
 

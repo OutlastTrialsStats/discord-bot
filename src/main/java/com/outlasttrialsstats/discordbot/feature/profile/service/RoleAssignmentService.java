@@ -1,16 +1,16 @@
 package com.outlasttrialsstats.discordbot.feature.profile.service;
 
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
-import com.outlasttrialsstats.backend.api.model.InvasionRanking;
 import com.outlasttrialsstats.discordbot.entity.EnumRoleMapping;
 import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
-import com.outlasttrialsstats.discordbot.feature.setup.service.BasicSetupService;
+import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -42,20 +42,14 @@ public class RoleAssignmentService {
         List<String> addedRoles = new ArrayList<>();
         List<String> removedRoles = new ArrayList<>();
 
-        log.debug("Member {} has prestige {}, skill {}, invasion ranking {}, platform {}, account type {}",
-                member.getId(), profile.getPrestigeLevel(), profile.getActiveReagentSkill(),
-                profile.getInvasionRanking(), profile.getPlatformType(), profile.getAccountCreationType());
-
-        // Ranked roles (best match)
         assignRankedRole(guild, member, guildId, RoleCategory.PRESTIGE,
-                profile.getPrestigeLevel() != null ? profile.getPrestigeLevel() : 0,
+                Objects.requireNonNullElse(profile.getPrestigeLevel(), 0),
                 addedRoles, removedRoles);
 
         assignRankedRole(guild, member, guildId, RoleCategory.INVASION_RANKING,
-                profile.getInvasionRanking() != null ? BasicSetupService.invasionRankingToOrdinal(profile.getInvasionRanking()) : -1,
+                profile.getInvasionRanking() != null ? RoleConfig.invasionRankingOrdinal(profile.getInvasionRanking()) : -1,
                 addedRoles, removedRoles);
 
-        // Enum roles (exact match)
         assignEnumRole(guild, member, guildId, RoleCategory.REAGENT_RIG,
                 profile.getActiveReagentSkill() != null ? profile.getActiveReagentSkill().getValue() : null,
                 addedRoles, removedRoles);
@@ -79,55 +73,42 @@ public class RoleAssignmentService {
     private void assignRankedRole(Guild guild, Member member, String guildId,
                                   RoleCategory category, int currentRank,
                                   List<String> addedRoles, List<String> removedRoles) {
-        List<RankedRoleMapping> allMappings = roleMappingService.getRankedMappings(guildId, category);
-        if (allMappings.isEmpty()) {
-            return;
-        }
+        var allMappings = roleMappingService.getRankedMappings(guildId, category);
+        if (allMappings.isEmpty()) return;
 
-        String bestRoleId = roleMappingService.getBestRankedMapping(guildId, category, currentRank)
-                .map(RankedRoleMapping::getRoleId)
-                .orElse(null);
+        Set<String> targetRoleIds = roleMappingService.getBestRankedMapping(guildId, category, currentRank)
+                .map(m -> Set.of(m.getRoleId()))
+                .orElse(Set.of());
 
-        for (var mapping : allMappings) {
-            Role role = guild.getRoleById(mapping.getRoleId());
-            if (role == null) {
-                continue;
-            }
-
-            boolean hasRole = member.getRoles().contains(role);
-            boolean shouldHaveRole = mapping.getRoleId().equals(bestRoleId);
-
-            if (shouldHaveRole && !hasRole) {
-                guild.addRoleToMember(member, role).queue();
-                addedRoles.add(role.getName());
-            } else if (!shouldHaveRole && hasRole) {
-                guild.removeRoleFromMember(member, role).queue();
-                removedRoles.add(role.getName());
-            }
-        }
+        syncRoles(guild, member,
+                allMappings.stream().map(RankedRoleMapping::getRoleId).toList(),
+                targetRoleIds, addedRoles, removedRoles);
     }
 
     private void assignEnumRole(Guild guild, Member member, String guildId,
                                 RoleCategory category, String currentValue,
                                 List<String> addedRoles, List<String> removedRoles) {
-        List<EnumRoleMapping> allMappings = roleMappingService.getEnumMappings(guildId, category);
-        if (allMappings.isEmpty()) {
-            return;
-        }
+        var allMappings = roleMappingService.getEnumMappings(guildId, category);
+        if (allMappings.isEmpty()) return;
 
-        Set<String> matchingRoleIds = allMappings.stream()
+        Set<String> targetRoleIds = allMappings.stream()
                 .filter(m -> m.getEnumValue().equals(currentValue))
                 .map(EnumRoleMapping::getRoleId)
                 .collect(Collectors.toSet());
 
-        for (var mapping : allMappings) {
-            Role role = guild.getRoleById(mapping.getRoleId());
-            if (role == null) {
-                continue;
-            }
+        syncRoles(guild, member,
+                allMappings.stream().map(EnumRoleMapping::getRoleId).toList(),
+                targetRoleIds, addedRoles, removedRoles);
+    }
+
+    private void syncRoles(Guild guild, Member member, List<String> allRoleIds,
+                           Set<String> targetRoleIds, List<String> addedRoles, List<String> removedRoles) {
+        for (String roleId : allRoleIds) {
+            Role role = guild.getRoleById(roleId);
+            if (role == null) continue;
 
             boolean hasRole = member.getRoles().contains(role);
-            boolean shouldHaveRole = matchingRoleIds.contains(mapping.getRoleId());
+            boolean shouldHaveRole = targetRoleIds.contains(roleId);
 
             if (shouldHaveRole && !hasRole) {
                 guild.addRoleToMember(member, role).queue();
@@ -138,4 +119,5 @@ public class RoleAssignmentService {
             }
         }
     }
+
 }

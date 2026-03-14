@@ -23,7 +23,7 @@ public class GuildServer {
     private String language = "en";
 
     @Column(name = "member_count", nullable = false)
-    private int memberCount = 0;
+    private int memberCount;
 
     public GuildServer(String guildId) {
         this.guildId = guildId;

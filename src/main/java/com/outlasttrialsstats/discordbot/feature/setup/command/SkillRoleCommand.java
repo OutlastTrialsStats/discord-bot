@@ -2,7 +2,7 @@ package com.outlasttrialsstats.discordbot.feature.setup.command;
 
 import com.outlasttrialsstats.backend.api.model.ActiveReagentSkillType;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
-import com.outlasttrialsstats.discordbot.feature.setup.service.BasicSetupService;
+import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import io.github.kaktushose.jdac.annotations.interactions.Choices;
@@ -42,9 +42,9 @@ public class SkillRoleCommand {
             roleMappingService.saveEnumMapping(guildId, RoleCategory.REAGENT_RIG, reagentSkill.getValue(), existingRole.getId());
             event.with().ephemeral(true)
                     .reply(messageService.getMessage(guildId, "setup.skill_role.success",
-                            existingRole.getName(), BasicSetupService.formatSkillName(reagentSkill)));
+                            existingRole.getName(), RoleConfig.skillName(reagentSkill)));
         } else {
-            String roleName = BasicSetupService.formatSkillName(reagentSkill);
+            String roleName = RoleConfig.skillName(reagentSkill);
             guild.createRole()
                     .setName(roleName)
                     .setPermissions(EnumSet.noneOf(Permission.class))
@@ -52,7 +52,7 @@ public class SkillRoleCommand {
                         roleMappingService.saveEnumMapping(guildId, RoleCategory.REAGENT_RIG, reagentSkill.getValue(), createdRole.getId());
                         event.with().ephemeral(true)
                                 .reply(messageService.getMessage(guildId, "setup.skill_role.success",
-                                        createdRole.getName(), BasicSetupService.formatSkillName(reagentSkill)));
+                                        createdRole.getName(), RoleConfig.skillName(reagentSkill)));
                     });
         }
     }
@@ -67,6 +67,6 @@ public class SkillRoleCommand {
         roleMappingService.removeEnumMapping(guildId, RoleCategory.REAGENT_RIG, reagentSkill.getValue());
         event.with().ephemeral(true)
                 .reply(messageService.getMessage(guildId, "setup.skill_role.removed",
-                        BasicSetupService.formatSkillName(reagentSkill)));
+                        RoleConfig.skillName(reagentSkill)));
     }
 }

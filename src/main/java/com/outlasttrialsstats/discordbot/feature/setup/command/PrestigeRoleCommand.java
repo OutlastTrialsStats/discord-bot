@@ -1,5 +1,6 @@
 package com.outlasttrialsstats.discordbot.feature.setup.command;
 
+import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import io.github.kaktushose.jdac.annotations.interactions.Command;
@@ -33,7 +34,7 @@ public class PrestigeRoleCommand {
 
         if (role.isPresent()) {
             Role existingRole = role.get();
-            roleMappingService.savePrestigeMapping(guildId, threshold, existingRole.getId());
+            roleMappingService.saveRankedMapping(guildId, RoleCategory.PRESTIGE, threshold, existingRole.getId());
             event.with().ephemeral(true)
                     .reply(messageService.getMessage(guildId, "setup.prestige_role.success",
                             existingRole.getName(), threshold));
@@ -42,7 +43,7 @@ public class PrestigeRoleCommand {
                     .setName("Prestige " + threshold + "+")
                     .setPermissions(EnumSet.noneOf(Permission.class))
                     .queue(createdRole -> {
-                        roleMappingService.savePrestigeMapping(guildId, threshold, createdRole.getId());
+                        roleMappingService.saveRankedMapping(guildId, RoleCategory.PRESTIGE, threshold, createdRole.getId());
                         event.with().ephemeral(true)
                                 .reply(messageService.getMessage(guildId, "setup.prestige_role.success",
                                         createdRole.getName(), threshold));
@@ -55,7 +56,7 @@ public class PrestigeRoleCommand {
     public void onRemovePrestigeRole(CommandEvent event,
                                      @Param("Prestige threshold to remove") int threshold) {
         String guildId = event.getGuild().getId();
-        roleMappingService.removePrestigeMapping(guildId, threshold);
+        roleMappingService.removeRankedMapping(guildId, RoleCategory.PRESTIGE, threshold);
         event.with().ephemeral(true)
                 .reply(messageService.getMessage(guildId, "setup.prestige_role.removed", threshold));
     }

@@ -1,9 +1,9 @@
 package com.outlasttrialsstats.discordbot.shared;
 
 import com.outlasttrialsstats.discordbot.entity.GuildMessage;
-import com.outlasttrialsstats.discordbot.entity.GuildSettings;
+import com.outlasttrialsstats.discordbot.entity.GuildServer;
 import com.outlasttrialsstats.discordbot.repository.GuildMessageRepository;
-import com.outlasttrialsstats.discordbot.repository.GuildSettingsRepository;
+import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.Map;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 public class MessageService {
 
     private final MessageSource messageSource;
-    private final GuildSettingsRepository guildSettingsRepository;
+    private final GuildServerRepository guildServerRepository;
     private final GuildMessageRepository guildMessageRepository;
 
     private final Map<String, Map<String, String>> cache = new ConcurrentHashMap<>();
@@ -40,17 +40,17 @@ public class MessageService {
     }
 
     public Locale getLocale(String guildId) {
-        return guildSettingsRepository.findById(guildId)
-                .map(GuildSettings::getLanguage)
+        return guildServerRepository.findById(guildId)
+                .map(GuildServer::getLanguage)
                 .map(Locale::forLanguageTag)
                 .orElse(Locale.ENGLISH);
     }
 
     public void setLanguage(String guildId, String language) {
-        GuildSettings settings = guildSettingsRepository.findById(guildId)
-                .orElseGet(() -> new GuildSettings(guildId));
-        settings.setLanguage(language);
-        guildSettingsRepository.save(settings);
+        GuildServer server = guildServerRepository.findById(guildId)
+                .orElseGet(() -> new GuildServer(guildId));
+        server.setLanguage(language);
+        guildServerRepository.save(server);
     }
 
     private Map<String, String> loadMessages(String guildId) {

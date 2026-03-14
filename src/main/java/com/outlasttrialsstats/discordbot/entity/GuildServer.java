@@ -9,11 +9,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "guild_settings")
+@Table(name = "guild_server")
 @Getter
 @Setter
 @NoArgsConstructor
-public class GuildSettings {
+public class GuildServer {
 
     @Id
     @Column(name = "guild_id")
@@ -22,7 +22,10 @@ public class GuildSettings {
     @Column(nullable = false)
     private String language = "en";
 
-    public GuildSettings(String guildId) {
+    @Column(name = "member_count", nullable = false)
+    private int memberCount = 0;
+
+    public GuildServer(String guildId) {
         this.guildId = guildId;
     }
 }

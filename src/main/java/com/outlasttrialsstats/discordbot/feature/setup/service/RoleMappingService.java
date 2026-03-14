@@ -1,11 +1,12 @@
 package com.outlasttrialsstats.discordbot.feature.setup.service;
 
-import com.outlasttrialsstats.backend.api.model.ActiveReagentSkillType;
-import com.outlasttrialsstats.discordbot.entity.PrestigeRoleMapping;
-import com.outlasttrialsstats.discordbot.entity.ReagentSkillRoleMapping;
-import com.outlasttrialsstats.discordbot.repository.PrestigeRoleMappingRepository;
-import com.outlasttrialsstats.discordbot.repository.ReagentSkillRoleMappingRepository;
+import com.outlasttrialsstats.discordbot.entity.EnumRoleMapping;
+import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
+import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
+import com.outlasttrialsstats.discordbot.repository.EnumRoleMappingRepository;
+import com.outlasttrialsstats.discordbot.repository.RankedRoleMappingRepository;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,49 +15,68 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RoleMappingService {
 
-    private final PrestigeRoleMappingRepository prestigeRoleRepo;
-    private final ReagentSkillRoleMappingRepository skillRoleRepo;
+    private final EnumRoleMappingRepository enumRoleRepo;
+    private final RankedRoleMappingRepository rankedRoleRepo;
+
+    // --- Enum-based mappings (Skill, Platform, AccountType) ---
 
     @Transactional
-    public void savePrestigeMapping(String guildId, int threshold, String roleId) {
-        var existing = prestigeRoleRepo.findByGuildIdAndMinPrestige(guildId, threshold);
+    public void saveEnumMapping(String guildId, RoleCategory category, String enumValue, String roleId) {
+        var existing = enumRoleRepo.findByGuildIdAndCategoryAndEnumValue(guildId, category, enumValue);
         if (existing.isPresent()) {
             existing.get().setRoleId(roleId);
         } else {
-            prestigeRoleRepo.save(new PrestigeRoleMapping(guildId, threshold, roleId));
+            enumRoleRepo.save(new EnumRoleMapping(guildId, category, enumValue, roleId));
         }
     }
 
     @Transactional
-    public void saveSkillMapping(String guildId, ActiveReagentSkillType skill, String roleId) {
-        var existing = skillRoleRepo.findByGuildIdAndSkill(guildId, skill);
+    public void removeEnumMapping(String guildId, RoleCategory category, String enumValue) {
+        enumRoleRepo.deleteByGuildIdAndCategoryAndEnumValue(guildId, category, enumValue);
+    }
+
+    public List<EnumRoleMapping> getEnumMappings(String guildId, RoleCategory category) {
+        return enumRoleRepo.findByGuildIdAndCategory(guildId, category);
+    }
+
+    // --- Ranked mappings (Prestige, InvasionRanking) ---
+
+    @Transactional
+    public void saveRankedMapping(String guildId, RoleCategory category, int minRank, String roleId) {
+        var existing = rankedRoleRepo.findByGuildIdAndCategoryAndMinRank(guildId, category, minRank);
         if (existing.isPresent()) {
             existing.get().setRoleId(roleId);
         } else {
-            skillRoleRepo.save(new ReagentSkillRoleMapping(guildId, skill, roleId));
+            rankedRoleRepo.save(new RankedRoleMapping(guildId, category, minRank, roleId));
         }
     }
 
     @Transactional
-    public void removePrestigeMapping(String guildId, int threshold) {
-        prestigeRoleRepo.deleteByGuildIdAndMinPrestige(guildId, threshold);
+    public void removeRankedMapping(String guildId, RoleCategory category, int minRank) {
+        rankedRoleRepo.deleteByGuildIdAndCategoryAndMinRank(guildId, category, minRank);
     }
 
-    @Transactional
-    public void removeSkillMapping(String guildId, ActiveReagentSkillType skill) {
-        skillRoleRepo.deleteByGuildIdAndSkill(guildId, skill);
+    public List<RankedRoleMapping> getRankedMappings(String guildId, RoleCategory category) {
+        return rankedRoleRepo.findByGuildIdAndCategory(guildId, category);
     }
+
+    public java.util.Optional<RankedRoleMapping> getBestRankedMapping(String guildId, RoleCategory category, int rank) {
+        return rankedRoleRepo.findFirstByGuildIdAndCategoryAndMinRankLessThanEqualOrderByMinRankDesc(
+                guildId, category, rank);
+    }
+
+    // --- Common operations ---
 
     public List<String> getAllRoleIds(String guildId) {
-        return java.util.stream.Stream.concat(
-                prestigeRoleRepo.findByGuildId(guildId).stream().map(PrestigeRoleMapping::getRoleId),
-                skillRoleRepo.findByGuildId(guildId).stream().map(ReagentSkillRoleMapping::getRoleId)
+        return Stream.concat(
+                enumRoleRepo.findByGuildId(guildId).stream().map(EnumRoleMapping::getRoleId),
+                rankedRoleRepo.findByGuildId(guildId).stream().map(RankedRoleMapping::getRoleId)
         ).toList();
     }
 
     @Transactional
     public void deleteAllMappings(String guildId) {
-        prestigeRoleRepo.deleteAll(prestigeRoleRepo.findByGuildId(guildId));
-        skillRoleRepo.deleteAll(skillRoleRepo.findByGuildId(guildId));
+        enumRoleRepo.deleteByGuildId(guildId);
+        rankedRoleRepo.deleteByGuildId(guildId);
     }
 }

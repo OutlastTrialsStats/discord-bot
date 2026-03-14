@@ -116,6 +116,13 @@ components:
         - HACKER
         - HEAL
 
+    AccountCreationType:
+      type: string
+      enum:
+        - CLOSED_BETA_USER
+        - EARLY_ACCESS_USER
+        - NORMAL_USER
+
     DiscordProfileResponse:
       type: object
       properties:
@@ -130,6 +137,14 @@ components:
           type: integer
 
         activeReagentSkill:
-          allOf:
-            - $ref: '#/components/schemas/ActiveReagentSkillType'
-          description: Active skill of the profile
+          $ref: '#/components/schemas/ActiveReagentSkillType'
+        invasionRanking:
+          $ref: './common.yml#/components/schemas/InvasionRanking'
+        totalInvasionMatchesPlayed:
+          type: integer
+        platformType:
+          $ref: './common.yml#/components/schemas/PlatformType'
+        reagentReleases:
+          type: integer
+        accountCreationType:
+          $ref: '#/components/schemas/AccountCreationType'

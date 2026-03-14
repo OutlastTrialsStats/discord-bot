@@ -1,10 +1,13 @@
 package com.outlasttrialsstats.discordbot.feature.profile.service;
 
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
-import com.outlasttrialsstats.discordbot.entity.ReagentSkillRoleMapping;
+import com.outlasttrialsstats.backend.api.model.InvasionRanking;
+import com.outlasttrialsstats.discordbot.entity.EnumRoleMapping;
+import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
-import com.outlasttrialsstats.discordbot.repository.PrestigeRoleMappingRepository;
-import com.outlasttrialsstats.discordbot.repository.ReagentSkillRoleMappingRepository;
+import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
+import com.outlasttrialsstats.discordbot.feature.setup.service.BasicSetupService;
+import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +26,7 @@ import org.springframework.stereotype.Service;
 public class RoleAssignmentService {
 
     private final TOTStatsApiClient statsApiClient;
-    private final PrestigeRoleMappingRepository prestigeRoleRepo;
-    private final ReagentSkillRoleMappingRepository skillRoleRepo;
+    private final RoleMappingService roleMappingService;
 
     public RoleAssignmentResult assignRoles(Guild guild, Member member) {
         log.debug("Assigning roles for member {} in guild {}", member.getId(), guild.getId());
@@ -40,11 +42,31 @@ public class RoleAssignmentService {
         List<String> addedRoles = new ArrayList<>();
         List<String> removedRoles = new ArrayList<>();
 
-        log.debug("Member {} has prestige {} and active skill {}",
-                member.getId(), profile.getPrestigeLevel(), profile.getActiveReagentSkill());
+        log.debug("Member {} has prestige {}, skill {}, invasion ranking {}, platform {}, account type {}",
+                member.getId(), profile.getPrestigeLevel(), profile.getActiveReagentSkill(),
+                profile.getInvasionRanking(), profile.getPlatformType(), profile.getAccountCreationType());
 
-        assignPrestigeRoles(guild, member, profile, guildId, addedRoles, removedRoles);
-        assignReagentSkillRoles(guild, member, profile, guildId, addedRoles, removedRoles);
+        // Ranked roles (best match)
+        assignRankedRole(guild, member, guildId, RoleCategory.PRESTIGE,
+                profile.getPrestigeLevel() != null ? profile.getPrestigeLevel() : 0,
+                addedRoles, removedRoles);
+
+        assignRankedRole(guild, member, guildId, RoleCategory.INVASION_RANKING,
+                profile.getInvasionRanking() != null ? BasicSetupService.invasionRankingToOrdinal(profile.getInvasionRanking()) : -1,
+                addedRoles, removedRoles);
+
+        // Enum roles (exact match)
+        assignEnumRole(guild, member, guildId, RoleCategory.REAGENT_RIG,
+                profile.getActiveReagentSkill() != null ? profile.getActiveReagentSkill().getValue() : null,
+                addedRoles, removedRoles);
+
+        assignEnumRole(guild, member, guildId, RoleCategory.PLATFORM,
+                profile.getPlatformType() != null ? profile.getPlatformType().getValue() : null,
+                addedRoles, removedRoles);
+
+        assignEnumRole(guild, member, guildId, RoleCategory.ACCOUNT_TYPE,
+                profile.getAccountCreationType() != null ? profile.getAccountCreationType().getValue() : null,
+                addedRoles, removedRoles);
 
         if (!addedRoles.isEmpty() || !removedRoles.isEmpty()) {
             log.info("Member {} in guild {}: added [{}], removed [{}]",
@@ -54,26 +76,21 @@ public class RoleAssignmentService {
         return RoleAssignmentResult.of(addedRoles, removedRoles);
     }
 
-    private void assignPrestigeRoles(Guild guild, Member member, DiscordProfileResponse profile,
-                                     String guildId, List<String> addedRoles, List<String> removedRoles) {
-        var allMappings = prestigeRoleRepo.findByGuildId(guildId);
+    private void assignRankedRole(Guild guild, Member member, String guildId,
+                                  RoleCategory category, int currentRank,
+                                  List<String> addedRoles, List<String> removedRoles) {
+        List<RankedRoleMapping> allMappings = roleMappingService.getRankedMappings(guildId, category);
         if (allMappings.isEmpty()) {
-            log.debug("No prestige role mappings configured for guild {}", guildId);
             return;
         }
 
-        var bestMapping = prestigeRoleRepo
-                .findFirstByGuildIdAndMinPrestigeLessThanEqualOrderByMinPrestigeDesc(guildId, profile.getPrestigeLevel());
-
-        String bestRoleId = bestMapping.map(m -> m.getRoleId()).orElse(null);
-        log.debug("Best prestige mapping for member {} (prestige {}): {}",
-                member.getId(), profile.getPrestigeLevel(),
-                bestMapping.map(m -> "Prestige " + m.getMinPrestige() + "+").orElse("none"));
+        String bestRoleId = roleMappingService.getBestRankedMapping(guildId, category, currentRank)
+                .map(RankedRoleMapping::getRoleId)
+                .orElse(null);
 
         for (var mapping : allMappings) {
             Role role = guild.getRoleById(mapping.getRoleId());
             if (role == null) {
-                log.warn("Prestige role {} not found in guild {}", mapping.getRoleId(), guildId);
                 continue;
             }
 
@@ -90,26 +107,22 @@ public class RoleAssignmentService {
         }
     }
 
-    private void assignReagentSkillRoles(Guild guild, Member member, DiscordProfileResponse profile,
-                                         String guildId, List<String> addedRoles, List<String> removedRoles) {
-        List<ReagentSkillRoleMapping> allSkillMappings = skillRoleRepo.findByGuildId(guildId);
-        if (allSkillMappings.isEmpty()) {
-            log.debug("No skill role mappings configured for guild {}", guildId);
+    private void assignEnumRole(Guild guild, Member member, String guildId,
+                                RoleCategory category, String currentValue,
+                                List<String> addedRoles, List<String> removedRoles) {
+        List<EnumRoleMapping> allMappings = roleMappingService.getEnumMappings(guildId, category);
+        if (allMappings.isEmpty()) {
             return;
         }
 
-        Set<String> matchingRoleIds = allSkillMappings.stream()
-                .filter(m -> m.getSkill() == profile.getActiveReagentSkill())
-                .map(ReagentSkillRoleMapping::getRoleId)
+        Set<String> matchingRoleIds = allMappings.stream()
+                .filter(m -> m.getEnumValue().equals(currentValue))
+                .map(EnumRoleMapping::getRoleId)
                 .collect(Collectors.toSet());
 
-        log.debug("Active skill for member {}: {}, matching role IDs: {}",
-                member.getId(), profile.getActiveReagentSkill(), matchingRoleIds);
-
-        for (var mapping : allSkillMappings) {
+        for (var mapping : allMappings) {
             Role role = guild.getRoleById(mapping.getRoleId());
             if (role == null) {
-                log.warn("Skill role {} not found in guild {}", mapping.getRoleId(), guildId);
                 continue;
             }
 

@@ -1,6 +1,6 @@
 package com.outlasttrialsstats.discordbot.entity;
 
-import com.outlasttrialsstats.backend.api.model.ActiveReagentSkillType;
+import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,13 +15,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "reagent_skill_role_mapping", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"guild_id", "skill"})
+@Table(name = "enum_role_mapping", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"guild_id", "category", "enum_value"})
 })
 @Getter
 @Setter
 @NoArgsConstructor
-public class ReagentSkillRoleMapping {
+public class EnumRoleMapping {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,14 +32,18 @@ public class ReagentSkillRoleMapping {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ActiveReagentSkillType skill;
+    private RoleCategory category;
+
+    @Column(name = "enum_value", nullable = false)
+    private String enumValue;
 
     @Column(name = "role_id", nullable = false)
     private String roleId;
 
-    public ReagentSkillRoleMapping(String guildId, ActiveReagentSkillType skill, String roleId) {
+    public EnumRoleMapping(String guildId, RoleCategory category, String enumValue, String roleId) {
         this.guildId = guildId;
-        this.skill = skill;
+        this.category = category;
+        this.enumValue = enumValue;
         this.roleId = roleId;
     }
 }

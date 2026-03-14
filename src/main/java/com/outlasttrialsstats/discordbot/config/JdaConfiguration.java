@@ -25,7 +25,7 @@ public class JdaConfiguration {
         return JDABuilder.createDefault(token)
                 .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES)
                 .setStatus(OnlineStatus.ONLINE)
-                .setActivity(Activity.watching("Work in Progress"))
+                .setActivity(Activity.watching("outlasttrialsstats.com/verify"))
                 .addEventListeners(listeners.toArray())
                 .build()
                 .awaitReady();

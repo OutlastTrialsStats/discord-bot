@@ -1,6 +1,6 @@
 # TOTStats Discord Bot
 
-A Discord bot that automatically assigns roles based on player stats from [The Outlast Trials](https://outlasttrialsstats.com). Built with Spring Boot, JDA, and jda-commands.
+A Discord bot that automatically assigns roles based on player stats from [The Outlast Trials](https://outlasttrialsstats.com).
 
 ## Features
 
@@ -8,13 +8,15 @@ A Discord bot that automatically assigns roles based on player stats from [The O
 
 | Command | Description |
 |---|---|
-| `/setup start` | Automatically create all prestige and reagent skill roles |
+| `/setup start` | Automatically create roles for selected categories (Prestige, Reagent Rig, Invasion Ranking, Platform, Account Type) |
 | `/setup delete` | Delete all bot-managed roles and remove mappings |
 | `/setup language` | Change the bot's response language (English, Deutsch) |
-| `/setup prestige-role` | Link a role to a prestige threshold (auto-creates if not provided) |
-| `/setup remove-prestige-role` | Remove a prestige role mapping |
-| `/setup skill-role` | Link a role to a reagent skill (auto-creates if not provided) |
-| `/setup remove-skill-role` | Remove a reagent skill role mapping |
+| `/setup role-mapping prestige` | Link a role to a prestige threshold (auto-creates if not provided) |
+| `/setup role-mapping skill` | Link a role to a reagent skill |
+| `/setup role-mapping invasion-ranking` | Link a role to an invasion ranking |
+| `/setup role-mapping platform` | Link a role to a gaming platform |
+| `/setup role-mapping account-type` | Link a role to an account type |
+| `/setup remove-role-mapping <category>` | Remove a role mapping for any category |
 | `/setup messages-upload` | Upload a custom `.properties` file to override bot messages |
 | `/setup messages-download` | Download all current messages as a `.properties` file |
 | `/setup messages-reset` | Reset custom messages to defaults |
@@ -30,7 +32,7 @@ Roles are also automatically assigned when a verified member joins the server.
 
 ## TODO
 
-- [ ] More role types (Count of Invasion Types)
+- [x] More role types (Count of Invasion Types)
 - [ ] Live Leaderboard
 - [ ] Announcements
 
@@ -38,14 +40,7 @@ Roles are also automatically assigned when a verified member joins the server.
 
 The easiest way to run the bot is with Docker.
 
-### 1. Create a Discord Bot
-
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a new application and add a bot
-3. Enable **Server Members Intent** under *Bot → Privileged Gateway Intents*
-4. Copy the bot token
-
-### 2. Set up `docker-compose.yml`
+### 1. Set up `docker-compose.yml`
 
 ```yaml
 services:
@@ -74,13 +69,13 @@ volumes:
   postgres_data:
 ```
 
-### 3. Start the bot
+### 2. Start the bot
 
 ```bash
 docker compose up -d
 ```
 
-### 4. Invite the bot
+### 3. Invite the bot
 
 Invite the bot to your server using the OAuth2 URL from the Developer Portal with the `bot` and `applications.commands` scopes.
 

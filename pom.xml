@@ -94,7 +94,7 @@
                     <dependency>
                         <groupId>org.openapitools</groupId>
                         <artifactId>openapi-generator-cli</artifactId>
-                        <version>7.17.0</version>
+                        <version>7.20.0</version>
                     </dependency>
                 </dependencies>
                 <executions>

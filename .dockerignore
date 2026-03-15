@@ -1,0 +1,7 @@
+.git
+.idea
+*.iml
+target/generated-sources
+target/classes
+target/maven-*
+target/test-classes

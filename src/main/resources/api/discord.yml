@@ -1,0 +1,144 @@
+paths:
+  /discord/leaderboard:
+    get:
+      tags:
+        - Discord
+      summary: Get top profiles for Discord Bot
+      description: Returns top profiles by category with pagination. Includes the Discord User ID if the profile is linked to a Discord account.
+      operationId: getDiscordLeaderboard
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: category
+          in: query
+          required: true
+          schema:
+            $ref: './common.yml#/components/schemas/StatisticType'
+          description: Statistic category to rank by
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (50 results per page)
+      responses:
+        '200':
+          description: Paginated leaderboard results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscordLeaderboardResponse'
+        '403':
+          description: Invalid or missing API Key
+        '500':
+          description: Internal server error
+
+  /discord/profile/{discordUserId}:
+    get:
+      tags:
+        - Discord
+      summary: Get profile by Discord User ID
+      description: Returns the linked game profile for a given Discord User ID if the user has linked their account.
+      operationId: getDiscordProfile
+      parameters:
+        - name: discordUserId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Discord User ID (Snowflake)
+      responses:
+        '200':
+          description: Linked profile found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscordProfileResponse'
+        '403':
+          description: Invalid or missing API Key
+        '404':
+          description: Discord user not found or not linked to a profile
+
+components:
+  schemas:
+    DiscordLeaderboardResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscordLeaderboardEntry'
+        currentPage:
+          type: integer
+        totalPages:
+          type: integer
+        hasMore:
+          type: boolean
+        totalResults:
+          type: integer
+
+    DiscordLeaderboardEntry:
+      type: object
+      properties:
+        profileId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        prestigeLevel:
+          type: integer
+        level:
+          type: integer
+        ranking:
+          type: integer
+        value:
+          type: integer
+        discordUserId:
+          type: string
+          nullable: true
+          description: Discord User ID if the profile is linked to a Discord account
+
+    ActiveReagentSkillType:
+      type: string
+      enum:
+        - STUN
+        - XRAY
+        - MINE
+        - DOOR_BLOCKER
+        - HACKER
+        - HEAL
+
+    AccountCreationType:
+      type: string
+      enum:
+        - CLOSED_BETA_USER
+        - EARLY_ACCESS_USER
+        - NORMAL_USER
+
+    DiscordProfileResponse:
+      type: object
+      properties:
+        profileId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        prestigeLevel:
+          type: integer
+        level:
+          type: integer
+
+        activeReagentSkill:
+          $ref: '#/components/schemas/ActiveReagentSkillType'
+        invasionRanking:
+          $ref: './common.yml#/components/schemas/InvasionRanking'
+        totalInvasionMatchesPlayed:
+          type: integer
+        platformType:
+          $ref: './common.yml#/components/schemas/PlatformType'
+        reagentReleases:
+          type: integer
+        accountCreationType:
+          $ref: '#/components/schemas/AccountCreationType'

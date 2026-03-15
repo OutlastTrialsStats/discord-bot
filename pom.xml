@@ -6,20 +6,22 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.0.3</version>
-        <relativePath/>
     </parent>
+
     <groupId>com.outlasttrialsstats</groupId>
     <artifactId>discord-bot</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
     <name>totstats-discord-bot</name>
-    <description>totstats-discord-bot</description>
-    <url/>
+
+    <url>https://outlasttrialsstats.com</url>
+
     <developers>
         <developer>
             <name>SuprexDE</name>
-            <email>contact@suprex.dev</email>
+            <email>me@suprex.dev</email>
         </developer>
     </developers>
+
     <properties>
         <java.version>25</java.version>
     </properties>

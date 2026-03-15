@@ -15,12 +15,6 @@ paths:
           schema:
             $ref: './common.yml#/components/schemas/StatisticType'
           description: Statistic category to rank by
-        - name: platform
-          in: query
-          required: false
-          schema:
-            $ref: './common.yml#/components/schemas/PlatformType'
-          description: Platform filter (optional)
         - name: page
           in: query
           required: false

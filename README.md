@@ -8,12 +8,14 @@ A Discord bot that automatically assigns roles based on player stats from [The O
 
 | Command | Description |
 |---|---|
-| `/setup start` | Automatically create roles for selected categories (Prestige, Reagent Rig, Invasion Ranking, Platform, Account Type) |
+| `/setup start` | Automatically create roles for selected categories (Prestige, Level, Reagent Rig, Invasion Ranking, Total Invasion Matches, Platform, Account Type) |
 | `/setup delete` | Delete all bot-managed roles and remove mappings |
 | `/setup language` | Change the bot's response language (English, Deutsch) |
 | `/setup role-mapping prestige` | Link a role to a prestige threshold (auto-creates if not provided) |
+| `/setup role-mapping level` | Link a role to a level threshold (auto-creates if not provided) |
 | `/setup role-mapping skill` | Link a role to a reagent skill |
 | `/setup role-mapping invasion-ranking` | Link a role to an invasion ranking |
+| `/setup role-mapping total-invasion-matches` | Link a role to a total invasion matches threshold (auto-creates if not provided) |
 | `/setup role-mapping platform` | Link a role to a gaming platform |
 | `/setup role-mapping account-type` | Link a role to an account type |
 | `/setup remove-role-mapping <category>` | Remove a role mapping for any category |

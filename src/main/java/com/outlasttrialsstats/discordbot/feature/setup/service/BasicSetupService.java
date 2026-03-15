@@ -57,10 +57,22 @@ public class BasicSetupService {
                             (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.PRESTIGE, t, roleId)
                     )).toList();
 
+            case LEVEL -> Arrays.stream(RoleConfig.LEVEL_THRESHOLDS)
+                    .mapToObj(t -> new RoleDef(
+                            "Level " + t + "+", null, true,
+                            (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.LEVEL, t, roleId)
+                    )).toList();
+
             case INVASION_RANKING -> Arrays.stream(InvasionRanking.values())
                     .map(r -> new RoleDef(
                             RoleConfig.INVASION_RANKING_NAMES.get(r), RoleConfig.INVASION_RANKING_COLORS.get(r), false,
                             (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.INVASION_RANKING, r.ordinal(), roleId)
+                    )).toList();
+
+            case TOTAL_INVASION_MATCHES -> Arrays.stream(RoleConfig.TOTAL_INVASION_MATCHES_THRESHOLDS)
+                    .mapToObj(t -> new RoleDef(
+                            "Invasion Matches " + t + "+", null, false,
+                            (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.TOTAL_INVASION_MATCHES, t, roleId)
                     )).toList();
 
             case REAGENT_RIG -> buildEnumRoleDefs(guildId, RoleCategory.REAGENT_RIG,

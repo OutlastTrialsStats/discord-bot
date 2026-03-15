@@ -37,10 +37,12 @@ public class StartBasicCommand {
                 .reply(messageService.getMessage(guildId, "setup.start.select_prompt"));
     }
 
-    @StringSelectMenu(value = "Select role categories", minValue = 1, maxValue = 5)
+    @StringSelectMenu(value = "Select role categories", minValue = 1, maxValue = 7)
     @MenuOption(label = "Prestige Roles", value = "prestige", description = "Roles based on prestige level (1+, 10+, 20+, ...)")
+    @MenuOption(label = "Level Roles", value = "level", description = "Roles based on player level (1+, 10+, 25+, ...)")
     @MenuOption(label = "Reagent Rig Roles", value = "reagent_rig", description = "Roles based on active reagent rig (Stun, X-Ray, ...)")
     @MenuOption(label = "Invasion Ranking Roles", value = "invasion_ranking", description = "Roles based on invasion rank (Bronze, Silver, Gold, ...)")
+    @MenuOption(label = "Total Invasion Matches Roles", value = "total_invasion_matches", description = "Roles based on total invasion matches played (10+, 50+, 100+, ...)")
     @MenuOption(label = "Platform Roles", value = "platform", description = "Roles based on gaming platform (Steam, PlayStation, ...)")
     @MenuOption(label = "Account Type Roles", value = "account_type", description = "Roles based on account type (Closed Beta, Early Access, ...)")
     public void onCategorySelect(ComponentEvent event, List<String> values) {

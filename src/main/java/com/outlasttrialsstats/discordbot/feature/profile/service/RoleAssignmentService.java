@@ -46,8 +46,16 @@ public class RoleAssignmentService {
                 Objects.requireNonNullElse(profile.getPrestigeLevel(), 0),
                 addedRoles, removedRoles);
 
+        assignRankedRole(guild, member, guildId, RoleCategory.LEVEL,
+                Objects.requireNonNullElse(profile.getLevel(), 0),
+                addedRoles, removedRoles);
+
         assignRankedRole(guild, member, guildId, RoleCategory.INVASION_RANKING,
                 profile.getInvasionRanking() != null ? RoleConfig.invasionRankingOrdinal(profile.getInvasionRanking()) : -1,
+                addedRoles, removedRoles);
+
+        assignRankedRole(guild, member, guildId, RoleCategory.TOTAL_INVASION_MATCHES,
+                Objects.requireNonNullElse(profile.getTotalInvasionMatchesPlayed(), 0),
                 addedRoles, removedRoles);
 
         assignEnumRole(guild, member, guildId, RoleCategory.REAGENT_RIG,

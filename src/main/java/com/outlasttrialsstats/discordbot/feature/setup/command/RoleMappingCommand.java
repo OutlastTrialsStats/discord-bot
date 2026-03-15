@@ -56,6 +56,32 @@ public class RoleMappingCommand {
                 .reply(messageService.getMessage(guildId, "setup.prestige_role.removed", threshold));
     }
 
+    // --- Level ---
+
+    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
+    @Command("setup role-mapping level")
+    public void onLevel(CommandEvent event,
+                        @Param("Minimum level (e.g. 50 for Level 50+)") int threshold,
+                        @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
+        Guild guild = event.getGuild();
+        String guildId = guild.getId();
+        String roleName = "Level " + threshold + "+";
+
+        createOrLinkRole(guild, guildId, roleName, role,
+                roleId -> roleMappingService.saveRankedMapping(guildId, RoleCategory.LEVEL, threshold, roleId),
+                event, "setup.level_role.success", threshold);
+    }
+
+    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
+    @Command("setup remove-role-mapping level")
+    public void onRemoveLevel(CommandEvent event,
+                              @Param("Level threshold to remove") int threshold) {
+        String guildId = event.getGuild().getId();
+        roleMappingService.removeRankedMapping(guildId, RoleCategory.LEVEL, threshold);
+        event.with().ephemeral(true)
+                .reply(messageService.getMessage(guildId, "setup.level_role.removed", threshold));
+    }
+
     // --- Skill (Reagent Rig) ---
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
@@ -121,6 +147,32 @@ public class RoleMappingCommand {
         event.with().ephemeral(true)
                 .reply(messageService.getMessage(guildId, "setup.role_mapping.removed",
                         RoleConfig.INVASION_RANKING_NAMES.get(invasionRanking)));
+    }
+
+    // --- Total Invasion Matches ---
+
+    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
+    @Command("setup role-mapping total-invasion-matches")
+    public void onTotalInvasionMatches(CommandEvent event,
+                                       @Param("Minimum total invasion matches (e.g. 100 for 100+)") int threshold,
+                                       @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
+        Guild guild = event.getGuild();
+        String guildId = guild.getId();
+        String roleName = "Invasion Matches " + threshold + "+";
+
+        createOrLinkRole(guild, guildId, roleName, role,
+                roleId -> roleMappingService.saveRankedMapping(guildId, RoleCategory.TOTAL_INVASION_MATCHES, threshold, roleId),
+                event, "setup.total_invasion_matches_role.success", threshold);
+    }
+
+    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
+    @Command("setup remove-role-mapping total-invasion-matches")
+    public void onRemoveTotalInvasionMatches(CommandEvent event,
+                                             @Param("Total invasion matches threshold to remove") int threshold) {
+        String guildId = event.getGuild().getId();
+        roleMappingService.removeRankedMapping(guildId, RoleCategory.TOTAL_INVASION_MATCHES, threshold);
+        event.with().ephemeral(true)
+                .reply(messageService.getMessage(guildId, "setup.total_invasion_matches_role.removed", threshold));
     }
 
     // --- Platform ---

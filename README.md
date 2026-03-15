@@ -32,7 +32,7 @@ Roles are also automatically assigned when a verified member joins the server.
 
 ## TODO
 
-- [x] More role types (Count of Invasion Types)
+- [x] More role types
 - [ ] Live Leaderboard
 - [ ] Announcements
 

@@ -65,7 +65,7 @@ public class BasicSetupService {
 
             case INVASION_RANKING -> Arrays.stream(InvasionRanking.values())
                     .map(r -> new RoleDef(
-                            RoleConfig.INVASION_RANKING_NAMES.get(r), null, false,
+                            RoleConfig.INVASION_RANKING_NAMES.get(r), RoleConfig.INVASION_RANKING_COLORS.get(r), false,
                             (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.INVASION_RANKING, r.ordinal(), roleId)
                     )).toList();
 

@@ -25,12 +25,12 @@ public final class RoleConfig {
     );
 
     public static final Map<ActiveReagentSkillType, Color> SKILL_COLORS = Map.of(
-            ActiveReagentSkillType.STUN, new Color(237, 17, 44),
-            ActiveReagentSkillType.XRAY, new Color(3, 170, 13),
-            ActiveReagentSkillType.MINE, new Color(116, 0, 198),
-            ActiveReagentSkillType.DOOR_BLOCKER, new Color(216, 155, 0),
+            ActiveReagentSkillType.STUN, new Color(159, 71, 58),
+            ActiveReagentSkillType.XRAY, new Color(85, 104, 69),
+            ActiveReagentSkillType.MINE, new Color(125, 95, 136),
+            ActiveReagentSkillType.DOOR_BLOCKER, new Color(200, 182, 79),
             ActiveReagentSkillType.HACKER, new Color(213, 85, 7),
-            ActiveReagentSkillType.HEAL, new Color(7, 87, 165)
+            ActiveReagentSkillType.HEAL, new Color(108, 163, 158)
     );
 
     public static final Map<InvasionRanking, String> INVASION_RANKING_NAMES = Map.ofEntries(
@@ -50,19 +50,19 @@ public final class RoleConfig {
     );
 
     public static final Map<InvasionRanking, Color> INVASION_RANKING_COLORS = Map.ofEntries(
-            Map.entry(InvasionRanking.UNRANKED, new Color(128, 128, 128)),
-            Map.entry(InvasionRanking.INITIATE_3, new Color(173, 216, 230)),
-            Map.entry(InvasionRanking.INITIATE_2, new Color(135, 206, 235)),
-            Map.entry(InvasionRanking.INITIATE_1, new Color(100, 149, 237)),
-            Map.entry(InvasionRanking.BRONZE_3, new Color(205, 127, 50)),
-            Map.entry(InvasionRanking.BRONZE_2, new Color(184, 115, 51)),
-            Map.entry(InvasionRanking.BRONZE_1, new Color(166, 100, 40)),
-            Map.entry(InvasionRanking.SILVER_3, new Color(192, 192, 192)),
-            Map.entry(InvasionRanking.SILVER_2, new Color(169, 169, 169)),
-            Map.entry(InvasionRanking.SILVER_1, new Color(150, 150, 150)),
-            Map.entry(InvasionRanking.GOLD_3, new Color(255, 215, 0)),
-            Map.entry(InvasionRanking.GOLD_2, new Color(218, 165, 32)),
-            Map.entry(InvasionRanking.GOLD_1, new Color(184, 134, 11))
+            Map.entry(InvasionRanking.UNRANKED, new Color(83, 82, 83)),
+            Map.entry(InvasionRanking.INITIATE_3, new Color(118, 105, 100)),
+            Map.entry(InvasionRanking.INITIATE_2, new Color(118, 105, 100)),
+            Map.entry(InvasionRanking.INITIATE_1, new Color(118, 105, 100)),
+            Map.entry(InvasionRanking.BRONZE_3, new Color(120, 91, 71)),
+            Map.entry(InvasionRanking.BRONZE_2, new Color(120, 91, 71)),
+            Map.entry(InvasionRanking.BRONZE_1, new Color(120, 91, 71)),
+            Map.entry(InvasionRanking.SILVER_3, new Color(184, 184, 184)),
+            Map.entry(InvasionRanking.SILVER_2, new Color(184, 184, 184)),
+            Map.entry(InvasionRanking.SILVER_1, new Color(184, 184, 184)),
+            Map.entry(InvasionRanking.GOLD_3, new Color(180, 130, 34)),
+            Map.entry(InvasionRanking.GOLD_2, new Color(180, 130, 34)),
+            Map.entry(InvasionRanking.GOLD_1, new Color(180, 130, 34))
     );
 
     public static final Map<PlatformType, String> PLATFORM_NAMES = Map.of(
@@ -73,10 +73,10 @@ public final class RoleConfig {
     );
 
     public static final Map<PlatformType, Color> PLATFORM_COLORS = Map.of(
-            PlatformType.STEAM, new Color(27, 40, 56),
-            PlatformType.PLAYSTATION, new Color(0, 55, 145),
-            PlatformType.XBOX, new Color(16, 124, 16),
-            PlatformType.EPIC_GAMES, new Color(32, 32, 32)
+            PlatformType.STEAM, new Color(41,46,55),
+            PlatformType.PLAYSTATION, new Color(0, 112, 204),
+            PlatformType.XBOX, new Color(12, 122, 31),
+            PlatformType.EPIC_GAMES, new Color(47, 45, 46)
     );
 
     public static final Map<AccountCreationType, String> ACCOUNT_TYPE_NAMES = Map.of(

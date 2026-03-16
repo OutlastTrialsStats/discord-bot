@@ -1,0 +1,13 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+
+discord:
+  bot:
+    token: test-token
+
+totstats:
+  api:
+    base-url: http://localhost

@@ -76,9 +76,6 @@ jobs:
           mvn versions:set -DnewVersion=${{ env.NEW_VERSION }}
           mvn versions:commit
 
-      - name: Build JAR
-        run: mvn package -DskipTests
-
       - name: Commit and tag
         run: |
           git config --local user.email "action@github.com"
@@ -94,7 +91,7 @@ jobs:
         with:
           tag_name: "v${{ env.NEW_VERSION }}"
           name: "v${{ env.NEW_VERSION }}"
-          files: target/discord-bot-${{ env.NEW_VERSION }}.jar
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -108,11 +105,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image name
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ env.NEW_VERSION }}
-            ghcr.io/${{ github.repository }}:latest
+            ${{ env.IMAGE_NAME }}:${{ env.NEW_VERSION }}
+            ${{ env.IMAGE_NAME }}:latest
+        env:
+          DOCKER_BUILD_SUMMARY: false

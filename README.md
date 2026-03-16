@@ -47,8 +47,10 @@ The easiest way to run the bot is with Docker.
 ```yaml
 services:
   bot:
+    container_name: totstats-discord-bot
     image: ghcr.io/outlasttrialsstats/discord-bot:latest
     restart: always
+    mem_limit: 1g
     environment:
       DISCORD_BOT_TOKEN: "your-bot-token"
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/totstats"
@@ -58,8 +60,10 @@ services:
       - postgres
 
   postgres:
+    container_name: totstats-discord-postgres
     image: postgres:17
     restart: always
+    mem_limit: 512m
     environment:
       POSTGRES_USER: totstats
       POSTGRES_PASSWORD: change-me

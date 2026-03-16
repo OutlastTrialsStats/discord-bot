@@ -4,7 +4,8 @@ import com.outlasttrialsstats.discordbot.entity.GuildMessage;
 import com.outlasttrialsstats.discordbot.repository.GuildMessageRepository;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -69,9 +70,9 @@ public class GuildMessageService {
 
     private Properties loadDefaultProperties() {
         Properties properties = new Properties();
-        try (InputStream is = new PathMatchingResourcePatternResolver()
-                .getResource("classpath:messages/messages.properties").getInputStream()) {
-            properties.load(is);
+        try (var reader = new InputStreamReader(new PathMatchingResourcePatternResolver()
+                .getResource("classpath:messages/messages.properties").getInputStream(), StandardCharsets.UTF_8)) {
+            properties.load(reader);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load default messages", e);
         }

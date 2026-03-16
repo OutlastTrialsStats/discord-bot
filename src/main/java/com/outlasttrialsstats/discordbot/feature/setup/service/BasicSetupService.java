@@ -39,7 +39,7 @@ public class BasicSetupService {
         List<String> createdRoles = new CopyOnWriteArrayList<>();
 
         for (RoleCategory category : categories) {
-            for (RoleDef def : buildRoleDefs(guildId, category)) {
+            for (RoleDef def : buildRoleDefs(guildId, category).reversed()) {
                 createOrLinkRole(guild, existingRoles, def, pendingTasks, createdRoles, onComplete);
             }
         }
@@ -59,13 +59,13 @@ public class BasicSetupService {
 
             case LEVEL -> Arrays.stream(RoleConfig.LEVEL_THRESHOLDS)
                     .mapToObj(t -> new RoleDef(
-                            "Level " + t + "+", null, true,
+                            "Level " + t + "+", null, false,
                             (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.LEVEL, t, roleId)
                     )).toList();
 
             case INVASION_RANKING -> Arrays.stream(InvasionRanking.values())
                     .map(r -> new RoleDef(
-                            RoleConfig.INVASION_RANKING_NAMES.get(r), RoleConfig.INVASION_RANKING_COLORS.get(r), false,
+                            RoleConfig.INVASION_RANKING_NAMES.get(r), null, false,
                             (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.INVASION_RANKING, r.ordinal(), roleId)
                     )).toList();
 

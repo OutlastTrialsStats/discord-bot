@@ -1,7 +1,10 @@
 .git
+.github
 .idea
+.vscode
+.claude
+.env
 *.iml
-target/generated-sources
-target/classes
-target/maven-*
-target/test-classes
+*.iws
+*.ipr
+target

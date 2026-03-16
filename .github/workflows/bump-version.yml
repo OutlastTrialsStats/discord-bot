@@ -30,6 +30,7 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+          cache: 'maven'
 
       - name: Get and calculate new version
         run: |

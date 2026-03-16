@@ -7,7 +7,7 @@ import io.github.kaktushose.jdac.annotations.interactions.CommandConfig;
 import io.github.kaktushose.jdac.annotations.interactions.Interaction;
 import io.github.kaktushose.jdac.annotations.interactions.Param;
 import io.github.kaktushose.jdac.dispatching.events.interactions.CommandEvent;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import lombok.RequiredArgsConstructor;
@@ -41,9 +41,9 @@ public class MessagesCommand {
         }
 
         file.getProxy().download().thenAccept(inputStream -> {
-            try (InputStream is = inputStream) {
+            try (var reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
                 Properties properties = new Properties();
-                properties.load(is);
+                properties.load(reader);
 
                 int count = guildMessageService.importMessages(guildId, properties);
 

@@ -27,7 +27,7 @@ A Discord bot that automatically assigns roles based on player stats from [The O
 
 | Command | Description |
 |---|---|
-| `/profile-update` | Sync your Discord roles with your Outlast Trials stats |
+| `/sync-profile` | Sync your Discord roles with your Outlast Trials stats |
 | `/sync-all` | Scan all server members and assign roles based on their stats |
 
 Roles are also automatically assigned when a verified member joins the server.

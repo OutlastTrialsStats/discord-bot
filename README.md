@@ -26,10 +26,18 @@ A Discord bot that automatically assigns roles based on player stats from [The O
 
 Roles are also automatically assigned when a verified member joins the server.
 
+### Leaderboard
+
+| Command | Description |
+|---|---|
+| `/leaderboard <category>` | View a paginated leaderboard for a stat category (ephemeral, with Previous/Next buttons) |
+| `/setup leaderboard <channel> <category>` | Set up an auto-updating leaderboard in a channel (refreshes hourly) |
+| `/setup remove-leaderboard <category>` | Remove an auto-updating leaderboard |
+
 ## TODO
 
 - [x] More role types
-- [ ] Live Leaderboard
+- [x] Live Leaderboard
 - [ ] Announcements
 
 ## Self-Hosting with Docker

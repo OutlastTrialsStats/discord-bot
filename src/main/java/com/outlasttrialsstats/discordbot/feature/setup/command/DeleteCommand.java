@@ -26,7 +26,7 @@ public class DeleteCommand {
     private final MessageService messageService;
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup delete")
+    @Command(value = "setup delete", desc = "Delete all bot-managed roles from this server")
     public void onDelete(CommandEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();

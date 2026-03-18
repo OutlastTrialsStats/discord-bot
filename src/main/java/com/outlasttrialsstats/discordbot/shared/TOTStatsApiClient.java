@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -21,13 +22,11 @@ public class TOTStatsApiClient {
                     .get()
                     .uri("/api/discord/profile/{discordUserId}", discordUserId)
                     .retrieve()
-                    .onStatus(HttpStatusCode::is4xxClientError, _ -> {
-                        throw new RuntimeException("Profile not found for Discord user: " + discordUserId);
-                    })
+                    .onStatus(HttpStatusCode::is4xxClientError, _ -> Mono.empty())
                     .bodyToMono(DiscordProfileResponse.class)
                     .blockOptional();
         } catch (Exception e) {
-            log.debug("Profile not found for Discord user {}", discordUserId);
+            log.warn("Failed to fetch profile for Discord user {}: {}", discordUserId, e.getMessage());
             return Optional.empty();
         }
     }

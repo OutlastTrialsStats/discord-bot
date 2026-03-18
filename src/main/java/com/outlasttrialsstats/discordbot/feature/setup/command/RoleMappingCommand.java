@@ -33,7 +33,7 @@ public class RoleMappingCommand {
     // --- Prestige ---
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup role-mapping prestige")
+    @Command(value = "setup role-mapping prestige", desc = "Map a role to a minimum prestige level")
     public void onPrestige(CommandEvent event,
                            @Param("Minimum prestige level (e.g. 10 for Prestige 10+)") int threshold,
                            @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
@@ -47,7 +47,7 @@ public class RoleMappingCommand {
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup remove-role-mapping prestige")
+    @Command(value = "setup remove-role-mapping prestige", desc = "Remove a prestige role mapping")
     public void onRemovePrestige(CommandEvent event,
                                  @Param("Prestige threshold to remove") int threshold) {
         String guildId = event.getGuild().getId();
@@ -59,7 +59,7 @@ public class RoleMappingCommand {
     // --- Level ---
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup role-mapping level")
+    @Command(value = "setup role-mapping level", desc = "Map a role to a minimum player level")
     public void onLevel(CommandEvent event,
                         @Param("Minimum level (e.g. 50 for Level 50+)") int threshold,
                         @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
@@ -73,7 +73,7 @@ public class RoleMappingCommand {
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup remove-role-mapping level")
+    @Command(value = "setup remove-role-mapping level", desc = "Remove a level role mapping")
     public void onRemoveLevel(CommandEvent event,
                               @Param("Level threshold to remove") int threshold) {
         String guildId = event.getGuild().getId();
@@ -85,7 +85,7 @@ public class RoleMappingCommand {
     // --- Skill (Reagent Rig) ---
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup role-mapping skill")
+    @Command(value = "setup role-mapping skill", desc = "Map a role to a reagent rig skill")
     public void onSkill(CommandEvent event,
                         @Choices({"STUN", "XRAY", "MINE", "DOOR_BLOCKER", "HACKER", "HEAL"})
                         @Param("Reagent skill") String skill,
@@ -101,7 +101,7 @@ public class RoleMappingCommand {
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup remove-role-mapping skill")
+    @Command(value = "setup remove-role-mapping skill", desc = "Remove a reagent rig skill role mapping")
     public void onRemoveSkill(CommandEvent event,
                               @Choices({"STUN", "XRAY", "MINE", "DOOR_BLOCKER", "HACKER", "HEAL"})
                               @Param("Reagent skill") String skill) {
@@ -115,7 +115,7 @@ public class RoleMappingCommand {
     // --- Invasion Ranking ---
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup role-mapping invasion-ranking")
+    @Command(value = "setup role-mapping invasion-ranking", desc = "Map a role to an invasion ranking")
     public void onInvasionRanking(CommandEvent event,
                                   @Choices({"UNRANKED", "INITIATE_3", "INITIATE_2", "INITIATE_1",
                                           "BRONZE_3", "BRONZE_2", "BRONZE_1",
@@ -134,7 +134,7 @@ public class RoleMappingCommand {
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup remove-role-mapping invasion-ranking")
+    @Command(value = "setup remove-role-mapping invasion-ranking", desc = "Remove an invasion ranking role mapping")
     public void onRemoveInvasionRanking(CommandEvent event,
                                         @Choices({"UNRANKED", "INITIATE_3", "INITIATE_2", "INITIATE_1",
                                                 "BRONZE_3", "BRONZE_2", "BRONZE_1",
@@ -152,7 +152,7 @@ public class RoleMappingCommand {
     // --- Total Invasion Matches ---
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup role-mapping total-invasion-matches")
+    @Command(value = "setup role-mapping total-invasion-matches", desc = "Map a role to a minimum number of invasion matches")
     public void onTotalInvasionMatches(CommandEvent event,
                                        @Param("Minimum total invasion matches (e.g. 100 for 100+)") int threshold,
                                        @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
@@ -166,7 +166,7 @@ public class RoleMappingCommand {
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup remove-role-mapping total-invasion-matches")
+    @Command(value = "setup remove-role-mapping total-invasion-matches", desc = "Remove a total invasion matches role mapping")
     public void onRemoveTotalInvasionMatches(CommandEvent event,
                                              @Param("Total invasion matches threshold to remove") int threshold) {
         String guildId = event.getGuild().getId();
@@ -178,7 +178,7 @@ public class RoleMappingCommand {
     // --- Platform ---
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup role-mapping platform")
+    @Command(value = "setup role-mapping platform", desc = "Map a role to a gaming platform")
     public void onPlatform(CommandEvent event,
                            @Choices({"STEAM", "PLAYSTATION", "XBOX", "EPIC_GAMES"})
                            @Param("Gaming platform") String platform,
@@ -194,7 +194,7 @@ public class RoleMappingCommand {
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup remove-role-mapping platform")
+    @Command(value = "setup remove-role-mapping platform", desc = "Remove a platform role mapping")
     public void onRemovePlatform(CommandEvent event,
                                  @Choices({"STEAM", "PLAYSTATION", "XBOX", "EPIC_GAMES"})
                                  @Param("Gaming platform") String platform) {
@@ -209,7 +209,7 @@ public class RoleMappingCommand {
     // --- Account Type ---
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup role-mapping account-type")
+    @Command(value = "setup role-mapping account-type", desc = "Map a role to an account type")
     public void onAccountType(CommandEvent event,
                               @Choices({"CLOSED_BETA_USER", "EARLY_ACCESS_USER"})
                               @Param("Account type") String accountType,
@@ -225,7 +225,7 @@ public class RoleMappingCommand {
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup remove-role-mapping account-type")
+    @Command(value = "setup remove-role-mapping account-type", desc = "Remove an account type role mapping")
     public void onRemoveAccountType(CommandEvent event,
                                     @Choices({"CLOSED_BETA_USER", "EARLY_ACCESS_USER"})
                                     @Param("Account type") String accountType) {

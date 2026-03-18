@@ -18,7 +18,7 @@ public class ProfileCommand {
     private final RoleAssignmentService roleAssignmentService;
     private final MessageService messageService;
 
-    @Command("profile-update")
+    @Command(value = "sync-profile", desc = "Sync your roles based on your Outlast Trials stats")
     public void onProfileUpdate(CommandEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();

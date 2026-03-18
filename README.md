@@ -11,13 +11,7 @@ A Discord bot that automatically assigns roles based on player stats from [The O
 | `/setup start` | Automatically create roles for selected categories (Prestige, Level, Reagent Rig, Invasion Ranking, Total Invasion Matches, Platform, Account Type) |
 | `/setup delete` | Delete all bot-managed roles and remove mappings |
 | `/setup language` | Change the bot's response language (English, Deutsch) |
-| `/setup role-mapping prestige` | Link a role to a prestige threshold (auto-creates if not provided) |
-| `/setup role-mapping level` | Link a role to a level threshold (auto-creates if not provided) |
-| `/setup role-mapping skill` | Link a role to a reagent skill |
-| `/setup role-mapping invasion-ranking` | Link a role to an invasion ranking |
-| `/setup role-mapping total-invasion-matches` | Link a role to a total invasion matches threshold (auto-creates if not provided) |
-| `/setup role-mapping platform` | Link a role to a gaming platform |
-| `/setup role-mapping account-type` | Link a role to an account type |
+| `/setup role-mapping <category>` | Link a role to a category (prestige, level, skill, invasion-ranking, total-invasion-matches, platform, account-type) |
 | `/setup remove-role-mapping <category>` | Remove a role mapping for any category |
 | `/setup messages-upload` | Upload a custom `.properties` file to override bot messages |
 | `/setup messages-download` | Download all current messages as a `.properties` file |
@@ -27,7 +21,7 @@ A Discord bot that automatically assigns roles based on player stats from [The O
 
 | Command | Description |
 |---|---|
-| `/profile-update` | Sync your Discord roles with your Outlast Trials stats |
+| `/sync-profile` | Sync your Discord roles with your Outlast Trials stats |
 | `/sync-all` | Scan all server members and assign roles based on their stats |
 
 Roles are also automatically assigned when a verified member joins the server.

@@ -28,7 +28,7 @@ public class StartBasicCommand {
     private final MessageService messageService;
 
     @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command("setup start")
+    @Command(value = "setup start", desc = "Start the basic role setup wizard")
     public void onStartBasic(CommandEvent event) {
         String guildId = event.getGuild().getId();
         event.with()

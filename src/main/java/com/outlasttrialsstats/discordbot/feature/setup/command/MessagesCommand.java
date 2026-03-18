@@ -28,7 +28,7 @@ public class MessagesCommand {
     private final MessageService messageService;
 
     @CommandConfig(enabledFor = Permission.ADMINISTRATOR)
-    @Command("setup messages-upload")
+    @Command(value = "setup messages-upload", desc = "Upload custom bot messages from a properties file")
     public void onUpload(CommandEvent event, @Param("Properties file with custom messages") Attachment file) {
         String guildId = event.getGuild().getId();
 
@@ -57,7 +57,7 @@ public class MessagesCommand {
     }
 
     @CommandConfig(enabledFor = Permission.ADMINISTRATOR)
-    @Command("setup messages-download")
+    @Command(value = "setup messages-download", desc = "Download current bot messages as a properties file")
     public void onDownload(CommandEvent event) {
         String guildId = event.getGuild().getId();
 
@@ -73,7 +73,7 @@ public class MessagesCommand {
     }
 
     @CommandConfig(enabledFor = Permission.ADMINISTRATOR)
-    @Command("setup messages-reset")
+    @Command(value = "setup messages-reset", desc = "Reset all custom messages to defaults")
     public void onReset(CommandEvent event) {
         String guildId = event.getGuild().getId();
 

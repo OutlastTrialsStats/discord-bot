@@ -88,7 +88,4 @@ public final class RoleConfig {
         return SKILL_NAMES.get(skill);
     }
 
-    public static int invasionRankingOrdinal(InvasionRanking ranking) {
-        return ranking.ordinal();
-    }
 }

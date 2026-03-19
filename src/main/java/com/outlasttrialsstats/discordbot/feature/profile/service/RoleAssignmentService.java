@@ -5,7 +5,6 @@ import com.outlasttrialsstats.discordbot.entity.EnumRoleMapping;
 import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
-import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.util.ArrayList;
@@ -51,7 +50,7 @@ public class RoleAssignmentService {
                 addedRoles, removedRoles);
 
         assignRankedRole(guild, member, guildId, RoleCategory.INVASION_RANKING,
-                profile.getInvasionRanking() != null ? RoleConfig.invasionRankingOrdinal(profile.getInvasionRanking()) : -1,
+                profile.getInvasionRanking() != null ? profile.getInvasionRanking().ordinal() : -1,
                 addedRoles, removedRoles);
 
         assignRankedRole(guild, member, guildId, RoleCategory.TOTAL_INVASION_MATCHES,

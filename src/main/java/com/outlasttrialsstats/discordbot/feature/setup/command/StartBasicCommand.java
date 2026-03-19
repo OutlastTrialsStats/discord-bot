@@ -3,23 +3,18 @@ package com.outlasttrialsstats.discordbot.feature.setup.command;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.service.BasicSetupService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
-import io.github.kaktushose.jdac.annotations.interactions.Command;
-import io.github.kaktushose.jdac.annotations.interactions.CommandConfig;
-import io.github.kaktushose.jdac.annotations.interactions.Interaction;
-import io.github.kaktushose.jdac.annotations.interactions.MenuOption;
-import io.github.kaktushose.jdac.annotations.interactions.StringSelectMenu;
-import io.github.kaktushose.jdac.dispatching.events.interactions.CommandEvent;
-import io.github.kaktushose.jdac.dispatching.events.interactions.ComponentEvent;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import org.springframework.stereotype.Component;
 
-@Interaction
 @Component
 @RequiredArgsConstructor
 public class StartBasicCommand {
@@ -27,27 +22,31 @@ public class StartBasicCommand {
     private final BasicSetupService basicSetupService;
     private final MessageService messageService;
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup start", desc = "Start the basic role setup wizard")
-    public void onStartBasic(CommandEvent event) {
+    public void onStartBasic(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
-        event.with()
-                .ephemeral(true)
-                .components("onCategorySelect")
-                .reply(messageService.getMessage(guildId, "setup.start.select_prompt"));
+
+        StringSelectMenu menu = StringSelectMenu.create("setup:start:categories")
+                .setPlaceholder("Select role categories")
+                .setRequiredRange(1, 7)
+                .addOption("Prestige Roles", "prestige", "Roles based on prestige level (1+, 10+, 20+, ...)")
+                .addOption("Level Roles", "level", "Roles based on player level (1+, 10+, 25+, ...)")
+                .addOption("Reagent Rig Roles", "reagent_rig", "Roles based on active reagent rig (Stun, X-Ray, ...)")
+                .addOption("Invasion Ranking Roles", "invasion_ranking", "Roles based on invasion rank (Bronze, Silver, Gold, ...)")
+                .addOption("Total Invasion Matches Roles", "total_invasion_matches", "Roles based on total invasion matches played (10+, 50+, 100+, ...)")
+                .addOption("Platform Roles", "platform", "Roles based on gaming platform (Steam, PlayStation, ...)")
+                .addOption("Account Type Roles", "account_type", "Roles based on account type (Closed Beta, Early Access, ...)")
+                .build();
+
+        event.reply(messageService.getMessage(guildId, "setup.start.select_prompt"))
+                .setEphemeral(true)
+                .addComponents(ActionRow.of(menu))
+                .queue();
     }
 
-    @StringSelectMenu(value = "Select role categories", minValue = 1, maxValue = 7)
-    @MenuOption(label = "Prestige Roles", value = "prestige", description = "Roles based on prestige level (1+, 10+, 20+, ...)")
-    @MenuOption(label = "Level Roles", value = "level", description = "Roles based on player level (1+, 10+, 25+, ...)")
-    @MenuOption(label = "Reagent Rig Roles", value = "reagent_rig", description = "Roles based on active reagent rig (Stun, X-Ray, ...)")
-    @MenuOption(label = "Invasion Ranking Roles", value = "invasion_ranking", description = "Roles based on invasion rank (Bronze, Silver, Gold, ...)")
-    @MenuOption(label = "Total Invasion Matches Roles", value = "total_invasion_matches", description = "Roles based on total invasion matches played (10+, 50+, 100+, ...)")
-    @MenuOption(label = "Platform Roles", value = "platform", description = "Roles based on gaming platform (Steam, PlayStation, ...)")
-    @MenuOption(label = "Account Type Roles", value = "account_type", description = "Roles based on account type (Closed Beta, Early Access, ...)")
-    public void onCategorySelect(ComponentEvent event, List<String> values) {
+    public void onCategorySelect(StringSelectInteractionEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();
+        List<String> values = event.getValues();
 
         Set<RoleCategory> selectedCategories = EnumSet.noneOf(RoleCategory.class);
         for (String value : values) {
@@ -57,10 +56,11 @@ public class StartBasicCommand {
             }
         }
 
-        event.with().editReply(true).keepComponents(false)
-                .reply(messageService.getMessage(guildId, "setup.basic.starting"));
+        event.editMessage(messageService.getMessage(guildId, "setup.basic.starting"))
+                .setComponents()
+                .queue();
 
-        InteractionHook hook = event.jdaEvent().getHook();
+        InteractionHook hook = event.getHook();
 
         basicSetupService.setupRoles(guild, selectedCategories,
                 (count, roles) -> hook.editOriginal(

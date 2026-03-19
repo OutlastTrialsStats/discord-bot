@@ -65,12 +65,7 @@
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>5.5.1</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.kaktushose.jda-commands</groupId>
-            <artifactId>core</artifactId>
-            <version>4.0.1</version>
+            <version>6.3.2</version>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>

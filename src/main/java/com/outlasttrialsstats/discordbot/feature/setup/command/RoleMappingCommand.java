@@ -8,21 +8,15 @@ import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
-import io.github.kaktushose.jdac.annotations.interactions.Choices;
-import io.github.kaktushose.jdac.annotations.interactions.Command;
-import io.github.kaktushose.jdac.annotations.interactions.CommandConfig;
-import io.github.kaktushose.jdac.annotations.interactions.Interaction;
-import io.github.kaktushose.jdac.annotations.interactions.Param;
-import io.github.kaktushose.jdac.dispatching.events.interactions.CommandEvent;
 import java.util.EnumSet;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import org.springframework.stereotype.Component;
 
-@Interaction
 @Component
 @RequiredArgsConstructor
 public class RoleMappingCommand {
@@ -30,15 +24,37 @@ public class RoleMappingCommand {
     private final RoleMappingService roleMappingService;
     private final MessageService messageService;
 
+    public void onRoleMapping(SlashCommandInteractionEvent event, String subcommand) {
+        switch (subcommand) {
+            case "prestige" -> onPrestige(event);
+            case "level" -> onLevel(event);
+            case "skill" -> onSkill(event);
+            case "invasion-ranking" -> onInvasionRanking(event);
+            case "total-invasion-matches" -> onTotalInvasionMatches(event);
+            case "platform" -> onPlatform(event);
+            case "account-type" -> onAccountType(event);
+        }
+    }
+
+    public void onRemoveRoleMapping(SlashCommandInteractionEvent event, String subcommand) {
+        switch (subcommand) {
+            case "prestige" -> onRemovePrestige(event);
+            case "level" -> onRemoveLevel(event);
+            case "skill" -> onRemoveSkill(event);
+            case "invasion-ranking" -> onRemoveInvasionRanking(event);
+            case "total-invasion-matches" -> onRemoveTotalInvasionMatches(event);
+            case "platform" -> onRemovePlatform(event);
+            case "account-type" -> onRemoveAccountType(event);
+        }
+    }
+
     // --- Prestige ---
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup role-mapping prestige", desc = "Map a role to a minimum prestige level")
-    public void onPrestige(CommandEvent event,
-                           @Param("Minimum prestige level (e.g. 10 for Prestige 10+)") int threshold,
-                           @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
+    private void onPrestige(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();
+        int threshold = event.getOption("threshold").getAsInt();
+        Role role = getOptionalRole(event);
         String roleName = "Prestige " + threshold + "+";
 
         createOrLinkRole(guild, guildId, roleName, role,
@@ -46,25 +62,21 @@ public class RoleMappingCommand {
                 event, "setup.prestige_role.success", threshold);
     }
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup remove-role-mapping prestige", desc = "Remove a prestige role mapping")
-    public void onRemovePrestige(CommandEvent event,
-                                 @Param("Prestige threshold to remove") int threshold) {
+    private void onRemovePrestige(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
+        int threshold = event.getOption("threshold").getAsInt();
         roleMappingService.removeRankedMapping(guildId, RoleCategory.PRESTIGE, threshold);
-        event.with().ephemeral(true)
-                .reply(messageService.getMessage(guildId, "setup.prestige_role.removed", threshold));
+        event.reply(messageService.getMessage(guildId, "setup.prestige_role.removed", threshold))
+                .setEphemeral(true).queue();
     }
 
     // --- Level ---
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup role-mapping level", desc = "Map a role to a minimum player level")
-    public void onLevel(CommandEvent event,
-                        @Param("Minimum level (e.g. 50 for Level 50+)") int threshold,
-                        @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
+    private void onLevel(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();
+        int threshold = event.getOption("threshold").getAsInt();
+        Role role = getOptionalRole(event);
         String roleName = "Level " + threshold + "+";
 
         createOrLinkRole(guild, guildId, roleName, role,
@@ -72,92 +84,66 @@ public class RoleMappingCommand {
                 event, "setup.level_role.success", threshold);
     }
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup remove-role-mapping level", desc = "Remove a level role mapping")
-    public void onRemoveLevel(CommandEvent event,
-                              @Param("Level threshold to remove") int threshold) {
+    private void onRemoveLevel(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
+        int threshold = event.getOption("threshold").getAsInt();
         roleMappingService.removeRankedMapping(guildId, RoleCategory.LEVEL, threshold);
-        event.with().ephemeral(true)
-                .reply(messageService.getMessage(guildId, "setup.level_role.removed", threshold));
+        event.reply(messageService.getMessage(guildId, "setup.level_role.removed", threshold))
+                .setEphemeral(true).queue();
     }
 
     // --- Skill (Reagent Rig) ---
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup role-mapping skill", desc = "Map a role to a reagent rig skill")
-    public void onSkill(CommandEvent event,
-                        @Choices({"STUN", "XRAY", "MINE", "DOOR_BLOCKER", "HACKER", "HEAL"})
-                        @Param("Reagent skill") String skill,
-                        @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
+    private void onSkill(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();
-        ActiveReagentSkillType reagentSkill = ActiveReagentSkillType.fromValue(skill);
+        ActiveReagentSkillType reagentSkill = ActiveReagentSkillType.fromValue(event.getOption("skill").getAsString());
         String roleName = RoleConfig.skillName(reagentSkill);
+        Role role = getOptionalRole(event);
 
         createOrLinkRole(guild, guildId, roleName, role,
                 roleId -> roleMappingService.saveEnumMapping(guildId, RoleCategory.REAGENT_RIG, reagentSkill.getValue(), roleId),
                 event, "setup.skill_role.success", roleName);
     }
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup remove-role-mapping skill", desc = "Remove a reagent rig skill role mapping")
-    public void onRemoveSkill(CommandEvent event,
-                              @Choices({"STUN", "XRAY", "MINE", "DOOR_BLOCKER", "HACKER", "HEAL"})
-                              @Param("Reagent skill") String skill) {
+    private void onRemoveSkill(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
-        ActiveReagentSkillType reagentSkill = ActiveReagentSkillType.fromValue(skill);
+        ActiveReagentSkillType reagentSkill = ActiveReagentSkillType.fromValue(event.getOption("skill").getAsString());
         roleMappingService.removeEnumMapping(guildId, RoleCategory.REAGENT_RIG, reagentSkill.getValue());
-        event.with().ephemeral(true)
-                .reply(messageService.getMessage(guildId, "setup.skill_role.removed", RoleConfig.skillName(reagentSkill)));
+        event.reply(messageService.getMessage(guildId, "setup.skill_role.removed", RoleConfig.skillName(reagentSkill)))
+                .setEphemeral(true).queue();
     }
 
     // --- Invasion Ranking ---
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup role-mapping invasion-ranking", desc = "Map a role to an invasion ranking")
-    public void onInvasionRanking(CommandEvent event,
-                                  @Choices({"UNRANKED", "INITIATE_3", "INITIATE_2", "INITIATE_1",
-                                          "BRONZE_3", "BRONZE_2", "BRONZE_1",
-                                          "SILVER_3", "SILVER_2", "SILVER_1",
-                                          "GOLD_3", "GOLD_2", "GOLD_1"})
-                                  @Param("Invasion ranking") String ranking,
-                                  @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
+    private void onInvasionRanking(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();
-        InvasionRanking invasionRanking = InvasionRanking.fromValue(ranking);
+        InvasionRanking invasionRanking = InvasionRanking.fromValue(event.getOption("ranking").getAsString());
         String roleName = RoleConfig.INVASION_RANKING_NAMES.get(invasionRanking);
+        Role role = getOptionalRole(event);
 
         createOrLinkRole(guild, guildId, roleName, role,
                 roleId -> roleMappingService.saveRankedMapping(guildId, RoleCategory.INVASION_RANKING, invasionRanking.ordinal(), roleId),
                 event, "setup.role_mapping.success", roleName);
     }
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup remove-role-mapping invasion-ranking", desc = "Remove an invasion ranking role mapping")
-    public void onRemoveInvasionRanking(CommandEvent event,
-                                        @Choices({"UNRANKED", "INITIATE_3", "INITIATE_2", "INITIATE_1",
-                                                "BRONZE_3", "BRONZE_2", "BRONZE_1",
-                                                "SILVER_3", "SILVER_2", "SILVER_1",
-                                                "GOLD_3", "GOLD_2", "GOLD_1"})
-                                        @Param("Invasion ranking") String ranking) {
+    private void onRemoveInvasionRanking(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
-        InvasionRanking invasionRanking = InvasionRanking.fromValue(ranking);
+        InvasionRanking invasionRanking = InvasionRanking.fromValue(event.getOption("ranking").getAsString());
         roleMappingService.removeRankedMapping(guildId, RoleCategory.INVASION_RANKING, invasionRanking.ordinal());
-        event.with().ephemeral(true)
-                .reply(messageService.getMessage(guildId, "setup.role_mapping.removed",
-                        RoleConfig.INVASION_RANKING_NAMES.get(invasionRanking)));
+        event.reply(messageService.getMessage(guildId, "setup.role_mapping.removed",
+                RoleConfig.INVASION_RANKING_NAMES.get(invasionRanking)))
+                .setEphemeral(true).queue();
     }
 
     // --- Total Invasion Matches ---
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup role-mapping total-invasion-matches", desc = "Map a role to a minimum number of invasion matches")
-    public void onTotalInvasionMatches(CommandEvent event,
-                                       @Param("Minimum total invasion matches (e.g. 100 for 100+)") int threshold,
-                                       @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
+    private void onTotalInvasionMatches(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();
+        int threshold = event.getOption("threshold").getAsInt();
+        Role role = getOptionalRole(event);
         String roleName = "Invasion Matches " + threshold + "+";
 
         createOrLinkRole(guild, guildId, roleName, role,
@@ -165,96 +151,83 @@ public class RoleMappingCommand {
                 event, "setup.total_invasion_matches_role.success", threshold);
     }
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup remove-role-mapping total-invasion-matches", desc = "Remove a total invasion matches role mapping")
-    public void onRemoveTotalInvasionMatches(CommandEvent event,
-                                             @Param("Total invasion matches threshold to remove") int threshold) {
+    private void onRemoveTotalInvasionMatches(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
+        int threshold = event.getOption("threshold").getAsInt();
         roleMappingService.removeRankedMapping(guildId, RoleCategory.TOTAL_INVASION_MATCHES, threshold);
-        event.with().ephemeral(true)
-                .reply(messageService.getMessage(guildId, "setup.total_invasion_matches_role.removed", threshold));
+        event.reply(messageService.getMessage(guildId, "setup.total_invasion_matches_role.removed", threshold))
+                .setEphemeral(true).queue();
     }
 
     // --- Platform ---
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup role-mapping platform", desc = "Map a role to a gaming platform")
-    public void onPlatform(CommandEvent event,
-                           @Choices({"STEAM", "PLAYSTATION", "XBOX", "EPIC_GAMES"})
-                           @Param("Gaming platform") String platform,
-                           @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
+    private void onPlatform(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();
-        PlatformType platformType = PlatformType.fromValue(platform);
+        PlatformType platformType = PlatformType.fromValue(event.getOption("platform").getAsString());
         String roleName = RoleConfig.PLATFORM_NAMES.get(platformType);
+        Role role = getOptionalRole(event);
 
         createOrLinkRole(guild, guildId, roleName, role,
                 roleId -> roleMappingService.saveEnumMapping(guildId, RoleCategory.PLATFORM, platformType.getValue(), roleId),
                 event, "setup.role_mapping.success", roleName);
     }
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup remove-role-mapping platform", desc = "Remove a platform role mapping")
-    public void onRemovePlatform(CommandEvent event,
-                                 @Choices({"STEAM", "PLAYSTATION", "XBOX", "EPIC_GAMES"})
-                                 @Param("Gaming platform") String platform) {
+    private void onRemovePlatform(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
-        PlatformType platformType = PlatformType.fromValue(platform);
+        PlatformType platformType = PlatformType.fromValue(event.getOption("platform").getAsString());
         roleMappingService.removeEnumMapping(guildId, RoleCategory.PLATFORM, platformType.getValue());
-        event.with().ephemeral(true)
-                .reply(messageService.getMessage(guildId, "setup.role_mapping.removed",
-                        RoleConfig.PLATFORM_NAMES.get(platformType)));
+        event.reply(messageService.getMessage(guildId, "setup.role_mapping.removed",
+                RoleConfig.PLATFORM_NAMES.get(platformType)))
+                .setEphemeral(true).queue();
     }
 
     // --- Account Type ---
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup role-mapping account-type", desc = "Map a role to an account type")
-    public void onAccountType(CommandEvent event,
-                              @Choices({"CLOSED_BETA_USER", "EARLY_ACCESS_USER"})
-                              @Param("Account type") String accountType,
-                              @Param(value = "Existing role to use (auto-creates if not provided)", optional = true) Optional<Role> role) {
+    private void onAccountType(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
         String guildId = guild.getId();
-        AccountCreationType type = AccountCreationType.fromValue(accountType);
+        AccountCreationType type = AccountCreationType.fromValue(event.getOption("account-type").getAsString());
         String roleName = RoleConfig.ACCOUNT_TYPE_NAMES.get(type);
+        Role role = getOptionalRole(event);
 
         createOrLinkRole(guild, guildId, roleName, role,
                 roleId -> roleMappingService.saveEnumMapping(guildId, RoleCategory.ACCOUNT_TYPE, type.getValue(), roleId),
                 event, "setup.role_mapping.success", roleName);
     }
 
-    @CommandConfig(enabledFor = Permission.MANAGE_ROLES)
-    @Command(value = "setup remove-role-mapping account-type", desc = "Remove an account type role mapping")
-    public void onRemoveAccountType(CommandEvent event,
-                                    @Choices({"CLOSED_BETA_USER", "EARLY_ACCESS_USER"})
-                                    @Param("Account type") String accountType) {
+    private void onRemoveAccountType(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
-        AccountCreationType type = AccountCreationType.fromValue(accountType);
+        AccountCreationType type = AccountCreationType.fromValue(event.getOption("account-type").getAsString());
         roleMappingService.removeEnumMapping(guildId, RoleCategory.ACCOUNT_TYPE, type.getValue());
-        event.with().ephemeral(true)
-                .reply(messageService.getMessage(guildId, "setup.role_mapping.removed",
-                        RoleConfig.ACCOUNT_TYPE_NAMES.get(type)));
+        event.reply(messageService.getMessage(guildId, "setup.role_mapping.removed",
+                RoleConfig.ACCOUNT_TYPE_NAMES.get(type)))
+                .setEphemeral(true).queue();
     }
 
     // --- Helper ---
 
-    private void createOrLinkRole(Guild guild, String guildId, String roleName, Optional<Role> role,
+    private Role getOptionalRole(SlashCommandInteractionEvent event) {
+        OptionMapping roleOption = event.getOption("role");
+        return roleOption != null ? roleOption.getAsRole() : null;
+    }
+
+    private void createOrLinkRole(Guild guild, String guildId, String roleName, Role role,
                                   java.util.function.Consumer<String> saveMapping,
-                                  CommandEvent event, String messageKey, Object extraArg) {
-        if (role.isPresent()) {
-            Role existingRole = role.get();
-            saveMapping.accept(existingRole.getId());
-            event.with().ephemeral(true)
-                    .reply(messageService.getMessage(guildId, messageKey, existingRole.getName(), extraArg));
+                                  SlashCommandInteractionEvent event, String messageKey, Object extraArg) {
+        if (role != null) {
+            saveMapping.accept(role.getId());
+            event.reply(messageService.getMessage(guildId, messageKey, role.getName(), extraArg))
+                    .setEphemeral(true).queue();
         } else {
+            event.deferReply(true).queue();
             guild.createRole()
                     .setName(roleName)
                     .setPermissions(EnumSet.noneOf(Permission.class))
                     .queue(createdRole -> {
                         saveMapping.accept(createdRole.getId());
-                        event.with().ephemeral(true)
-                                .reply(messageService.getMessage(guildId, messageKey, createdRole.getName(), extraArg));
+                        event.getHook().editOriginal(
+                                messageService.getMessage(guildId, messageKey, createdRole.getName(), extraArg)).queue();
                     });
         }
     }

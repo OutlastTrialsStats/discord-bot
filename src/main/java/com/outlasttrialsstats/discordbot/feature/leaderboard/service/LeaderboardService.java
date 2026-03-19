@@ -31,7 +31,7 @@ public class LeaderboardService {
     }
 
     public MessageEmbed buildLeaderboardEmbed(String guildId, Guild guild, StatisticType category,
-                                               DiscordLeaderboardResponse response, boolean includeTimestamp) {
+                                               DiscordLeaderboardResponse response, boolean includeFooter) {
         String categoryName = getCategoryDisplayName(guildId, category);
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle(messageService.getMessage(guildId, "leaderboard.title", categoryName))
@@ -52,16 +52,14 @@ public class LeaderboardService {
             embed.setDescription(description.toString());
         }
 
-        Integer currentPage = response.getCurrentPage();
-        Integer totalPages = response.getTotalPages();
-        Integer totalResults = response.getTotalResults();
-        embed.setFooter(messageService.getMessage(guildId, "leaderboard.footer",
-                currentPage != null ? currentPage : 1,
-                totalPages != null ? totalPages : 1,
-                totalResults != null ? totalResults : 0));
-
-        if (includeTimestamp) {
-            embed.setTimestamp(Instant.now());
+        if (includeFooter) {
+            Integer currentPage = response.getCurrentPage();
+            Integer totalPages = response.getTotalPages();
+            Integer totalResults = response.getTotalResults();
+            embed.setFooter(messageService.getMessage(guildId, "leaderboard.footer",
+                    currentPage != null ? currentPage : 1,
+                    totalPages != null ? totalPages : 1,
+                    totalResults != null ? totalResults : 0));
         }
 
         return embed.build();

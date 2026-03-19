@@ -59,7 +59,7 @@ public class LeaderboardScheduler {
 
             MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
                     binding.getGuildId(), jda.getGuildById(binding.getGuildId()),
-                    binding.getCategory(), response.get(), page == maxPages);
+                    binding.getCategory(), response.get(), false);
 
             String messageId = messageIds.get(i);
             channel.editMessageEmbedsById(messageId, embed).queue(

@@ -74,7 +74,7 @@ public class LeaderboardSetupCommand {
             if (response.isEmpty()) break;
 
             MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                    guildId, event.getGuild(), statisticType, response.get(), page == maxPages);
+                    guildId, event.getGuild(), statisticType, response.get(), false);
             var message = channel.sendMessageEmbeds(embed).complete();
             messageIds.add(message.getId());
         }

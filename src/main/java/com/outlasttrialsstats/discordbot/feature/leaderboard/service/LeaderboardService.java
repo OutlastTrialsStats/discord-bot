@@ -7,7 +7,6 @@ import com.outlasttrialsstats.discordbot.entity.LeaderboardChannel;
 import com.outlasttrialsstats.discordbot.repository.LeaderboardChannelRepository;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -121,7 +120,7 @@ public class LeaderboardService {
     }
 
     public List<LeaderboardChannel> getAllBindings() {
-        return leaderboardChannelRepository.findAll();
+        return leaderboardChannelRepository.findAllWithMessageIds();
     }
 
     public String getCategoryDisplayName(String guildId, StatisticType category) {

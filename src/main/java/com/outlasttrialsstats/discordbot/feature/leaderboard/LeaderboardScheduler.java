@@ -6,6 +6,8 @@ import com.outlasttrialsstats.discordbot.feature.leaderboard.service.Leaderboard
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
@@ -22,7 +24,7 @@ public class LeaderboardScheduler {
     private final JDA jda;
     private final LeaderboardService leaderboardService;
 
-    @Scheduled(fixedRate = 1, initialDelay = 1, timeUnit = TimeUnit.HOURS)
+    @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
     public void updateLeaderboards() {
         log.info("Starting scheduled leaderboard update");
 
@@ -66,9 +68,13 @@ public class LeaderboardScheduler {
                     _ -> log.debug("Updated leaderboard page {} in guild {} for category {}",
                             page, binding.getGuildId(), binding.getCategory()),
                     error -> {
-                        log.info("Message {} no longer exists, removing leaderboard binding: {}",
-                                messageId, error.getMessage());
-                        leaderboardService.removeBinding(binding.getGuildId(), binding.getCategory());
+                        if (error instanceof ErrorResponseException ere
+                                && ere.getErrorResponse() == ErrorResponse.UNKNOWN_MESSAGE) {
+                            log.info("Message {} no longer exists, removing leaderboard binding", messageId);
+                            leaderboardService.removeBinding(binding.getGuildId(), binding.getCategory());
+                        } else {
+                            log.warn("Failed to update leaderboard message {}: {}", messageId, error.getMessage());
+                        }
                     }
             );
         }

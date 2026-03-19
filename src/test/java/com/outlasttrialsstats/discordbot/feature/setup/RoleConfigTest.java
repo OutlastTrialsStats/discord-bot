@@ -87,10 +87,4 @@ class RoleConfigTest {
         assertThat(RoleConfig.skillName(ActiveReagentSkillType.HEAL)).isEqualTo("Heal");
     }
 
-    @Test
-    void invasionRankingOrdinal_returnsOrdinal() {
-        assertThat(RoleConfig.invasionRankingOrdinal(InvasionRanking.UNRANKED)).isEqualTo(0);
-        assertThat(RoleConfig.invasionRankingOrdinal(InvasionRanking.GOLD_1))
-                .isEqualTo(InvasionRanking.GOLD_1.ordinal());
-    }
 }

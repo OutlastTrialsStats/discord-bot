@@ -80,10 +80,10 @@ public class LeaderboardService {
                 : rawName;
 
         String mention = "";
-        if (guild != null && entry.getDiscordUserId() != null && entry.getDiscordUserId().isPresent()
-                && entry.getDiscordUserId().get() != null
-                && guild.getMemberById(entry.getDiscordUserId().get()) != null) {
-            mention = " (<@" + entry.getDiscordUserId().get() + ">)";
+        String discordUserId = entry.getDiscordUserId() != null && entry.getDiscordUserId().isPresent()
+                ? entry.getDiscordUserId().get() : null;
+        if (guild != null && discordUserId != null && guild.getMemberById(discordUserId) != null) {
+            mention = " (<@" + discordUserId + ">)";
         }
 
         int ranking = entry.getRanking() != null ? entry.getRanking() : 0;

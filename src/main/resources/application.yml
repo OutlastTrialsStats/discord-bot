@@ -13,6 +13,7 @@ spring:
     open-in-view: false
   messages:
     basename: messages/messages
+    fallback-to-system-locale: false
 
 discord:
   bot:

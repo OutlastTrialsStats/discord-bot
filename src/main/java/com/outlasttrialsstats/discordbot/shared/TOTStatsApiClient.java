@@ -1,6 +1,8 @@
 package com.outlasttrialsstats.discordbot.shared;
 
+import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
+import com.outlasttrialsstats.backend.api.model.StatisticType;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,25 @@ import reactor.core.publisher.Mono;
 public class TOTStatsApiClient {
 
     private final WebClient statsWebClient;
+
+    public Optional<DiscordLeaderboardResponse> getLeaderboard(StatisticType category, int page) {
+        try {
+            return statsWebClient
+                    .get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/discord/leaderboard")
+                            .queryParam("category", category.getValue())
+                            .queryParam("page", page)
+                            .build())
+                    .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, _ -> Mono.empty())
+                    .bodyToMono(DiscordLeaderboardResponse.class)
+                    .blockOptional();
+        } catch (Exception e) {
+            log.warn("Failed to fetch leaderboard for category {}: {}", category, e.getMessage());
+            return Optional.empty();
+        }
+    }
 
     public Optional<DiscordProfileResponse> getProfile(String discordUserId) {
         try {

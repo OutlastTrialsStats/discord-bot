@@ -52,7 +52,7 @@ public class LeaderboardScheduler {
         }
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                binding.getGuildId(), binding.getCategory(), response.get(), true);
+                binding.getGuildId(), jda.getGuildById(binding.getGuildId()), binding.getCategory(), response.get(), true);
 
         channel.editMessageEmbedsById(binding.getMessageId(), embed).queue(
                 _ -> log.debug("Updated leaderboard in guild {} for category {}",

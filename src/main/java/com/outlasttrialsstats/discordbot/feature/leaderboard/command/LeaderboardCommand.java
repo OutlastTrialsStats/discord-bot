@@ -11,6 +11,8 @@ import io.github.kaktushose.jdac.annotations.interactions.Interaction;
 import io.github.kaktushose.jdac.annotations.interactions.Param;
 import io.github.kaktushose.jdac.dispatching.events.interactions.CommandEvent;
 import io.github.kaktushose.jdac.dispatching.events.interactions.ComponentEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -31,16 +33,17 @@ public class LeaderboardCommand {
 
     @Command(value = "leaderboard", desc = "View the leaderboard for a stat category")
     public void onLeaderboard(CommandEvent event,
-                              @Choices({"COMPLETED_TRIALS", "REAGENTS_RELEASED", "TRIALS_IN_HOURS",
-                                      "ESCALATION_PEAK", "FAILED_TRIALS", "DEATHS", "PRESTIGE", "STAMPS",
-                                      "EVENT_TOKENS", "CHESS_WINS", "CHESS_RATING", "ARMWRESTLING_WINS",
-                                      "ARMWRESTLING_LOSES", "ARMWRESTLING_RATING", "STROOP_RATING",
-                                      "TENNIS_WINS", "TENNIS_LOSES", "TENNIS_RATING",
-                                      "INVASION_IMPOSTER_WON_MATCHES", "INVASION_IMPOSTER_LOST_MATCHES",
-                                      "INVASION_REAGENT_WON_MATCHES", "INVASION_REAGENT_LOST_MATCHES"})
+                              @Choices({"completed-trials", "reagents-released", "trials-in-hours",
+                                      "escalation-peak", "failed-trials", "deaths", "prestige", "stamps",
+                                      "event-tokens", "chess-wins", "chess-rating", "armwrestling-wins",
+                                      "armwrestling-loses", "armwrestling-rating", "stroop-rating",
+                                      "tennis-wins", "tennis-loses", "tennis-rating",
+                                      "invasion-imposter-won-matches", "invasion-imposter-lost-matches",
+                                      "invasion-reagent-won-matches", "invasion-reagent-lost-matches"})
                               @Param("Statistic category") String category) {
         String guildId = event.getGuild().getId();
-        currentCategory = StatisticType.fromValue(category);
+        String enumValue = category.replace("-", "_").toUpperCase();
+        currentCategory = StatisticType.fromValue(enumValue);
         currentPage = 1;
 
         Optional<DiscordLeaderboardResponse> response = leaderboardService.fetchLeaderboard(currentCategory, currentPage);
@@ -52,11 +55,11 @@ public class LeaderboardCommand {
 
         DiscordLeaderboardResponse data = response.get();
         totalPages = data.getTotalPages() != null ? data.getTotalPages() : 1;
-        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, currentCategory, data, false);
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), currentCategory, data, false);
 
         event.with().ephemeral(true)
                 .builder(builder -> builder.addEmbeds(embed))
-                .components("onPrevious", "onNext")
+                .components(getButtons())
                 .reply();
     }
 
@@ -91,10 +94,21 @@ public class LeaderboardCommand {
 
         DiscordLeaderboardResponse data = response.get();
         totalPages = data.getTotalPages() != null ? data.getTotalPages() : 1;
-        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, currentCategory, data, false);
-        event.with().editReply(true)
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), currentCategory, data, false);
+        event.with().editReply(true).keepComponents(false)
                 .builder(builder -> builder.addEmbeds(embed))
-                .components("onPrevious", "onNext")
+                .components(getButtons())
                 .reply();
+    }
+
+    private String[] getButtons() {
+        List<String> buttons = new ArrayList<>();
+        if (currentPage > 1) {
+            buttons.add("onPrevious");
+        }
+        if (currentPage < totalPages) {
+            buttons.add("onNext");
+        }
+        return buttons.toArray(String[]::new);
     }
 }

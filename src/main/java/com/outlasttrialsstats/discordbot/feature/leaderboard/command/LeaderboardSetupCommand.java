@@ -32,16 +32,17 @@ public class LeaderboardSetupCommand {
     @Command(value = "setup leaderboard", desc = "Set up an auto-updating leaderboard in a channel")
     public void onSetupLeaderboard(CommandEvent event,
                                    @Param("Channel to post the leaderboard in") TextChannel channel,
-                                   @Choices({"COMPLETED_TRIALS", "REAGENTS_RELEASED", "TRIALS_IN_HOURS",
-                                           "ESCALATION_PEAK", "FAILED_TRIALS", "DEATHS", "PRESTIGE", "STAMPS",
-                                           "EVENT_TOKENS", "CHESS_WINS", "CHESS_RATING", "ARMWRESTLING_WINS",
-                                           "ARMWRESTLING_LOSES", "ARMWRESTLING_RATING", "STROOP_RATING",
-                                           "TENNIS_WINS", "TENNIS_LOSES", "TENNIS_RATING",
-                                           "INVASION_IMPOSTER_WON_MATCHES", "INVASION_IMPOSTER_LOST_MATCHES",
-                                           "INVASION_REAGENT_WON_MATCHES", "INVASION_REAGENT_LOST_MATCHES"})
+                                   @Choices({"completed-trials", "reagents-released", "trials-in-hours",
+                                           "escalation-peak", "failed-trials", "deaths", "prestige", "stamps",
+                                           "event-tokens", "chess-wins", "chess-rating", "armwrestling-wins",
+                                           "armwrestling-loses", "armwrestling-rating", "stroop-rating",
+                                           "tennis-wins", "tennis-loses", "tennis-rating",
+                                           "invasion-imposter-won-matches", "invasion-imposter-lost-matches",
+                                           "invasion-reagent-won-matches", "invasion-reagent-lost-matches"})
                                    @Param("Statistic category") String category) {
         String guildId = event.getGuild().getId();
-        StatisticType statisticType = StatisticType.fromValue(category);
+        String enumValue = category.replace("-", "_").toUpperCase();
+        StatisticType statisticType = StatisticType.fromValue(enumValue);
         String categoryName = leaderboardService.getCategoryDisplayName(guildId, statisticType);
 
         Optional<DiscordLeaderboardResponse> response = leaderboardService.fetchLeaderboard(statisticType, 1);
@@ -51,7 +52,7 @@ public class LeaderboardSetupCommand {
             return;
         }
 
-        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, statisticType, response.get(), true);
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), statisticType, response.get(), true);
 
         // Delete old message if binding exists
         Optional<LeaderboardChannel> oldBinding = leaderboardService.removeBinding(guildId, statisticType);
@@ -69,27 +70,27 @@ public class LeaderboardSetupCommand {
             }
         });
 
-        channel.sendMessageEmbeds(embed).queue(message -> {
-            leaderboardService.saveBinding(guildId, statisticType, channel.getId(), message.getId());
-            event.with().ephemeral(true)
-                    .reply(messageService.getMessage(guildId, "setup.leaderboard.success",
-                            categoryName, channel.getAsMention()));
-        });
+        var message = channel.sendMessageEmbeds(embed).complete();
+        leaderboardService.saveBinding(guildId, statisticType, channel.getId(), message.getId());
+        event.with().ephemeral(true)
+                .reply(messageService.getMessage(guildId, "setup.leaderboard.success",
+                        categoryName, channel.getAsMention()));
     }
 
     @CommandConfig(enabledFor = Permission.MANAGE_CHANNEL)
     @Command(value = "setup remove-leaderboard", desc = "Remove an auto-updating leaderboard")
     public void onRemoveLeaderboard(CommandEvent event,
-                                    @Choices({"COMPLETED_TRIALS", "REAGENTS_RELEASED", "TRIALS_IN_HOURS",
-                                            "ESCALATION_PEAK", "FAILED_TRIALS", "DEATHS", "PRESTIGE", "STAMPS",
-                                            "EVENT_TOKENS", "CHESS_WINS", "CHESS_RATING", "ARMWRESTLING_WINS",
-                                            "ARMWRESTLING_LOSES", "ARMWRESTLING_RATING", "STROOP_RATING",
-                                            "TENNIS_WINS", "TENNIS_LOSES", "TENNIS_RATING",
-                                            "INVASION_IMPOSTER_WON_MATCHES", "INVASION_IMPOSTER_LOST_MATCHES",
-                                            "INVASION_REAGENT_WON_MATCHES", "INVASION_REAGENT_LOST_MATCHES"})
+                                    @Choices({"completed-trials", "reagents-released", "trials-in-hours",
+                                            "escalation-peak", "failed-trials", "deaths", "prestige", "stamps",
+                                            "event-tokens", "chess-wins", "chess-rating", "armwrestling-wins",
+                                            "armwrestling-loses", "armwrestling-rating", "stroop-rating",
+                                            "tennis-wins", "tennis-loses", "tennis-rating",
+                                            "invasion-imposter-won-matches", "invasion-imposter-lost-matches",
+                                            "invasion-reagent-won-matches", "invasion-reagent-lost-matches"})
                                     @Param("Statistic category") String category) {
         String guildId = event.getGuild().getId();
-        StatisticType statisticType = StatisticType.fromValue(category);
+        String enumValue = category.replace("-", "_").toUpperCase();
+        StatisticType statisticType = StatisticType.fromValue(enumValue);
         String categoryName = leaderboardService.getCategoryDisplayName(guildId, statisticType);
 
         Optional<LeaderboardChannel> binding = leaderboardService.removeBinding(guildId, statisticType);

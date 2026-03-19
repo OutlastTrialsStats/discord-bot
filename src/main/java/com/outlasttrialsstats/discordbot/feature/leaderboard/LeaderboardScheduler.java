@@ -3,6 +3,7 @@ package com.outlasttrialsstats.discordbot.feature.leaderboard;
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.discordbot.entity.LeaderboardChannel;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -43,25 +44,33 @@ public class LeaderboardScheduler {
             return;
         }
 
-        Optional<DiscordLeaderboardResponse> response = leaderboardService
-                .fetchLeaderboard(binding.getCategory(), 1);
-        if (response.isEmpty()) {
-            log.warn("Failed to fetch leaderboard data for guild {} category {}",
-                    binding.getGuildId(), binding.getCategory());
-            return;
+        List<String> messageIds = binding.getMessageIds();
+        int maxPages = binding.getMaxPages();
+
+        for (int i = 0; i < maxPages && i < messageIds.size(); i++) {
+            int page = i + 1;
+            Optional<DiscordLeaderboardResponse> response = leaderboardService
+                    .fetchLeaderboard(binding.getCategory(), page);
+            if (response.isEmpty()) {
+                log.warn("Failed to fetch leaderboard page {} for guild {} category {}",
+                        page, binding.getGuildId(), binding.getCategory());
+                continue;
+            }
+
+            MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
+                    binding.getGuildId(), jda.getGuildById(binding.getGuildId()),
+                    binding.getCategory(), response.get(), page == maxPages);
+
+            String messageId = messageIds.get(i);
+            channel.editMessageEmbedsById(messageId, embed).queue(
+                    _ -> log.debug("Updated leaderboard page {} in guild {} for category {}",
+                            page, binding.getGuildId(), binding.getCategory()),
+                    error -> {
+                        log.info("Message {} no longer exists, removing leaderboard binding: {}",
+                                messageId, error.getMessage());
+                        leaderboardService.removeBinding(binding.getGuildId(), binding.getCategory());
+                    }
+            );
         }
-
-        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                binding.getGuildId(), jda.getGuildById(binding.getGuildId()), binding.getCategory(), response.get(), true);
-
-        channel.editMessageEmbedsById(binding.getMessageId(), embed).queue(
-                _ -> log.debug("Updated leaderboard in guild {} for category {}",
-                        binding.getGuildId(), binding.getCategory()),
-                error -> {
-                    log.info("Message {} no longer exists, removing leaderboard binding: {}",
-                            binding.getMessageId(), error.getMessage());
-                    leaderboardService.removeBinding(binding.getGuildId(), binding.getCategory());
-                }
-        );
     }
 }

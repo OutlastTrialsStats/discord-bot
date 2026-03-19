@@ -8,6 +8,7 @@ import com.outlasttrialsstats.discordbot.repository.LeaderboardChannelRepository
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -98,17 +99,18 @@ public class LeaderboardService {
     }
 
     @Transactional
-    public void saveBinding(String guildId, StatisticType category, String channelId, String messageId) {
+    public void saveBinding(String guildId, StatisticType category, String channelId, List<String> messageIds, int maxPages) {
         Optional<LeaderboardChannel> existing = leaderboardChannelRepository
                 .findByGuildIdAndCategory(guildId, category);
 
         if (existing.isPresent()) {
             LeaderboardChannel binding = existing.get();
             binding.setChannelId(channelId);
-            binding.setMessageId(messageId);
+            binding.setMessageIds(new ArrayList<>(messageIds));
+            binding.setMaxPages(maxPages);
             leaderboardChannelRepository.save(binding);
         } else {
-            leaderboardChannelRepository.save(new LeaderboardChannel(guildId, category, channelId, messageId));
+            leaderboardChannelRepository.save(new LeaderboardChannel(guildId, category, channelId, messageIds, maxPages));
         }
     }
 

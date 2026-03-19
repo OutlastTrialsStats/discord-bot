@@ -101,45 +101,4 @@ public class LeaderboardSetupCommand {
         }
     }
 
-    @CommandConfig(enabledFor = Permission.MANAGE_CHANNEL)
-    @Command(value = "setup remove-leaderboard", desc = "Remove an auto-updating leaderboard")
-    public void onRemoveLeaderboard(CommandEvent event,
-                                    @Choices({"completed-trials", "reagents-released", "trials-in-hours",
-                                            "escalation-peak", "failed-trials", "deaths", "prestige", "stamps",
-                                            "event-tokens", "chess-wins", "chess-rating", "armwrestling-wins",
-                                            "armwrestling-loses", "armwrestling-rating", "stroop-rating",
-                                            "tennis-wins", "tennis-loses", "tennis-rating",
-                                            "invasion-imposter-won-matches", "invasion-imposter-lost-matches",
-                                            "invasion-reagent-won-matches", "invasion-reagent-lost-matches"})
-                                    @Param("Statistic category") String category) {
-        String guildId = event.getGuild().getId();
-        String enumValue = category.replace("-", "_").toUpperCase();
-        StatisticType statisticType = StatisticType.fromValue(enumValue);
-        String categoryName = leaderboardService.getCategoryDisplayName(guildId, statisticType);
-
-        Optional<LeaderboardChannel> binding = leaderboardService.removeBinding(guildId, statisticType);
-        if (binding.isEmpty()) {
-            event.with().ephemeral(true)
-                    .reply(messageService.getMessage(guildId, "setup.leaderboard.not_found", categoryName));
-            return;
-        }
-
-        // Best-effort delete all messages
-        try {
-            TextChannel channel = event.getGuild().getTextChannelById(binding.get().getChannelId());
-            if (channel != null) {
-                for (String messageId : binding.get().getMessageIds()) {
-                    channel.deleteMessageById(messageId).queue(
-                            _ -> {},
-                            _ -> log.debug("Could not delete leaderboard message {}", messageId)
-                    );
-                }
-            }
-        } catch (Exception e) {
-            log.debug("Could not delete leaderboard messages: {}", e.getMessage());
-        }
-
-        event.with().ephemeral(true)
-                .reply(messageService.getMessage(guildId, "setup.leaderboard.removed", categoryName));
-    }
 }

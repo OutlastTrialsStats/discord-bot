@@ -31,14 +31,9 @@ Roles are also automatically assigned when a verified member joins the server.
 | Command | Description |
 |---|---|
 | `/leaderboard <category>` | View a paginated leaderboard for a stat category (ephemeral, with Previous/Next buttons) |
-| `/setup leaderboard <channel> <category>` | Set up an auto-updating leaderboard in a channel (refreshes hourly) |
-| `/setup remove-leaderboard <category>` | Remove an auto-updating leaderboard |
+| `/setup leaderboard <channel> <category> <pages>` | Set up an auto-updating leaderboard in a channel (refreshes hourly) |
 
-## TODO
-
-- [x] More role types
-- [x] Live Leaderboard
-- [ ] Announcements
+To remove a leaderboard, simply delete its message in Discord — the bot will automatically clean up the binding.
 
 ## Self-Hosting with Docker
 

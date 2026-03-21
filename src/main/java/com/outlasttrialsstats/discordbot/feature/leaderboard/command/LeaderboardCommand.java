@@ -37,7 +37,7 @@ public class LeaderboardCommand {
 
         DiscordLeaderboardResponse data = response.get();
         int totalPages = data.getTotalPages() != null ? data.getTotalPages() : 1;
-        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), category, data, true);
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), category, data, true, true, true);
 
         var reply = event.replyEmbeds(embed).setEphemeral(true);
         List<Button> buttons = buildButtons(categoryValue, 1, totalPages);
@@ -65,7 +65,7 @@ public class LeaderboardCommand {
 
         DiscordLeaderboardResponse data = response.get();
         int totalPages = data.getTotalPages() != null ? data.getTotalPages() : 1;
-        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), category, data, true);
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), category, data, true, true, true);
 
         List<Button> buttons = buildButtons(categoryValue, targetPage, totalPages);
         var edit = event.editMessageEmbeds(embed);

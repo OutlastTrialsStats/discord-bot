@@ -30,11 +30,15 @@ public class LeaderboardService {
     }
 
     public MessageEmbed buildLeaderboardEmbed(String guildId, Guild guild, StatisticType category,
-                                               DiscordLeaderboardResponse response, boolean includeFooter) {
-        String categoryName = getCategoryDisplayName(guildId, category);
+                                               DiscordLeaderboardResponse response, boolean includeTitle,
+                                               boolean includeFooter, boolean includeTotalEntries) {
         EmbedBuilder embed = new EmbedBuilder()
-                .setTitle(messageService.getMessage(guildId, "leaderboard.title", categoryName))
                 .setColor(0x5865F2);
+
+        if (includeTitle) {
+            String categoryName = getCategoryDisplayName(guildId, category);
+            embed.setTitle(messageService.getMessage(guildId, "leaderboard.title", categoryName));
+        }
 
         List<DiscordLeaderboardEntry> entries = response.getResults();
         if (entries == null || entries.isEmpty()) {
@@ -54,11 +58,17 @@ public class LeaderboardService {
         if (includeFooter) {
             Integer currentPage = response.getCurrentPage();
             Integer totalPages = response.getTotalPages();
-            Integer totalResults = response.getTotalResults();
-            embed.setFooter(messageService.getMessage(guildId, "leaderboard.footer",
-                    currentPage != null ? currentPage : 1,
-                    totalPages != null ? totalPages : 1,
-                    totalResults != null ? totalResults : 0));
+            if (includeTotalEntries) {
+                Integer totalResults = response.getTotalResults();
+                embed.setFooter(messageService.getMessage(guildId, "leaderboard.footer",
+                        currentPage != null ? currentPage : 1,
+                        totalPages != null ? totalPages : 1,
+                        totalResults != null ? totalResults : 0));
+            } else {
+                embed.setFooter(messageService.getMessage(guildId, "leaderboard.footer.compact",
+                        currentPage != null ? currentPage : 1,
+                        totalPages != null ? totalPages : 1));
+            }
         }
 
         return embed.build();

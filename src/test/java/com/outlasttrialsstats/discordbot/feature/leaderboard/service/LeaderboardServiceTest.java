@@ -60,7 +60,7 @@ class LeaderboardServiceTest {
                 List.of(createEntry("Player", 1, 100)), 1, 1, 1);
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                GUILD_ID, guild, StatisticType.PRESTIGE, response, false);
+                GUILD_ID, guild, StatisticType.PRESTIGE, response, true, false, false);
 
         assertThat(embed.getTitle()).isEqualTo("Prestige Leaderboard");
         assertThat(embed.getDescription()).contains("#1 **Player** — `100`");
@@ -79,7 +79,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardResponse response = createResponse(List.of(), 1, 1, 0);
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                GUILD_ID, guild, StatisticType.PRESTIGE, response, false);
+                GUILD_ID, guild, StatisticType.PRESTIGE, response, true, false, false);
 
         assertThat(embed.getDescription()).isEqualTo("No entries found.");
     }
@@ -98,7 +98,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardResponse response = createResponse(List.of(), 2, 5, 50);
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                GUILD_ID, guild, StatisticType.PRESTIGE, response, true);
+                GUILD_ID, guild, StatisticType.PRESTIGE, response, true, true, true);
 
         assertThat(embed.getFooter()).isNotNull();
         assertThat(embed.getFooter().getText()).isEqualTo("Page 2/5 | 50 total entries");
@@ -118,7 +118,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardResponse response = createResponse(List.of(), null, null, null);
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                GUILD_ID, guild, StatisticType.PRESTIGE, response, true);
+                GUILD_ID, guild, StatisticType.PRESTIGE, response, true, true, true);
 
         assertThat(embed.getFooter().getText()).isEqualTo("Page 1/1 | 0 total entries");
     }
@@ -139,7 +139,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardResponse response = createResponse(List.of(entry), 1, 1, 1);
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                GUILD_ID, guild, StatisticType.PRESTIGE, response, false);
+                GUILD_ID, guild, StatisticType.PRESTIGE, response, true, false, false);
 
         assertThat(embed.getDescription()).contains("...");
     }
@@ -162,7 +162,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardResponse response = createResponse(List.of(entry), 1, 1, 1);
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                GUILD_ID, guild, StatisticType.PRESTIGE, response, false);
+                GUILD_ID, guild, StatisticType.PRESTIGE, response, true, false, false);
 
         assertThat(embed.getDescription()).contains("<@discord-123>");
     }
@@ -183,7 +183,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardResponse response = createResponse(List.of(entry), 1, 1, 1);
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                GUILD_ID, guild, StatisticType.PRESTIGE, response, false);
+                GUILD_ID, guild, StatisticType.PRESTIGE, response, true, false, false);
 
         assertThat(embed.getDescription()).contains("Unknown");
     }
@@ -204,7 +204,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardResponse response = createResponse(List.of(entry), 1, 1, 1);
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                GUILD_ID, guild, StatisticType.PRESTIGE, response, false);
+                GUILD_ID, guild, StatisticType.PRESTIGE, response, true, false, false);
 
         assertThat(embed.getDescription()).contains("Unknown");
     }
@@ -229,7 +229,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardResponse response = createResponse(List.of(entry), 1, 1, 1);
 
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                GUILD_ID, guild, StatisticType.PRESTIGE, response, false);
+                GUILD_ID, guild, StatisticType.PRESTIGE, response, true, false, false);
 
         assertThat(embed.getDescription()).contains("Player");
         assertThat(embed.getDescription()).doesNotContain("outlasttrialsstats.com");

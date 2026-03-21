@@ -91,17 +91,20 @@ class LeaderboardSchedulerTest {
         when(leaderboardService.fetchLeaderboard(eq(StatisticType.PRESTIGE), any(int.class)))
                 .thenReturn(Optional.of(response));
 
-        MessageEmbed embed = mock(MessageEmbed.class);
-        when(leaderboardService.buildLeaderboardEmbed(eq(GUILD_ID), eq(guild), eq(StatisticType.PRESTIGE), eq(response), eq(false)))
-                .thenReturn(embed);
+        MessageEmbed embedPage1 = mock(MessageEmbed.class);
+        MessageEmbed embedPage2 = mock(MessageEmbed.class);
+        when(leaderboardService.buildLeaderboardEmbed(eq(GUILD_ID), eq(guild), eq(StatisticType.PRESTIGE), eq(response), eq(true), eq(true), eq(false)))
+                .thenReturn(embedPage1);
+        when(leaderboardService.buildLeaderboardEmbed(eq(GUILD_ID), eq(guild), eq(StatisticType.PRESTIGE), eq(response), eq(false), eq(true), eq(false)))
+                .thenReturn(embedPage2);
 
         MessageEditAction editAction = mock(MessageEditAction.class);
         when(channel.editMessageEmbedsById(any(String.class), any(MessageEmbed.class))).thenReturn(editAction);
 
         leaderboardScheduler.updateLeaderboards();
 
-        verify(channel).editMessageEmbedsById("msg-1", embed);
-        verify(channel).editMessageEmbedsById("msg-2", embed);
+        verify(channel).editMessageEmbedsById("msg-1", embedPage1);
+        verify(channel).editMessageEmbedsById("msg-2", embedPage2);
     }
 
     @Test
@@ -137,7 +140,7 @@ class LeaderboardSchedulerTest {
         when(leaderboardService.fetchLeaderboard(StatisticType.PRESTIGE, 1)).thenReturn(Optional.of(response));
 
         MessageEmbed embed = mock(MessageEmbed.class);
-        when(leaderboardService.buildLeaderboardEmbed(eq(GUILD_ID), eq(guild), eq(StatisticType.PRESTIGE), eq(response), eq(false)))
+        when(leaderboardService.buildLeaderboardEmbed(eq(GUILD_ID), eq(guild), eq(StatisticType.PRESTIGE), eq(response), eq(true), eq(true), eq(false)))
                 .thenReturn(embed);
 
         MessageEditAction editAction = mock(MessageEditAction.class);
@@ -170,7 +173,7 @@ class LeaderboardSchedulerTest {
         when(leaderboardService.fetchLeaderboard(StatisticType.PRESTIGE, 1)).thenReturn(Optional.of(response));
 
         MessageEmbed embed = mock(MessageEmbed.class);
-        when(leaderboardService.buildLeaderboardEmbed(eq(GUILD_ID), eq(guild), eq(StatisticType.PRESTIGE), eq(response), eq(false)))
+        when(leaderboardService.buildLeaderboardEmbed(eq(GUILD_ID), eq(guild), eq(StatisticType.PRESTIGE), eq(response), eq(true), eq(true), eq(false)))
                 .thenReturn(embed);
 
         MessageEditAction editAction = mock(MessageEditAction.class);

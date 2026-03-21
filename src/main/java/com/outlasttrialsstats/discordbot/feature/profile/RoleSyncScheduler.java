@@ -2,6 +2,7 @@ package com.outlasttrialsstats.discordbot.feature.profile;
 
 import com.outlasttrialsstats.discordbot.feature.profile.service.GuildSyncService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
@@ -23,12 +24,22 @@ public class RoleSyncScheduler {
 
         for (Guild guild : jda.getGuilds()) {
             try {
-                guild.loadMembers().onSuccess(members -> {
-                    var result = guildSyncService.syncMembers(guild, members);
-                    log.info("Scheduled role sync for guild {}: {} updated, {} skipped",
-                            guild.getId(), result.updated(), result.skipped());
-                }).onError(error ->
-                        log.warn("Failed to load members for guild {}: {}", guild.getId(), error.getMessage())
+                var updated = new AtomicInteger();
+                var skipped = new AtomicInteger();
+
+                guild.loadMembers(member -> {
+                    var result = guildSyncService.syncMember(guild, member);
+                    if (result.verified() && result.hasChanges()) {
+                        updated.incrementAndGet();
+                    } else {
+                        skipped.incrementAndGet();
+                    }
+                }).onSuccess(_ ->
+                        log.info("Scheduled role sync for guild {}: {} updated, {} skipped",
+                                guild.getId(), updated.get(), skipped.get())
+                ).onError(error ->
+                        log.warn("Failed to load members for guild {}: {} updated, {} skipped before error: {}",
+                                guild.getId(), updated.get(), skipped.get(), error.getMessage())
                 );
             } catch (Exception e) {
                 log.warn("Failed to sync guild {}: {}", guild.getId(), e.getMessage());

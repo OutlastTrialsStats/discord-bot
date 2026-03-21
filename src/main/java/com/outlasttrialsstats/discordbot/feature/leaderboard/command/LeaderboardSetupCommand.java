@@ -25,6 +25,8 @@ public class LeaderboardSetupCommand {
     private final MessageService messageService;
 
     public void onSetupLeaderboard(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         Guild guild = event.getGuild();
         String guildId = guild.getId();
         TextChannel channel = event.getOption("channel").getAsChannel().asTextChannel();
@@ -36,8 +38,7 @@ public class LeaderboardSetupCommand {
         // Verify first page is available
         Optional<DiscordLeaderboardResponse> firstResponse = leaderboardService.fetchLeaderboard(statisticType, 1);
         if (firstResponse.isEmpty()) {
-            event.reply(messageService.getMessage(guildId, "leaderboard.error"))
-                    .setEphemeral(true).queue();
+            event.getHook().editOriginal(messageService.getMessage(guildId, "leaderboard.error")).queue();
             return;
         }
 
@@ -58,15 +59,15 @@ public class LeaderboardSetupCommand {
             if (response.isEmpty()) break;
 
             MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                    guildId, guild, statisticType, response.get(), false);
+                    guildId, guild, statisticType, response.get(), page == 1, true, false);
             var message = channel.sendMessageEmbeds(embed).complete();
             messageIds.add(message.getId());
         }
 
         leaderboardService.saveBinding(guildId, statisticType, channel.getId(), messageIds, maxPages);
-        event.reply(messageService.getMessage(guildId, "setup.leaderboard.success",
+        event.getHook().editOriginal(messageService.getMessage(guildId, "setup.leaderboard.success",
                         categoryName, channel.getAsMention()))
-                .setEphemeral(true).queue();
+                .queue();
     }
 
     private void deleteOldMessages(Guild guild, LeaderboardChannel binding) {

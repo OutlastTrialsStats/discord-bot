@@ -19,18 +19,16 @@ public class MemberCountScheduler {
     private final JDA jda;
     private final GuildServerRepository guildServerRepository;
 
-    @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
+    @Scheduled(fixedRate = 1, initialDelay = 1, timeUnit = TimeUnit.HOURS)
     public void updateMemberCounts() {
         for (Guild guild : jda.getGuilds()) {
             try {
-                guild.loadMembers().onSuccess(members -> {
-                    int count = (int) members.stream().filter(m -> !m.getUser().isBot()).count();
-                    GuildServer server = guildServerRepository.findById(guild.getId())
-                            .orElseGet(() -> new GuildServer(guild.getId()));
-                    server.setMemberCount(count);
-                    guildServerRepository.save(server);
-                    log.debug("Updated member count for guild {}: {}", guild.getId(), count);
-                }).onError(error -> log.warn("Failed to load members for guild {}: {}", guild.getId(), error.getMessage()));
+                int count = guild.getMemberCount();
+                GuildServer server = guildServerRepository.findById(guild.getId())
+                        .orElseGet(() -> new GuildServer(guild.getId()));
+                server.setMemberCount(count);
+                guildServerRepository.save(server);
+                log.debug("Updated member count for guild {}: {}", guild.getId(), count);
             } catch (Exception e) {
                 log.warn("Failed to update member count for guild {}: {}", guild.getId(), e.getMessage());
             }

@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.feature.profile.service;
 
 import com.outlasttrialsstats.discordbot.feature.profile.dto.GuildSyncResult;
+import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,25 +16,29 @@ public class GuildSyncService {
 
     private final RoleAssignmentService roleAssignmentService;
 
+    public RoleAssignmentResult syncMember(Guild guild, Member member) {
+        if (member.getUser().isBot()) {
+            return RoleAssignmentResult.notVerified();
+        }
+
+        try {
+            return roleAssignmentService.assignRoles(guild, member);
+        } catch (Exception e) {
+            log.warn("Failed to sync roles for member {} in guild {}: {}",
+                    member.getId(), guild.getId(), e.getMessage());
+            return RoleAssignmentResult.notVerified();
+        }
+    }
+
     public GuildSyncResult syncMembers(Guild guild, List<Member> members) {
         int updated = 0;
         int skipped = 0;
 
         for (var member : members) {
-            if (member.getUser().isBot()) {
-                continue;
-            }
-
-            try {
-                var result = roleAssignmentService.assignRoles(guild, member);
-                if (result.verified() && result.hasChanges()) {
-                    updated++;
-                } else {
-                    skipped++;
-                }
-            } catch (Exception e) {
-                log.warn("Failed to sync roles for member {} in guild {}: {}",
-                        member.getId(), guild.getId(), e.getMessage());
+            var result = syncMember(guild, member);
+            if (result.verified() && result.hasChanges()) {
+                updated++;
+            } else {
                 skipped++;
             }
         }

@@ -9,8 +9,10 @@ spring:
     password: dev
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
   messages:
     basename: messages/messages
     fallback-to-system-locale: false

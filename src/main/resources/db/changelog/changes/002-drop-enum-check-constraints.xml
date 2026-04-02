@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="002-drop-enum-check-constraints" author="SuprexDE">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) FROM information_schema.check_constraints
+                WHERE constraint_name = 'ranked_role_mapping_category_check'
+            </sqlCheck>
+        </preConditions>
+
+        <sql>ALTER TABLE ranked_role_mapping DROP CONSTRAINT IF EXISTS ranked_role_mapping_category_check</sql>
+        <sql>ALTER TABLE enum_role_mapping DROP CONSTRAINT IF EXISTS enum_role_mapping_category_check</sql>
+        <sql>ALTER TABLE leaderboard_channel DROP CONSTRAINT IF EXISTS leaderboard_channel_category_check</sql>
+    </changeSet>
+
+</databaseChangeLog>

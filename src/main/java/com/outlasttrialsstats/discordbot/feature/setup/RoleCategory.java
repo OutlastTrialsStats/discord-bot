@@ -12,6 +12,7 @@ public enum RoleCategory {
     REAGENT_RIG("reagent_rig", "Reagent Rig Roles"),
     INVASION_RANKING("invasion_ranking", "Invasion Ranking Roles"),
     TOTAL_INVASION_MATCHES("total_invasion_matches", "Total Invasion Matches Roles"),
+    SEASON_INVASION_POINTS("season_invasion_points", "Season Invasion Points Roles"),
     PLATFORM("platform", "Platform Roles"),
     ACCOUNT_TYPE("account_type", "Account Type Roles");
 

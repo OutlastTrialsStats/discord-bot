@@ -86,4 +86,4 @@ These Terms may be updated at any time. Continued use of the Bot after changes c
 
 ## 12. Contact
 
-For questions or data deletion requests, contact: **me@suprex.dev**
+For questions or data deletion requests, contact: **admin@outlasttrialsstats.com**

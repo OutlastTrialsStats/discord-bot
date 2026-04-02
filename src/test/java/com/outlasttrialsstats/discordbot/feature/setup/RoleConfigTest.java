@@ -14,18 +14,11 @@ import org.junit.jupiter.api.Test;
 class RoleConfigTest {
 
     @Test
-    void prestigeThresholds_areSortedAscending() {
+    void allThresholds_areSortedAscending() {
         assertThat(RoleConfig.PRESTIGE_THRESHOLDS).isSorted();
-    }
-
-    @Test
-    void levelThresholds_areSortedAscending() {
         assertThat(RoleConfig.LEVEL_THRESHOLDS).isSorted();
-    }
-
-    @Test
-    void totalInvasionMatchesThresholds_areSortedAscending() {
         assertThat(RoleConfig.TOTAL_INVASION_MATCHES_THRESHOLDS).isSorted();
+        assertThat(RoleConfig.SEASON_INVASION_POINTS_THRESHOLDS).isSorted();
     }
 
     @Test

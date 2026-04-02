@@ -3,6 +3,8 @@ spring:
     hibernate:
       ddl-auto: create-drop
     open-in-view: false
+  liquibase:
+    enabled: false
 
 discord:
   bot:

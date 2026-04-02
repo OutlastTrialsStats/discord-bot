@@ -95,6 +95,8 @@ components:
           type: integer
         value:
           type: integer
+        seasonTotalInvasionPoints:
+          type: integer
         discordUserId:
           type: string
           nullable: true
@@ -135,6 +137,8 @@ components:
         invasionRanking:
           $ref: './common.yml#/components/schemas/InvasionRanking'
         totalInvasionMatchesPlayed:
+          type: integer
+        seasonTotalInvasionPoints:
           type: integer
         platformType:
           $ref: './common.yml#/components/schemas/PlatformType'

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-initial-schema" author="SuprexDE">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="guild_server"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="guild_server">
+            <column name="guild_id" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="language" type="varchar(255)" defaultValue="en">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_count" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="guild_messages">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="guild_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message_key" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message_value" type="varchar(2000)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="guild_messages" columnNames="guild_id, message_key"
+                             constraintName="uk_guild_messages_guild_key"/>
+
+        <createTable tableName="enum_role_mapping">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="guild_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enum_value" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="enum_role_mapping" columnNames="guild_id, category, enum_value"
+                             constraintName="uk_enum_role_mapping"/>
+
+        <createTable tableName="ranked_role_mapping">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="guild_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="min_rank" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="ranked_role_mapping" columnNames="guild_id, category, min_rank"
+                             constraintName="uk_ranked_role_mapping"/>
+
+        <createTable tableName="leaderboard_channel">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="guild_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="channel_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_pages" type="int" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="leaderboard_channel" columnNames="guild_id, category"
+                             constraintName="uk_leaderboard_channel"/>
+
+        <createTable tableName="leaderboard_channel_messages">
+            <column name="leaderboard_channel_id" type="bigint">
+                <constraints nullable="false"
+                             foreignKeyName="fk_lcm_leaderboard_channel"
+                             references="leaderboard_channel(id)"/>
+            </column>
+            <column name="message_id" type="varchar(255)"/>
+            <column name="page_index" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

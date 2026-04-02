@@ -2,6 +2,7 @@ package com.outlasttrialsstats.discordbot.feature.leaderboard;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -13,20 +14,21 @@ import com.outlasttrialsstats.discordbot.entity.LeaderboardChannel;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.restaction.MessageEditAction;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,14 +40,17 @@ class LeaderboardSchedulerTest {
     @Mock
     private LeaderboardService leaderboardService;
 
+    @Spy
     @InjectMocks
     private LeaderboardScheduler leaderboardScheduler;
 
-    @Captor
-    private ArgumentCaptor<Consumer<Throwable>> errorCallbackCaptor;
-
     private static final String GUILD_ID = "guild-1";
     private static final String CHANNEL_ID = "channel-1";
+
+    @BeforeEach
+    void setUp() {
+        lenient().doReturn(CompletableFuture.completedFuture(null)).when(leaderboardScheduler).delay();
+    }
 
     @Test
     void updateLeaderboards_channelNotFound_removesBinding() {
@@ -98,8 +103,12 @@ class LeaderboardSchedulerTest {
         when(leaderboardService.buildLeaderboardEmbed(eq(GUILD_ID), eq(guild), eq(StatisticType.PRESTIGE), eq(response), eq(false), eq(true), eq(false)))
                 .thenReturn(embedPage2);
 
-        MessageEditAction editAction = mock(MessageEditAction.class);
-        when(channel.editMessageEmbedsById(any(String.class), any(MessageEmbed.class))).thenReturn(editAction);
+        MessageEditAction editAction1 = mock(MessageEditAction.class);
+        MessageEditAction editAction2 = mock(MessageEditAction.class);
+        when(channel.editMessageEmbedsById("msg-1", embedPage1)).thenReturn(editAction1);
+        when(channel.editMessageEmbedsById("msg-2", embedPage2)).thenReturn(editAction2);
+        when(editAction1.submit()).thenReturn(CompletableFuture.completedFuture(null));
+        when(editAction2.submit()).thenReturn(CompletableFuture.completedFuture(null));
 
         leaderboardScheduler.updateLeaderboards();
 
@@ -146,13 +155,13 @@ class LeaderboardSchedulerTest {
         MessageEditAction editAction = mock(MessageEditAction.class);
         when(channel.editMessageEmbedsById("msg-1", embed)).thenReturn(editAction);
 
-        leaderboardScheduler.updateLeaderboards();
-
-        verify(editAction).queue(any(), errorCallbackCaptor.capture());
-
         ErrorResponseException unknownMessageError = mock(ErrorResponseException.class);
         when(unknownMessageError.getErrorResponse()).thenReturn(ErrorResponse.UNKNOWN_MESSAGE);
-        errorCallbackCaptor.getValue().accept(unknownMessageError);
+        CompletableFuture<Message> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(unknownMessageError);
+        when(editAction.submit()).thenReturn(failedFuture);
+
+        leaderboardScheduler.updateLeaderboards();
 
         verify(leaderboardService).removeBinding(GUILD_ID, StatisticType.PRESTIGE);
     }
@@ -179,13 +188,11 @@ class LeaderboardSchedulerTest {
         MessageEditAction editAction = mock(MessageEditAction.class);
         when(channel.editMessageEmbedsById("msg-1", embed)).thenReturn(editAction);
 
+        CompletableFuture<Message> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("rate limited"));
+        when(editAction.submit()).thenReturn(failedFuture);
+
         leaderboardScheduler.updateLeaderboards();
-
-        verify(editAction).queue(any(), errorCallbackCaptor.capture());
-
-        // Simulate a rate limit or other transient error
-        RuntimeException transientError = new RuntimeException("rate limited");
-        errorCallbackCaptor.getValue().accept(transientError);
 
         verify(leaderboardService, never()).removeBinding(any(), any());
     }

@@ -88,7 +88,7 @@ public class LeaderboardScheduler {
                 .thenCompose(_ -> delay());
     }
 
-    private static CompletableFuture<Void> delay() {
-        return CompletableFuture.runAsync(() -> {}, CompletableFuture.delayedExecutor(LeaderboardScheduler.EDIT_COOLDOWN_SECONDS, TimeUnit.SECONDS));
+    CompletableFuture<Void> delay() {
+        return CompletableFuture.runAsync(() -> {}, CompletableFuture.delayedExecutor(EDIT_COOLDOWN_SECONDS, TimeUnit.SECONDS));
     }
 }

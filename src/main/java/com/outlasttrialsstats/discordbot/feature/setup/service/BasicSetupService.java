@@ -75,6 +75,12 @@ public class BasicSetupService {
                             (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.TOTAL_INVASION_MATCHES, t, roleId)
                     )).toList();
 
+            case SEASON_INVASION_POINTS -> Arrays.stream(RoleConfig.SEASON_INVASION_POINTS_THRESHOLDS)
+                    .mapToObj(t -> new RoleDef(
+                            "Invasion Points " + t + "+", null, false,
+                            (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.SEASON_INVASION_POINTS, t, roleId)
+                    )).toList();
+
             case REAGENT_RIG -> buildEnumRoleDefs(guildId, RoleCategory.REAGENT_RIG,
                     ActiveReagentSkillType.values(), RoleConfig.SKILL_NAMES::get, RoleConfig.SKILL_COLORS::get, ActiveReagentSkillType::getValue);
 

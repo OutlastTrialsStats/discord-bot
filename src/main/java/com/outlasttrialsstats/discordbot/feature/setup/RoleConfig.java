@@ -14,6 +14,7 @@ public final class RoleConfig {
     public static final int[] PRESTIGE_THRESHOLDS = {1, 10, 20, 30, 40, 50, 60, 70, 80, 90};
     public static final int[] LEVEL_THRESHOLDS = {1, 10, 25, 50, 75, 99 };
     public static final int[] TOTAL_INVASION_MATCHES_THRESHOLDS = {1, 50, 100, 250, 500, 1000};
+    public static final int[] SEASON_INVASION_POINTS_THRESHOLDS = {100, 500, 1000, 2500, 5000, 10000};
 
     public static final Map<ActiveReagentSkillType, String> SKILL_NAMES = Map.of(
             ActiveReagentSkillType.STUN, "Stun",

@@ -31,6 +31,7 @@ public class RoleMappingCommand {
             case "skill" -> onSkill(event);
             case "invasion-ranking" -> onInvasionRanking(event);
             case "total-invasion-matches" -> onTotalInvasionMatches(event);
+            case "season-invasion-points" -> onSeasonInvasionPoints(event);
             case "platform" -> onPlatform(event);
             case "account-type" -> onAccountType(event);
         }
@@ -43,6 +44,7 @@ public class RoleMappingCommand {
             case "skill" -> onRemoveSkill(event);
             case "invasion-ranking" -> onRemoveInvasionRanking(event);
             case "total-invasion-matches" -> onRemoveTotalInvasionMatches(event);
+            case "season-invasion-points" -> onRemoveSeasonInvasionPoints(event);
             case "platform" -> onRemovePlatform(event);
             case "account-type" -> onRemoveAccountType(event);
         }
@@ -156,6 +158,28 @@ public class RoleMappingCommand {
         int threshold = event.getOption("threshold").getAsInt();
         roleMappingService.removeRankedMapping(guildId, RoleCategory.TOTAL_INVASION_MATCHES, threshold);
         event.reply(messageService.getMessage(guildId, "setup.total_invasion_matches_role.removed", threshold))
+                .setEphemeral(true).queue();
+    }
+
+    // --- Season Invasion Points ---
+
+    private void onSeasonInvasionPoints(SlashCommandInteractionEvent event) {
+        Guild guild = event.getGuild();
+        String guildId = guild.getId();
+        int threshold = event.getOption("threshold").getAsInt();
+        Role role = getOptionalRole(event);
+        String roleName = "Invasion Points " + threshold + "+";
+
+        createOrLinkRole(guild, guildId, roleName, role,
+                roleId -> roleMappingService.saveRankedMapping(guildId, RoleCategory.SEASON_INVASION_POINTS, threshold, roleId),
+                event, "setup.season_invasion_points_role.success", threshold);
+    }
+
+    private void onRemoveSeasonInvasionPoints(SlashCommandInteractionEvent event) {
+        String guildId = event.getGuild().getId();
+        int threshold = event.getOption("threshold").getAsInt();
+        roleMappingService.removeRankedMapping(guildId, RoleCategory.SEASON_INVASION_POINTS, threshold);
+        event.reply(messageService.getMessage(guildId, "setup.season_invasion_points_role.removed", threshold))
                 .setEphemeral(true).queue();
     }
 

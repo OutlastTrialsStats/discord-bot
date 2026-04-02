@@ -86,6 +86,8 @@ public class CommandRegistrar {
                                 .addOptions(stringOption("ranking", "Invasion ranking", INVASION_RANKING_CHOICES), OPTIONAL_ROLE),
                         new SubcommandData("total-invasion-matches", "Map a role to a minimum number of invasion matches")
                                 .addOptions(thresholdOption("Minimum total invasion matches"), OPTIONAL_ROLE),
+                        new SubcommandData("season-invasion-points", "Map a role to a minimum number of season invasion points")
+                                .addOptions(thresholdOption("Minimum season invasion points"), OPTIONAL_ROLE),
                         new SubcommandData("platform", "Map a role to a gaming platform")
                                 .addOptions(stringOption("platform", "Gaming platform", PLATFORM_CHOICES), OPTIONAL_ROLE),
                         new SubcommandData("account-type", "Map a role to an account type")
@@ -106,6 +108,8 @@ public class CommandRegistrar {
                                 .addOptions(stringOption("ranking", "Invasion ranking", INVASION_RANKING_CHOICES)),
                         new SubcommandData("total-invasion-matches", "Remove a total invasion matches role mapping")
                                 .addOptions(thresholdOption("Total invasion matches threshold to remove")),
+                        new SubcommandData("season-invasion-points", "Remove a season invasion points role mapping")
+                                .addOptions(thresholdOption("Season invasion points threshold to remove")),
                         new SubcommandData("platform", "Remove a platform role mapping")
                                 .addOptions(stringOption("platform", "Gaming platform", PLATFORM_CHOICES)),
                         new SubcommandData("account-type", "Remove an account type role mapping")

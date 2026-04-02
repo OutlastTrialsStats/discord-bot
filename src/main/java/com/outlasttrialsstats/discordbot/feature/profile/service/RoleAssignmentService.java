@@ -57,6 +57,10 @@ public class RoleAssignmentService {
                 Objects.requireNonNullElse(profile.getTotalInvasionMatchesPlayed(), 0),
                 addedRoles, removedRoles);
 
+        assignRankedRole(guild, member, guildId, RoleCategory.SEASON_INVASION_POINTS,
+                Objects.requireNonNullElse(profile.getSeasonTotalInvasionPoints(), 0),
+                addedRoles, removedRoles);
+
         assignEnumRole(guild, member, guildId, RoleCategory.REAGENT_RIG,
                 profile.getActiveReagentSkill() != null ? profile.getActiveReagentSkill().getValue() : null,
                 addedRoles, removedRoles);

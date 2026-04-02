@@ -27,12 +27,13 @@ public class StartBasicCommand {
 
         StringSelectMenu menu = StringSelectMenu.create("setup:start:categories")
                 .setPlaceholder("Select role categories")
-                .setRequiredRange(1, 7)
+                .setRequiredRange(1, 8)
                 .addOption("Prestige Roles", "prestige", "Roles based on prestige level (1+, 10+, 20+, ...)")
                 .addOption("Level Roles", "level", "Roles based on player level (1+, 10+, 25+, ...)")
                 .addOption("Reagent Rig Roles", "reagent_rig", "Roles based on active reagent rig (Stun, X-Ray, ...)")
                 .addOption("Invasion Ranking Roles", "invasion_ranking", "Roles based on invasion rank (Bronze, Silver, Gold, ...)")
                 .addOption("Total Invasion Matches Roles", "total_invasion_matches", "Roles based on total invasion matches played (10+, 50+, 100+, ...)")
+                .addOption("Season Invasion Points Roles", "season_invasion_points", "Roles based on season invasion points (100+, 500+, 1000+, ...)")
                 .addOption("Platform Roles", "platform", "Roles based on gaming platform (Steam, PlayStation, ...)")
                 .addOption("Account Type Roles", "account_type", "Roles based on account type (Closed Beta, Early Access, ...)")
                 .build();

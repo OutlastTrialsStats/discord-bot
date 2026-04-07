@@ -1,8 +1,10 @@
 # TOTStats Discord Bot
 
-[![Invite Bot](https://img.shields.io/badge/Discord-Invite%20Bot-5865F2?logo=discord&logoColor=white)](https://discord.com/oauth2/authorize?client_id=1464019044817571941&scope=bot%20applications.commands&permissions=257698425936)
+[![Invite Bot](https://img.shields.io/badge/Discord-Invite%20Bot-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/oauth2/authorize?client_id=1464019044817571941&scope=bot%20applications.commands&permissions=257698425936)
 
 A Discord bot that automatically assigns roles based on player stats from [The Outlast Trials](https://outlasttrialsstats.com).
+
+**[Add the bot to your server](https://discord.com/oauth2/authorize?client_id=1464019044817571941&scope=bot%20applications.commands&permissions=257698425936)**
 
 ## Features
 

@@ -3,6 +3,7 @@ package com.outlasttrialsstats.discordbot.feature.profile;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -124,5 +125,28 @@ class VerificationPollSchedulerTest {
 
         verify(guildSyncService).syncMember(guild1, member1);
         verify(guildSyncService).syncMember(guild2, member2);
+    }
+
+    @Test
+    void pollRecentVerifications_sameUserTwice_onlySyncsOnce() {
+        var verification = new DiscordVerificationEntry();
+        verification.setDiscordUserId("user-1");
+        verification.setDisplayName("TestUser");
+
+        var response = new DiscordRecentVerificationsResponse();
+        response.setVerifications(List.of(verification));
+        when(statsApiClient.getRecentVerifications(10)).thenReturn(Optional.of(response));
+
+        var guild = mock(Guild.class);
+        var member = mock(Member.class);
+        when(jda.getGuilds()).thenReturn(List.of(guild));
+        when(guild.getMemberById("user-1")).thenReturn(member);
+        when(guildSyncService.syncMember(guild, member))
+                .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
+
+        verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
+
+        verify(guildSyncService, times(1)).syncMember(guild, member);
     }
 }

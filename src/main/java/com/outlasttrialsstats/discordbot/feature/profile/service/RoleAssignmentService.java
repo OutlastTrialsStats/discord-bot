@@ -2,6 +2,7 @@ package com.outlasttrialsstats.discordbot.feature.profile.service;
 
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
 import com.outlasttrialsstats.discordbot.entity.EnumRoleMapping;
+import com.outlasttrialsstats.discordbot.entity.GuildServer;
 import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
@@ -89,7 +90,7 @@ public class RoleAssignmentService {
         if (profile.getDisplayName() == null) return;
 
         boolean autoNickname = guildServerRepository.findById(guild.getId())
-                .map(server -> server.isAutoNickname())
+                .map(GuildServer::isAutoNickname)
                 .orElse(false);
 
         if (!autoNickname) return;

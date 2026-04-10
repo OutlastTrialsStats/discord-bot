@@ -3,6 +3,7 @@ package com.outlasttrialsstats.discordbot.feature.profile.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -69,7 +70,7 @@ class RoleAssignmentServiceTest {
 
     @Test
     void assignRoles_noMappingsConfigured_returnsEmptyChanges() {
-        stubProfileAndEmptyMappings(createProfile(0, 0, null, 0, null, null, null));
+        stubProfileWithEmptyMappings(createProfile(0, 0, null, 0, null, null, null));
 
         var result = roleAssignmentService.assignRoles(guild, member);
 
@@ -79,7 +80,7 @@ class RoleAssignmentServiceTest {
 
     @Test
     void assignRoles_prestigeMapping_addsCorrectRole() {
-        stubProfileAndEmptyMappings(createProfile(25, 0, null, 0, null, null, null));
+        stubProfileWithEmptyMappings(createProfile(25, 0, null, 0, null, null, null));
 
         var mapping20 = rankedMapping(RoleCategory.PRESTIGE, 20, "role-20");
         var mapping30 = rankedMapping(RoleCategory.PRESTIGE, 30, "role-30");
@@ -105,7 +106,7 @@ class RoleAssignmentServiceTest {
 
     @Test
     void assignRoles_memberAlreadyHasCorrectRole_noChanges() {
-        stubProfileAndEmptyMappings(createProfile(25, 0, null, 0, null, null, null));
+        stubProfileWithEmptyMappings(createProfile(25, 0, null, 0, null, null, null));
 
         var mapping20 = rankedMapping(RoleCategory.PRESTIGE, 20, "role-20");
         when(roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.PRESTIGE))
@@ -128,7 +129,7 @@ class RoleAssignmentServiceTest {
 
     @Test
     void assignRoles_memberHasWrongRole_removesOldAndAddsNew() {
-        stubProfileAndEmptyMappings(createProfile(25, 0, null, 0, null, null, null));
+        stubProfileWithEmptyMappings(createProfile(25, 0, null, 0, null, null, null));
 
         var mapping10 = rankedMapping(RoleCategory.PRESTIGE, 10, "role-10");
         var mapping20 = rankedMapping(RoleCategory.PRESTIGE, 20, "role-20");
@@ -155,7 +156,7 @@ class RoleAssignmentServiceTest {
 
     @Test
     void assignRoles_enumMapping_addsSkillRole() {
-        stubProfileAndEmptyMappings(createProfile(0, 0, null, 0, ActiveReagentSkillType.STUN, null, null));
+        stubProfileWithEmptyMappings(createProfile(0, 0, null, 0, ActiveReagentSkillType.STUN, null, null));
 
         var stunMapping = enumMapping(RoleCategory.REAGENT_RIG, "STUN", "role-stun");
         when(roleMappingService.getEnumMappings(GUILD_ID, RoleCategory.REAGENT_RIG))
@@ -174,7 +175,7 @@ class RoleAssignmentServiceTest {
 
     @Test
     void assignRoles_roleNotFoundInGuild_skipsGracefully() {
-        stubProfileAndEmptyMappings(createProfile(25, 0, null, 0, null, null, null));
+        stubProfileWithEmptyMappings(createProfile(25, 0, null, 0, null, null, null));
 
         var mapping = rankedMapping(RoleCategory.PRESTIGE, 20, "deleted-role");
         when(roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.PRESTIGE))
@@ -191,19 +192,60 @@ class RoleAssignmentServiceTest {
     }
 
     @Test
-    void assignRoles_nullProfileFields_handledGracefully() {
-        stubProfileAndEmptyMappings(createProfile(null, null, null, null, null, null, null));
+    void assignRoles_nullProfileFields_skipsAllCategories() {
+        when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(
+                Optional.of(createProfile(null, null, null, null, null, null, null)));
 
         var result = roleAssignmentService.assignRoles(guild, member);
 
         assertThat(result.verified()).isTrue();
         assertThat(result.hasChanges()).isFalse();
+        verify(roleMappingService, never()).getRankedMappings(any(), any());
+        verify(roleMappingService, never()).getEnumMappings(any(), any());
     }
 
-    private void stubProfileAndEmptyMappings(DiscordProfileResponse profile) {
+    @Test
+    void assignRolesFromProfile_partialProfile_onlySyncsAvailableCategories() {
+        var profile = new DiscordProfileResponse();
+        profile.setPrestigeLevel(10);
+        profile.setLevel(50);
+
+        var prestigeMapping = rankedMapping(RoleCategory.PRESTIGE, 5, "role-prestige");
+        when(roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.PRESTIGE))
+                .thenReturn(List.of(prestigeMapping));
+        when(roleMappingService.getBestRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10))
+                .thenReturn(Optional.of(prestigeMapping));
+
+        var levelMapping = rankedMapping(RoleCategory.LEVEL, 40, "role-level");
+        when(roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.LEVEL))
+                .thenReturn(List.of(levelMapping));
+        when(roleMappingService.getBestRankedMapping(GUILD_ID, RoleCategory.LEVEL, 50))
+                .thenReturn(Optional.of(levelMapping));
+
+        Role prestigeRole = mockRole("Prestige 5+");
+        Role levelRole = mockRole("Level 40+");
+        when(guild.getRoleById("role-prestige")).thenReturn(prestigeRole);
+        when(guild.getRoleById("role-level")).thenReturn(levelRole);
+        when(member.getRoles()).thenReturn(List.of());
+        stubAddRole(member, prestigeRole);
+        stubAddRole(member, levelRole);
+
+        var result = roleAssignmentService.assignRolesFromProfile(guild, member, profile);
+
+        assertThat(result.verified()).isTrue();
+        assertThat(result.addedRoles()).containsExactlyInAnyOrder("Prestige 5+", "Level 40+");
+        verify(roleMappingService, never()).getRankedMappings(GUILD_ID, RoleCategory.INVASION_RANKING);
+        verify(roleMappingService, never()).getRankedMappings(GUILD_ID, RoleCategory.TOTAL_INVASION_MATCHES);
+        verify(roleMappingService, never()).getRankedMappings(GUILD_ID, RoleCategory.SEASON_INVASION_POINTS);
+        verify(roleMappingService, never()).getEnumMappings(GUILD_ID, RoleCategory.REAGENT_RIG);
+        verify(roleMappingService, never()).getEnumMappings(GUILD_ID, RoleCategory.PLATFORM);
+        verify(roleMappingService, never()).getEnumMappings(GUILD_ID, RoleCategory.ACCOUNT_TYPE);
+    }
+
+    private void stubProfileWithEmptyMappings(DiscordProfileResponse profile) {
         when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(Optional.of(profile));
-        when(roleMappingService.getRankedMappings(eq(GUILD_ID), any())).thenReturn(List.of());
-        when(roleMappingService.getEnumMappings(eq(GUILD_ID), any())).thenReturn(List.of());
+        lenient().when(roleMappingService.getRankedMappings(eq(GUILD_ID), any())).thenReturn(List.of());
+        lenient().when(roleMappingService.getEnumMappings(eq(GUILD_ID), any())).thenReturn(List.of());
     }
 
     private void stubAddRole(Member member, Role role) {

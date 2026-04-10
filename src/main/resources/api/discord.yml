@@ -35,6 +35,62 @@ paths:
         '500':
           description: Internal server error
 
+  /discord/profiles:
+    post:
+      tags:
+        - Discord
+      summary: Get profiles for multiple Discord users
+      description: Returns linked game profiles for a batch of Discord User IDs. Max 100 IDs per request.
+      operationId: getDiscordProfiles
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscordBulkProfileRequest'
+      responses:
+        '200':
+          description: Profiles found for the given Discord User IDs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscordBulkProfileResponse'
+        '400':
+          description: Invalid request (e.g. too many IDs)
+        '403':
+          description: Invalid or missing API Key
+
+  /discord/verifications/recent:
+    get:
+      tags:
+        - Discord
+      summary: Get recently verified users
+      description: Returns users who linked their game profile within the last N seconds. Designed for bot polling.
+      operationId: getRecentVerifications
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: seconds
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 5
+            maximum: 300
+            default: 30
+          description: Look back window in seconds (default 30, max 300)
+      responses:
+        '200':
+          description: Recently verified users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscordRecentVerificationsResponse'
+        '403':
+          description: Invalid or missing API Key
+
   /discord/profile/{discordUserId}:
     get:
       tags:
@@ -118,6 +174,65 @@ components:
         - CLOSED_BETA_USER
         - EARLY_ACCESS_USER
         - NORMAL_USER
+
+    DiscordBulkProfileRequest:
+      type: object
+      required:
+        - discordUserIds
+      properties:
+        discordUserIds:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+          description: List of Discord User IDs (Snowflakes), max 100
+
+    DiscordBulkProfileResponse:
+      type: object
+      properties:
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscordBulkProfileEntry'
+
+    DiscordBulkProfileEntry:
+      type: object
+      properties:
+        discordUserId:
+          type: string
+        profileId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        prestigeLevel:
+          type: integer
+        level:
+          type: integer
+
+    DiscordRecentVerificationsResponse:
+      type: object
+      properties:
+        verifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscordVerificationEntry'
+
+    DiscordVerificationEntry:
+      type: object
+      properties:
+        discordUserId:
+          type: string
+        discordUsername:
+          type: string
+        profileId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        linkedAt:
+          type: string
+          format: date-time
 
     DiscordProfileResponse:
       type: object

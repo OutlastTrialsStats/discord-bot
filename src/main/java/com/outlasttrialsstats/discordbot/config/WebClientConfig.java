@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.config;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +21,7 @@ public class WebClientConfig {
     public WebClient statsWebClient() {
         JsonMapper mapper = JsonMapper.builder()
                 .addModule(new JsonNullableModule())
+                .addModule(new JavaTimeModule())
                 .build();
 
         return WebClient.builder()

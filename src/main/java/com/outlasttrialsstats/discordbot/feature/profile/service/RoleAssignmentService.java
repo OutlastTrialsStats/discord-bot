@@ -6,6 +6,7 @@ import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
+import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ public class RoleAssignmentService {
 
     private final TOTStatsApiClient statsApiClient;
     private final RoleMappingService roleMappingService;
+    private final GuildServerRepository guildServerRepository;
 
     public RoleAssignmentResult assignRoles(Guild guild, Member member) {
         log.debug("Assigning roles for member {} in guild {}", member.getId(), guild.getId());
@@ -78,7 +80,27 @@ public class RoleAssignmentService {
                     member.getId(), guildId, String.join(", ", addedRoles), String.join(", ", removedRoles));
         }
 
+        updateNicknameIfEnabled(guild, member, profile);
+
         return RoleAssignmentResult.of(addedRoles, removedRoles);
+    }
+
+    private void updateNicknameIfEnabled(Guild guild, Member member, DiscordProfileResponse profile) {
+        if (profile.getDisplayName() == null) return;
+
+        boolean autoNickname = guildServerRepository.findById(guild.getId())
+                .map(server -> server.isAutoNickname())
+                .orElse(false);
+
+        if (!autoNickname) return;
+
+        String displayName = profile.getDisplayName();
+        if (!displayName.equals(member.getEffectiveName())) {
+            guild.modifyNickname(member, displayName).queue(
+                    _ -> log.debug("Updated nickname for {} to '{}'", member.getId(), displayName),
+                    error -> log.warn("Failed to update nickname for {}: {}", member.getId(), error.getMessage())
+            );
+        }
     }
 
     private void assignRankedRole(Guild guild, Member member, String guildId,

@@ -64,7 +64,9 @@ public class CommandRegistrar {
                                         .addOptions(new OptionData(OptionType.ATTACHMENT, "file", "Properties file with custom messages", true)),
                                 new SubcommandData("messages-download", "Download current bot messages as a properties file"),
                                 new SubcommandData("messages-reset", "Reset all custom messages to defaults"),
-                                new SubcommandData("start", "Start the basic role setup wizard")
+                                new SubcommandData("start", "Start the basic role setup wizard"),
+                                new SubcommandData("nickname", "Toggle automatic nickname sync for verified users")
+                                        .addOptions(new OptionData(OptionType.BOOLEAN, "enabled", "Enable or disable auto-nickname", true))
                         )
                         .addSubcommandGroups(
                                 buildRoleMappingGroup(),

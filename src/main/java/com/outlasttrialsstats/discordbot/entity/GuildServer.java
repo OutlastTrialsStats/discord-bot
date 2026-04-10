@@ -25,6 +25,9 @@ public class GuildServer {
     @Column(name = "member_count", nullable = false)
     private int memberCount;
 
+    @Column(name = "auto_nickname", nullable = false)
+    private boolean autoNickname = false;
+
     public GuildServer(String guildId) {
         this.guildId = guildId;
     }

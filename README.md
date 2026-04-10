@@ -17,6 +17,7 @@ A Discord bot that automatically assigns roles based on player stats from [The O
 | `/setup language` | Change the bot's response language (English, Deutsch) |
 | `/setup role-mapping <category>` | Link a role to a category (prestige, level, skill, invasion-ranking, total-invasion-matches, platform, account-type) |
 | `/setup remove-role-mapping <category>` | Remove a role mapping for any category |
+| `/setup nickname` | Toggle automatic nickname sync — verified users get their in-game display name as their server nickname |
 | `/setup messages-upload` | Upload a custom `.properties` file to override bot messages |
 | `/setup messages-download` | Download all current messages as a `.properties` file |
 | `/setup messages-reset` | Reset custom messages to defaults |

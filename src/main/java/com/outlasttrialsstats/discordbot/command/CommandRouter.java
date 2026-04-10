@@ -7,6 +7,7 @@ import com.outlasttrialsstats.discordbot.feature.profile.command.SyncAllCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.DeleteCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.LanguageCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.MessagesCommand;
+import com.outlasttrialsstats.discordbot.feature.setup.command.NicknameCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.RoleMappingCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.StartBasicCommand;
 import java.awt.Color;
@@ -32,6 +33,7 @@ public class CommandRouter extends ListenerAdapter {
     private final RoleMappingCommand roleMappingCommand;
     private final StartBasicCommand startBasicCommand;
     private final LeaderboardCommand leaderboardCommand;
+    private final NicknameCommand nicknameCommand;
     private final LeaderboardSetupCommand leaderboardSetupCommand;
 
     @Override
@@ -67,6 +69,7 @@ public class CommandRouter extends ListenerAdapter {
                 case "messages-upload" -> messagesCommand.onUpload(event);
                 case "messages-download" -> messagesCommand.onDownload(event);
                 case "messages-reset" -> messagesCommand.onReset(event);
+                case "nickname" -> nicknameCommand.onNickname(event);
                 case "start" -> startBasicCommand.onStartBasic(event);
                 default -> {}
             }

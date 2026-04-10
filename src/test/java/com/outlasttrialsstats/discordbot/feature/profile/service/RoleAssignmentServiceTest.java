@@ -213,13 +213,13 @@ class RoleAssignmentServiceTest {
         profile.setPrestigeLevel(10);
         profile.setLevel(50);
 
-        var prestigeMapping = rankedMapping(RoleCategory.PRESTIGE, 5, "role-prestige");
+        var prestigeMapping = new RankedRoleMapping(GUILD_ID, RoleCategory.PRESTIGE, 5, "role-prestige");
         when(roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.PRESTIGE))
                 .thenReturn(List.of(prestigeMapping));
         when(roleMappingService.getBestRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10))
                 .thenReturn(Optional.of(prestigeMapping));
 
-        var levelMapping = rankedMapping(RoleCategory.LEVEL, 40, "role-level");
+        var levelMapping = new RankedRoleMapping(GUILD_ID, RoleCategory.LEVEL, 40, "role-level");
         when(roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.LEVEL))
                 .thenReturn(List.of(levelMapping));
         when(roleMappingService.getBestRankedMapping(GUILD_ID, RoleCategory.LEVEL, 50))
@@ -245,12 +245,11 @@ class RoleAssignmentServiceTest {
         verify(roleMappingService, never()).getEnumMappings(GUILD_ID, RoleCategory.ACCOUNT_TYPE);
     }
 
-    private void stubProfileWithEmptyMappings(DiscordProfileResponse profile) {
     @Test
     void assignRoles_autoNicknameEnabled_updatesNickname() {
         var profile = createProfile(0, 0, 0, null);
         profile.setDisplayName("GamePlayer123");
-        stubProfileAndEmptyMappings(profile);
+        stubProfileWithEmptyMappings(profile);
 
         var server = new GuildServer(GUILD_ID);
         server.setAutoNickname(true);
@@ -270,7 +269,7 @@ class RoleAssignmentServiceTest {
     void assignRoles_autoNicknameDisabled_doesNotUpdateNickname() {
         var profile = createProfile(0, 0, 0, null);
         profile.setDisplayName("GamePlayer123");
-        stubProfileAndEmptyMappings(profile);
+        stubProfileWithEmptyMappings(profile);
 
         var server = new GuildServer(GUILD_ID);
         server.setAutoNickname(false);
@@ -285,7 +284,7 @@ class RoleAssignmentServiceTest {
     void assignRoles_nicknameAlreadyCorrect_doesNotModify() {
         var profile = createProfile(0, 0, 0, null);
         profile.setDisplayName("GamePlayer123");
-        stubProfileAndEmptyMappings(profile);
+        stubProfileWithEmptyMappings(profile);
 
         var server = new GuildServer(GUILD_ID);
         server.setAutoNickname(true);
@@ -301,7 +300,7 @@ class RoleAssignmentServiceTest {
     void assignRoles_noGuildServerEntry_doesNotUpdateNickname() {
         var profile = createProfile(0, 0, 0, null);
         profile.setDisplayName("GamePlayer123");
-        stubProfileAndEmptyMappings(profile);
+        stubProfileWithEmptyMappings(profile);
 
         when(guildServerRepository.findById(GUILD_ID)).thenReturn(Optional.empty());
 
@@ -310,7 +309,7 @@ class RoleAssignmentServiceTest {
         verify(guild, never()).modifyNickname(any(), any());
     }
 
-    private void stubProfileAndEmptyMappings(DiscordProfileResponse profile) {
+    private void stubProfileWithEmptyMappings(DiscordProfileResponse profile) {
         when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(Optional.of(profile));
         lenient().when(roleMappingService.getRankedMappings(eq(GUILD_ID), any())).thenReturn(List.of());
         lenient().when(roleMappingService.getEnumMappings(eq(GUILD_ID), any())).thenReturn(List.of());

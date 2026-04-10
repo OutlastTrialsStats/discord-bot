@@ -53,8 +53,8 @@ public class RoleMappingCommand {
     // --- Prestige ---
 
     private void onPrestige(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         int threshold = event.getOption("threshold").getAsInt();
         Role role = getOptionalRole(event);
         String roleName = "Prestige " + threshold + "+";
@@ -75,8 +75,8 @@ public class RoleMappingCommand {
     // --- Level ---
 
     private void onLevel(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         int threshold = event.getOption("threshold").getAsInt();
         Role role = getOptionalRole(event);
         String roleName = "Level " + threshold + "+";
@@ -97,8 +97,8 @@ public class RoleMappingCommand {
     // --- Skill (Reagent Rig) ---
 
     private void onSkill(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         ActiveReagentSkillType reagentSkill = ActiveReagentSkillType.fromValue(event.getOption("skill").getAsString());
         String roleName = RoleConfig.skillName(reagentSkill);
         Role role = getOptionalRole(event);
@@ -119,8 +119,8 @@ public class RoleMappingCommand {
     // --- Invasion Ranking ---
 
     private void onInvasionRanking(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         InvasionRanking invasionRanking = InvasionRanking.fromValue(event.getOption("ranking").getAsString());
         String roleName = RoleConfig.INVASION_RANKING_NAMES.get(invasionRanking);
         Role role = getOptionalRole(event);
@@ -142,8 +142,8 @@ public class RoleMappingCommand {
     // --- Total Invasion Matches ---
 
     private void onTotalInvasionMatches(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         int threshold = event.getOption("threshold").getAsInt();
         Role role = getOptionalRole(event);
         String roleName = "Invasion Matches " + threshold + "+";
@@ -164,8 +164,8 @@ public class RoleMappingCommand {
     // --- Season Invasion Points ---
 
     private void onSeasonInvasionPoints(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         int threshold = event.getOption("threshold").getAsInt();
         Role role = getOptionalRole(event);
         String roleName = "Invasion Points " + threshold + "+";
@@ -186,8 +186,8 @@ public class RoleMappingCommand {
     // --- Platform ---
 
     private void onPlatform(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         PlatformType platformType = PlatformType.fromValue(event.getOption("platform").getAsString());
         String roleName = RoleConfig.PLATFORM_NAMES.get(platformType);
         Role role = getOptionalRole(event);
@@ -209,8 +209,8 @@ public class RoleMappingCommand {
     // --- Account Type ---
 
     private void onAccountType(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         AccountCreationType type = AccountCreationType.fromValue(event.getOption("account-type").getAsString());
         String roleName = RoleConfig.ACCOUNT_TYPE_NAMES.get(type);
         Role role = getOptionalRole(event);

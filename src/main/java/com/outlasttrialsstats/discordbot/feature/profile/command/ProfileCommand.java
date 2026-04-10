@@ -16,8 +16,8 @@ public class ProfileCommand {
     private final MessageService messageService;
 
     public void onProfileUpdate(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
 
         RoleAssignmentResult result = roleAssignmentService.assignRoles(guild, event.getMember());
 

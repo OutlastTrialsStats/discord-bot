@@ -27,8 +27,8 @@ public class LeaderboardSetupCommand {
     public void onSetupLeaderboard(SlashCommandInteractionEvent event) {
         event.deferReply(true).queue();
 
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         TextChannel channel = event.getOption("channel").getAsChannel().asTextChannel();
         String categoryValue = event.getOption("category").getAsString();
         StatisticType statisticType = StatisticType.fromValue(categoryValue);

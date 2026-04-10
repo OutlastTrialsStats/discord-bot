@@ -45,8 +45,8 @@ public class StartBasicCommand {
     }
 
     public void onCategorySelect(StringSelectInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
         List<String> values = event.getValues();
 
         Set<RoleCategory> selectedCategories = EnumSet.noneOf(RoleCategory.class);

@@ -18,8 +18,8 @@ public class SyncAllCommand {
     private final MessageService messageService;
 
     public void onSyncAll(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        String guildId = guild.getId();
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
 
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();

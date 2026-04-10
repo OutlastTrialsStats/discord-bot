@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.interactions.commands.Command.Choice;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -42,12 +43,15 @@ public class CommandRegistrar {
                         .addOptions(new OptionData(OptionType.STRING, "category", "Statistic category", true)
                                 .addChoices(leaderboardChoices())),
 
-                Commands.slash("sync-profile", "Sync your roles based on your Outlast Trials stats"),
+                Commands.slash("sync-profile", "Sync your roles based on your Outlast Trials stats")
+                        .setContexts(InteractionContextType.GUILD),
 
                 Commands.slash("sync-all", "Sync roles for all members in this server")
+                        .setContexts(InteractionContextType.GUILD)
                         .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES)),
 
                 Commands.slash("setup", "Bot setup commands")
+                        .setContexts(InteractionContextType.GUILD)
                         .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_CHANNEL))
                         .addSubcommands(
                                 new SubcommandData("delete", "Delete all bot-managed roles from this server"),

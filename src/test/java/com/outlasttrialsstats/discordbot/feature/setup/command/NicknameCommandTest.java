@@ -1,7 +1,9 @@
 package com.outlasttrialsstats.discordbot.feature.setup.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -9,7 +11,10 @@ import com.outlasttrialsstats.discordbot.entity.GuildServer;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.Optional;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.SelfMember;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
@@ -89,11 +94,38 @@ class NicknameCommandTest {
         assertThat(captor.getValue().isAutoNickname()).isTrue();
     }
 
+    @Test
+    void onNickname_enable_missingPermission_repliesError() {
+        var event = mockEvent(true, false);
+        when(messageService.getMessage(GUILD_ID, "error.missing_permission.manage_nicknames"))
+                .thenReturn("No permission!");
+
+        var replyAction = mock(ReplyCallbackAction.class);
+        when(event.reply("No permission!")).thenReturn(replyAction);
+        when(replyAction.setEphemeral(true)).thenReturn(replyAction);
+
+        nicknameCommand.onNickname(event);
+
+        verify(guildServerRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
     private SlashCommandInteractionEvent mockEvent(boolean enabled) {
+        return mockEvent(enabled, true);
+    }
+
+    private SlashCommandInteractionEvent mockEvent(boolean enabled, boolean hasNicknamePermission) {
         var event = mock(SlashCommandInteractionEvent.class);
         var guild = mock(Guild.class);
         when(guild.getId()).thenReturn(GUILD_ID);
         when(event.getGuild()).thenReturn(guild);
+
+        var jda = mock(JDA.class);
+        when(event.getJDA()).thenReturn(jda);
+        when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
+
+        var selfMember = mock(SelfMember.class);
+        lenient().when(guild.getSelfMember()).thenReturn(selfMember);
+        lenient().when(selfMember.hasPermission(Permission.NICKNAME_MANAGE)).thenReturn(hasNicknamePermission);
 
         var option = mock(OptionMapping.class);
         when(option.getAsBoolean()).thenReturn(enabled);

@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
@@ -47,6 +48,14 @@ public class StartBasicCommand {
     public void onCategorySelect(StringSelectInteractionEvent event) {
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
+
+        if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
+            event.editMessage(messageService.getMessage(guildId, "error.missing_permission.manage_roles"))
+                    .setComponents()
+                    .queue();
+            return;
+        }
+
         List<String> values = event.getValues();
 
         Set<RoleCategory> selectedCategories = EnumSet.noneOf(RoleCategory.class);

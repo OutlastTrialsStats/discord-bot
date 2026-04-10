@@ -244,6 +244,11 @@ public class RoleMappingCommand {
             event.reply(messageService.getMessage(guildId, messageKey, role.getName(), extraArg))
                     .setEphemeral(true).queue();
         } else {
+            if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
+                event.reply(messageService.getMessage(guildId, "error.missing_permission.manage_roles"))
+                        .setEphemeral(true).queue();
+                return;
+            }
             event.deferReply(true).queue();
             guild.createRole()
                     .setName(roleName)

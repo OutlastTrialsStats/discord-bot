@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -23,6 +24,12 @@ public class DeleteCommand {
     public void onDelete(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
+
+        if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply(messageService.getMessage(guildId, "error.missing_permission.manage_roles"))
+                    .setEphemeral(true).queue();
+            return;
+        }
 
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();

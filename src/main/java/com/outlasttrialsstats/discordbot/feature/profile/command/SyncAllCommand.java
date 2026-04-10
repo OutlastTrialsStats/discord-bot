@@ -4,6 +4,7 @@ import com.outlasttrialsstats.discordbot.feature.profile.service.GuildSyncServic
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
@@ -20,6 +21,12 @@ public class SyncAllCommand {
     public void onSyncAll(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
+
+        if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply(messageService.getMessage(guildId, "error.missing_permission.manage_roles"))
+                    .setEphemeral(true).queue();
+            return;
+        }
 
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();

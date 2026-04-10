@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -25,11 +26,18 @@ public class LeaderboardSetupCommand {
     private final MessageService messageService;
 
     public void onSetupLeaderboard(SlashCommandInteractionEvent event) {
-        event.deferReply(true).queue();
-
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
         TextChannel channel = event.getOption("channel").getAsChannel().asTextChannel();
+
+        if (!guild.getSelfMember().hasPermission(channel, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND)) {
+            event.reply(messageService.getMessage(guildId, "error.missing_permission.channel_write", channel.getAsMention()))
+                    .setEphemeral(true).queue();
+            return;
+        }
+
+        event.deferReply(true).queue();
+
         String categoryValue = event.getOption("category").getAsString();
         StatisticType statisticType = StatisticType.fromValue(categoryValue);
         String categoryName = leaderboardService.getCategoryDisplayName(guildId, statisticType);

@@ -4,6 +4,7 @@ import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResul
 import com.outlasttrialsstats.discordbot.feature.profile.service.RoleAssignmentService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import lombok.RequiredArgsConstructor;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,12 @@ public class ProfileCommand {
     public void onProfileUpdate(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
+
+        if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply(messageService.getMessage(guildId, "error.missing_permission.manage_roles"))
+                    .setEphemeral(true).queue();
+            return;
+        }
 
         RoleAssignmentResult result = roleAssignmentService.assignRoles(guild, event.getMember());
 

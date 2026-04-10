@@ -9,17 +9,17 @@ import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,42 +39,53 @@ public class RoleAssignmentService {
             return RoleAssignmentResult.notVerified();
         }
 
-        DiscordProfileResponse profile = profileOpt.get();
+        return assignRolesFromProfile(guild, member, profileOpt.get());
+    }
+
+    public RoleAssignmentResult assignRolesFromProfile(Guild guild, Member member, DiscordProfileResponse profile) {
         String guildId = guild.getId();
         List<String> addedRoles = new ArrayList<>();
         List<String> removedRoles = new ArrayList<>();
 
-        assignRankedRole(guild, member, guildId, RoleCategory.PRESTIGE,
-                Objects.requireNonNullElse(profile.getPrestigeLevel(), 0),
-                addedRoles, removedRoles);
+        if (profile.getPrestigeLevel() != null) {
+            assignRankedRole(guild, member, guildId, RoleCategory.PRESTIGE,
+                    profile.getPrestigeLevel(), addedRoles, removedRoles);
+        }
 
-        assignRankedRole(guild, member, guildId, RoleCategory.LEVEL,
-                Objects.requireNonNullElse(profile.getLevel(), 0),
-                addedRoles, removedRoles);
+        if (profile.getLevel() != null) {
+            assignRankedRole(guild, member, guildId, RoleCategory.LEVEL,
+                    profile.getLevel(), addedRoles, removedRoles);
+        }
 
-        assignRankedRole(guild, member, guildId, RoleCategory.INVASION_RANKING,
-                profile.getInvasionRanking() != null ? profile.getInvasionRanking().ordinal() : -1,
-                addedRoles, removedRoles);
+        if (profile.getInvasionRanking() != null) {
+            assignRankedRole(guild, member, guildId, RoleCategory.INVASION_RANKING,
+                    profile.getInvasionRanking().ordinal(), addedRoles, removedRoles);
+        }
 
-        assignRankedRole(guild, member, guildId, RoleCategory.TOTAL_INVASION_MATCHES,
-                Objects.requireNonNullElse(profile.getTotalInvasionMatchesPlayed(), 0),
-                addedRoles, removedRoles);
+        if (profile.getTotalInvasionMatchesPlayed() != null) {
+            assignRankedRole(guild, member, guildId, RoleCategory.TOTAL_INVASION_MATCHES,
+                    profile.getTotalInvasionMatchesPlayed(), addedRoles, removedRoles);
+        }
 
-        assignRankedRole(guild, member, guildId, RoleCategory.SEASON_INVASION_POINTS,
-                Objects.requireNonNullElse(profile.getSeasonTotalInvasionPoints(), 0),
-                addedRoles, removedRoles);
+        if (profile.getSeasonTotalInvasionPoints() != null) {
+            assignRankedRole(guild, member, guildId, RoleCategory.SEASON_INVASION_POINTS,
+                    profile.getSeasonTotalInvasionPoints(), addedRoles, removedRoles);
+        }
 
-        assignEnumRole(guild, member, guildId, RoleCategory.REAGENT_RIG,
-                profile.getActiveReagentSkill() != null ? profile.getActiveReagentSkill().getValue() : null,
-                addedRoles, removedRoles);
+        if (profile.getActiveReagentSkill() != null) {
+            assignEnumRole(guild, member, guildId, RoleCategory.REAGENT_RIG,
+                    profile.getActiveReagentSkill().getValue(), addedRoles, removedRoles);
+        }
 
-        assignEnumRole(guild, member, guildId, RoleCategory.PLATFORM,
-                profile.getPlatformType() != null ? profile.getPlatformType().getValue() : null,
-                addedRoles, removedRoles);
+        if (profile.getPlatformType() != null) {
+            assignEnumRole(guild, member, guildId, RoleCategory.PLATFORM,
+                    profile.getPlatformType().getValue(), addedRoles, removedRoles);
+        }
 
-        assignEnumRole(guild, member, guildId, RoleCategory.ACCOUNT_TYPE,
-                profile.getAccountCreationType() != null ? profile.getAccountCreationType().getValue() : null,
-                addedRoles, removedRoles);
+        if (profile.getAccountCreationType() != null) {
+            assignEnumRole(guild, member, guildId, RoleCategory.ACCOUNT_TYPE,
+                    profile.getAccountCreationType().getValue(), addedRoles, removedRoles);
+        }
 
         if (!addedRoles.isEmpty() || !removedRoles.isEmpty()) {
             log.info("Member {} in guild {}: added [{}], removed [{}]",

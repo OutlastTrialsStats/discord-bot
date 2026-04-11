@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -55,6 +56,7 @@ public class LeaderboardCommand {
         int targetPage = Integer.parseInt(parts[3]);
         StatisticType category = StatisticType.fromValue(categoryValue);
         String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
 
         Optional<DiscordLeaderboardResponse> response = leaderboardService.fetchLeaderboard(category, targetPage);
         if (response.isEmpty()) {
@@ -65,7 +67,7 @@ public class LeaderboardCommand {
 
         DiscordLeaderboardResponse data = response.get();
         int totalPages = data.getTotalPages() != null ? data.getTotalPages() : 1;
-        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), category, data, true, true, true);
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, guild, category, data, true, true, true);
 
         List<Button> buttons = buildButtons(categoryValue, targetPage, totalPages);
         var edit = event.editMessageEmbeds(embed);

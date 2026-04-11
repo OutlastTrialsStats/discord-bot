@@ -98,7 +98,8 @@ public class RoleAssignmentService {
     }
 
     private void updateNicknameIfEnabled(Guild guild, Member member, DiscordProfileResponse profile) {
-        if (profile.getDisplayName() == null) return;
+        String displayName = profile.getDisplayName();
+        if (displayName == null) return;
 
         boolean autoNickname = guildServerRepository.findById(guild.getId())
                 .map(GuildServer::isAutoNickname)
@@ -106,7 +107,6 @@ public class RoleAssignmentService {
 
         if (!autoNickname) return;
 
-        String displayName = profile.getDisplayName();
         if (!displayName.equals(member.getEffectiveName())) {
             guild.modifyNickname(member, displayName).queue(
                     _ -> log.debug("Updated nickname for {} to '{}'", member.getId(), displayName),
@@ -156,10 +156,16 @@ public class RoleAssignmentService {
             boolean shouldHaveRole = targetRoleIds.contains(roleId);
 
             if (shouldHaveRole && !hasRole) {
-                guild.addRoleToMember(member, role).queue();
+                guild.addRoleToMember(member, role).queue(
+                        _ -> log.debug("Added role '{}' to member {} in guild {}", role.getName(), member.getId(), guild.getId()),
+                        error -> log.warn("Failed to add role '{}' to member {} in guild {}: {}", role.getName(), member.getId(), guild.getId(), error.getMessage())
+                );
                 addedRoles.add(role.getName());
             } else if (!shouldHaveRole && hasRole) {
-                guild.removeRoleFromMember(member, role).queue();
+                guild.removeRoleFromMember(member, role).queue(
+                        _ -> log.debug("Removed role '{}' from member {} in guild {}", role.getName(), member.getId(), guild.getId()),
+                        error -> log.warn("Failed to remove role '{}' from member {} in guild {}: {}", role.getName(), member.getId(), guild.getId(), error.getMessage())
+                );
                 removedRoles.add(role.getName());
             }
         }

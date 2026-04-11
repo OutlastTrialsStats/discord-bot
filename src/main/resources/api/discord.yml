@@ -209,6 +209,18 @@ components:
           type: integer
         level:
           type: integer
+        activeReagentSkill:
+          $ref: '#/components/schemas/ActiveReagentSkillType'
+        invasionRanking:
+          $ref: './common.yml#/components/schemas/InvasionRanking'
+        totalInvasionMatchesPlayed:
+          type: integer
+        seasonTotalInvasionPoints:
+          type: integer
+        platformType:
+          $ref: './common.yml#/components/schemas/PlatformType'
+        accountCreationType:
+          $ref: '#/components/schemas/AccountCreationType'
 
     DiscordRecentVerificationsResponse:
       type: object

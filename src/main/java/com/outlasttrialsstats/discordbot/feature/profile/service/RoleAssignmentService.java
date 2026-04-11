@@ -44,47 +44,64 @@ public class RoleAssignmentService {
 
     public RoleAssignmentResult assignRolesFromProfile(Guild guild, Member member, DiscordProfileResponse profile) {
         String guildId = guild.getId();
+        log.debug("Profile data for member {} in guild {}: {}", member.getId(), guildId, profile);
         List<String> addedRoles = new ArrayList<>();
         List<String> removedRoles = new ArrayList<>();
 
         if (profile.getPrestigeLevel() != null) {
             assignRankedRole(guild, member, guildId, RoleCategory.PRESTIGE,
                     profile.getPrestigeLevel(), addedRoles, removedRoles);
+        } else {
+            log.debug("Member {}: skipping PRESTIGE — value is null", member.getId());
         }
 
         if (profile.getLevel() != null) {
             assignRankedRole(guild, member, guildId, RoleCategory.LEVEL,
                     profile.getLevel(), addedRoles, removedRoles);
+        } else {
+            log.debug("Member {}: skipping LEVEL — value is null", member.getId());
         }
 
         if (profile.getInvasionRanking() != null) {
             assignRankedRole(guild, member, guildId, RoleCategory.INVASION_RANKING,
                     profile.getInvasionRanking().ordinal(), addedRoles, removedRoles);
+        } else {
+            log.debug("Member {}: skipping INVASION_RANKING — value is null", member.getId());
         }
 
         if (profile.getTotalInvasionMatchesPlayed() != null) {
             assignRankedRole(guild, member, guildId, RoleCategory.TOTAL_INVASION_MATCHES,
                     profile.getTotalInvasionMatchesPlayed(), addedRoles, removedRoles);
+        } else {
+            log.debug("Member {}: skipping TOTAL_INVASION_MATCHES — value is null", member.getId());
         }
 
         if (profile.getSeasonTotalInvasionPoints() != null) {
             assignRankedRole(guild, member, guildId, RoleCategory.SEASON_INVASION_POINTS,
                     profile.getSeasonTotalInvasionPoints(), addedRoles, removedRoles);
+        } else {
+            log.debug("Member {}: skipping SEASON_INVASION_POINTS — value is null", member.getId());
         }
 
         if (profile.getActiveReagentSkill() != null) {
             assignEnumRole(guild, member, guildId, RoleCategory.REAGENT_RIG,
                     profile.getActiveReagentSkill().getValue(), addedRoles, removedRoles);
+        } else {
+            log.debug("Member {}: skipping REAGENT_RIG — value is null", member.getId());
         }
 
         if (profile.getPlatformType() != null) {
             assignEnumRole(guild, member, guildId, RoleCategory.PLATFORM,
                     profile.getPlatformType().getValue(), addedRoles, removedRoles);
+        } else {
+            log.debug("Member {}: skipping PLATFORM — value is null", member.getId());
         }
 
         if (profile.getAccountCreationType() != null) {
             assignEnumRole(guild, member, guildId, RoleCategory.ACCOUNT_TYPE,
                     profile.getAccountCreationType().getValue(), addedRoles, removedRoles);
+        } else {
+            log.debug("Member {}: skipping ACCOUNT_TYPE — value is null", member.getId());
         }
 
         if (!addedRoles.isEmpty() || !removedRoles.isEmpty()) {
@@ -119,7 +136,10 @@ public class RoleAssignmentService {
                                   RoleCategory category, int currentRank,
                                   List<String> addedRoles, List<String> removedRoles) {
         var allMappings = roleMappingService.getRankedMappings(guildId, category);
-        if (allMappings.isEmpty()) return;
+        if (allMappings.isEmpty()) {
+            log.debug("No ranked role mappings configured for category {} in guild {}", category, guildId);
+            return;
+        }
 
         Set<String> targetRoleIds = roleMappingService.getBestRankedMapping(guildId, category, currentRank)
                 .map(m -> Set.of(m.getRoleId()))
@@ -134,7 +154,10 @@ public class RoleAssignmentService {
                                 RoleCategory category, String currentValue,
                                 List<String> addedRoles, List<String> removedRoles) {
         var allMappings = roleMappingService.getEnumMappings(guildId, category);
-        if (allMappings.isEmpty()) return;
+        if (allMappings.isEmpty()) {
+            log.debug("No enum role mappings configured for category {} in guild {}", category, guildId);
+            return;
+        }
 
         Set<String> targetRoleIds = allMappings.stream()
                 .filter(m -> m.getEnumValue().equals(currentValue))
@@ -155,18 +178,23 @@ public class RoleAssignmentService {
             boolean hasRole = member.getRoles().contains(role);
             boolean shouldHaveRole = targetRoleIds.contains(roleId);
 
-            if (shouldHaveRole && !hasRole) {
-                guild.addRoleToMember(member, role).queue(
-                        _ -> log.debug("Added role '{}' to member {} in guild {}", role.getName(), member.getId(), guild.getId()),
-                        error -> log.warn("Failed to add role '{}' to member {} in guild {}: {}", role.getName(), member.getId(), guild.getId(), error.getMessage())
-                );
-                addedRoles.add(role.getName());
-            } else if (!shouldHaveRole && hasRole) {
-                guild.removeRoleFromMember(member, role).queue(
-                        _ -> log.debug("Removed role '{}' from member {} in guild {}", role.getName(), member.getId(), guild.getId()),
-                        error -> log.warn("Failed to remove role '{}' from member {} in guild {}: {}", role.getName(), member.getId(), guild.getId(), error.getMessage())
-                );
-                removedRoles.add(role.getName());
+            try {
+                if (shouldHaveRole && !hasRole) {
+                    guild.addRoleToMember(member, role).queue(
+                            _ -> log.debug("Added role '{}' to member {} in guild {}", role.getName(), member.getId(), guild.getId()),
+                            error -> log.warn("Failed to add role '{}' to member {} in guild {}: {}", role.getName(), member.getId(), guild.getId(), error.getMessage())
+                    );
+                    addedRoles.add(role.getName());
+                } else if (!shouldHaveRole && hasRole) {
+                    guild.removeRoleFromMember(member, role).queue(
+                            _ -> log.debug("Removed role '{}' from member {} in guild {}", role.getName(), member.getId(), guild.getId()),
+                            error -> log.warn("Failed to remove role '{}' from member {} in guild {}: {}", role.getName(), member.getId(), guild.getId(), error.getMessage())
+                    );
+                    removedRoles.add(role.getName());
+                }
+            } catch (Exception e) {
+                log.warn("Cannot modify role '{}' for member {} in guild {}: {}",
+                        role.getName(), member.getId(), guild.getId(), e.getMessage());
             }
         }
     }

@@ -98,7 +98,8 @@ public class RoleAssignmentService {
     }
 
     private void updateNicknameIfEnabled(Guild guild, Member member, DiscordProfileResponse profile) {
-        if (profile.getDisplayName() == null) return;
+        String displayName = profile.getDisplayName();
+        if (displayName == null) return;
 
         boolean autoNickname = guildServerRepository.findById(guild.getId())
                 .map(GuildServer::isAutoNickname)
@@ -106,7 +107,6 @@ public class RoleAssignmentService {
 
         if (!autoNickname) return;
 
-        String displayName = profile.getDisplayName();
         if (!displayName.equals(member.getEffectiveName())) {
             guild.modifyNickname(member, displayName).queue(
                     _ -> log.debug("Updated nickname for {} to '{}'", member.getId(), displayName),

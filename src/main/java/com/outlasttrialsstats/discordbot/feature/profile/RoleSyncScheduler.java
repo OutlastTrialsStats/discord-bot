@@ -99,6 +99,12 @@ public class RoleSyncScheduler {
         profile.setDisplayName(entry.getDisplayName());
         profile.setPrestigeLevel(entry.getPrestigeLevel());
         profile.setLevel(entry.getLevel());
+        profile.setActiveReagentSkill(entry.getActiveReagentSkill());
+        profile.setInvasionRanking(entry.getInvasionRanking());
+        profile.setTotalInvasionMatchesPlayed(entry.getTotalInvasionMatchesPlayed());
+        profile.setSeasonTotalInvasionPoints(entry.getSeasonTotalInvasionPoints());
+        profile.setPlatformType(entry.getPlatformType());
+        profile.setAccountCreationType(entry.getAccountCreationType());
         return profile;
     }
 }

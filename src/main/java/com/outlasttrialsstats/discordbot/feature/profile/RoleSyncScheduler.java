@@ -51,7 +51,9 @@ public class RoleSyncScheduler {
                 .toList();
 
         var updated = new AtomicInteger();
-        var skipped = new AtomicInteger();
+        var unchanged = new AtomicInteger();
+        var unverified = new AtomicInteger();
+        var failed = new AtomicInteger();
 
         for (int i = 0; i < nonBotMembers.size(); i += BULK_BATCH_SIZE) {
             List<Member> batch = nonBotMembers.subList(i, Math.min(i + BULK_BATCH_SIZE, nonBotMembers.size()));
@@ -59,7 +61,7 @@ public class RoleSyncScheduler {
 
             var responseOpt = statsApiClient.getBulkProfiles(discordIds);
             if (responseOpt.isEmpty() || responseOpt.get().getProfiles() == null) {
-                skipped.addAndGet(batch.size());
+                unverified.addAndGet(batch.size());
                 continue;
             }
 
@@ -69,7 +71,7 @@ public class RoleSyncScheduler {
             for (Member member : batch) {
                 var entry = profilesByDiscordId.get(member.getId());
                 if (entry == null) {
-                    skipped.incrementAndGet();
+                    unverified.incrementAndGet();
                     continue;
                 }
 
@@ -79,18 +81,18 @@ public class RoleSyncScheduler {
                     if (result.hasChanges()) {
                         updated.incrementAndGet();
                     } else {
-                        skipped.incrementAndGet();
+                        unchanged.incrementAndGet();
                     }
                 } catch (Exception e) {
                     log.warn("Failed to sync roles for member {} in guild {}: {}",
                             member.getId(), guild.getId(), e.getMessage());
-                    skipped.incrementAndGet();
+                    failed.incrementAndGet();
                 }
             }
         }
 
-        log.info("Scheduled role sync for guild {}: {} updated, {} skipped",
-                guild.getId(), updated.get(), skipped.get());
+        log.info("Scheduled role sync for guild {}: {} updated, {} unchanged, {} unverified, {} failed",
+                guild.getId(), updated.get(), unchanged.get(), unverified.get(), failed.get());
     }
 
     private DiscordProfileResponse toProfileResponse(DiscordBulkProfileEntry entry) {

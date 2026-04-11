@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,14 @@ public class LeaderboardSetupCommand {
     public void onSetupLeaderboard(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
-        TextChannel channel = event.getOption("channel").getAsChannel().asTextChannel();
+
+        var channelUnion = event.getOption("channel").getAsChannel();
+        if (channelUnion.getType() != ChannelType.TEXT && channelUnion.getType() != ChannelType.NEWS) {
+            event.reply(messageService.getMessage(guildId, "error.invalid_channel_type"))
+                    .setEphemeral(true).queue();
+            return;
+        }
+        TextChannel channel = channelUnion.asTextChannel();
 
         if (!guild.getSelfMember().hasPermission(channel, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND)) {
             event.reply(messageService.getMessage(guildId, "error.missing_permission.channel_write", channel.getAsMention()))

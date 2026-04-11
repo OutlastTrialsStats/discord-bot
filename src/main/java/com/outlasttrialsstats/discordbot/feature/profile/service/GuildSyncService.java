@@ -21,28 +21,32 @@ public class GuildSyncService {
             return RoleAssignmentResult.notVerified();
         }
 
-        try {
-            return roleAssignmentService.assignRoles(guild, member);
-        } catch (Exception e) {
-            log.warn("Failed to sync roles for member {} in guild {}: {}",
-                    member.getId(), guild.getId(), e.getMessage());
-            return RoleAssignmentResult.notVerified();
-        }
+        return roleAssignmentService.assignRoles(guild, member);
     }
 
     public GuildSyncResult syncMembers(Guild guild, List<Member> members) {
         int updated = 0;
-        int skipped = 0;
+        int unchanged = 0;
+        int unverified = 0;
+        int failed = 0;
 
         for (var member : members) {
-            var result = syncMember(guild, member);
-            if (result.verified() && result.hasChanges()) {
-                updated++;
-            } else {
-                skipped++;
+            try {
+                var result = syncMember(guild, member);
+                if (!result.verified()) {
+                    unverified++;
+                } else if (result.hasChanges()) {
+                    updated++;
+                } else {
+                    unchanged++;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to sync roles for member {} in guild {}: {}",
+                        member.getId(), guild.getId(), e.getMessage());
+                failed++;
             }
         }
 
-        return new GuildSyncResult(updated, skipped);
+        return new GuildSyncResult(updated, unchanged, unverified, failed);
     }
 }

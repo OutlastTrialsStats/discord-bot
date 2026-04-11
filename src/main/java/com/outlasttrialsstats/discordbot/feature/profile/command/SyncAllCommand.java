@@ -37,7 +37,7 @@ public class SyncAllCommand {
             var result = guildSyncService.syncMembers(guild, members);
 
             hook.editOriginal(messageService.getMessage(guildId, "sync.completed",
-                    result.updated(), result.skipped())).queue();
+                    result.updated(), result.unchanged(), result.unverified(), result.failed())).queue();
         });
     }
 }

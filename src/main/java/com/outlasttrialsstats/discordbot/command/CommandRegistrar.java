@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.interactions.commands.Command.Choice;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
@@ -60,7 +61,8 @@ public class CommandRegistrar {
                                                 .addChoices(new Choice("English", "en"), new Choice("Deutsch", "de"))),
                                 new SubcommandData("leaderboard", "Set up an auto-updating leaderboard in a channel")
                                         .addOptions(
-                                                new OptionData(OptionType.CHANNEL, "channel", "Channel to post the leaderboard in", true),
+                                                new OptionData(OptionType.CHANNEL, "channel", "Channel to post the leaderboard in", true)
+                                                .setChannelTypes(ChannelType.TEXT, ChannelType.NEWS),
                                                 new OptionData(OptionType.STRING, "category", "Statistic category", true)
                                                         .addChoices(leaderboardChoices()),
                                                 new OptionData(OptionType.INTEGER, "pages", "Number of pages to display (1-10)", true)),

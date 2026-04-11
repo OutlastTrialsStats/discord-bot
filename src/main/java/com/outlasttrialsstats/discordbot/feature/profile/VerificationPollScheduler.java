@@ -63,10 +63,15 @@ public class VerificationPollScheduler {
                     continue;
                 }
 
-                var result = guildSyncService.syncMember(guild, member);
-                if (result.verified() && result.hasChanges()) {
-                    log.info("Synced recently verified user {} ({}) in guild {}",
-                            verification.getDisplayName(), discordUserId, guild.getId());
+                try {
+                    var result = guildSyncService.syncMember(guild, member);
+                    if (result.verified() && result.hasChanges()) {
+                        log.info("Synced recently verified user {} ({}) in guild {}",
+                                verification.getDisplayName(), discordUserId, guild.getId());
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to sync verified user {} in guild {}: {}",
+                            discordUserId, guild.getId(), e.getMessage());
                 }
             }
         }

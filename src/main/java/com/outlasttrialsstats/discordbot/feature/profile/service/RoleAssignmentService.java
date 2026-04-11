@@ -156,10 +156,16 @@ public class RoleAssignmentService {
             boolean shouldHaveRole = targetRoleIds.contains(roleId);
 
             if (shouldHaveRole && !hasRole) {
-                guild.addRoleToMember(member, role).queue();
+                guild.addRoleToMember(member, role).queue(
+                        _ -> log.debug("Added role '{}' to member {} in guild {}", role.getName(), member.getId(), guild.getId()),
+                        error -> log.warn("Failed to add role '{}' to member {} in guild {}: {}", role.getName(), member.getId(), guild.getId(), error.getMessage())
+                );
                 addedRoles.add(role.getName());
             } else if (!shouldHaveRole && hasRole) {
-                guild.removeRoleFromMember(member, role).queue();
+                guild.removeRoleFromMember(member, role).queue(
+                        _ -> log.debug("Removed role '{}' from member {} in guild {}", role.getName(), member.getId(), guild.getId()),
+                        error -> log.warn("Failed to remove role '{}' from member {} in guild {}: {}", role.getName(), member.getId(), guild.getId(), error.getMessage())
+                );
                 removedRoles.add(role.getName());
             }
         }

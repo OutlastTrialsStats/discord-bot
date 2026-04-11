@@ -141,7 +141,12 @@ public class RoleAssignmentService {
             return;
         }
 
-        Set<String> targetRoleIds = roleMappingService.getBestRankedMapping(guildId, category, currentRank)
+        var bestMapping = roleMappingService.getBestRankedMapping(guildId, category, currentRank);
+        if (bestMapping.isEmpty()) {
+            log.debug("Member {}: no matching ranked mapping for {} with value {}",
+                    member.getId(), category, currentRank);
+        }
+        Set<String> targetRoleIds = bestMapping
                 .map(m -> Set.of(m.getRoleId()))
                 .orElse(Set.of());
 
@@ -164,6 +169,11 @@ public class RoleAssignmentService {
                 .map(EnumRoleMapping::getRoleId)
                 .collect(Collectors.toSet());
 
+        if (targetRoleIds.isEmpty()) {
+            log.debug("Member {}: no matching enum mapping for {} with value '{}'",
+                    member.getId(), category, currentValue);
+        }
+
         syncRoles(guild, member,
                 allMappings.stream().map(EnumRoleMapping::getRoleId).toList(),
                 targetRoleIds, addedRoles, removedRoles);
@@ -173,7 +183,10 @@ public class RoleAssignmentService {
                            Set<String> targetRoleIds, List<String> addedRoles, List<String> removedRoles) {
         for (String roleId : allRoleIds) {
             Role role = guild.getRoleById(roleId);
-            if (role == null) continue;
+            if (role == null) {
+                log.debug("Role {} not found in guild {} — mapping is stale", roleId, guild.getId());
+                continue;
+            }
 
             boolean hasRole = member.getRoles().contains(role);
             boolean shouldHaveRole = targetRoleIds.contains(roleId);

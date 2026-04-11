@@ -75,6 +75,12 @@ public class RoleMappingService {
     }
 
     @Transactional
+    public void deleteMappingsByRoleId(String guildId, String roleId) {
+        enumRoleRepo.deleteByGuildIdAndRoleId(guildId, roleId);
+        rankedRoleRepo.deleteByGuildIdAndRoleId(guildId, roleId);
+    }
+
+    @Transactional
     public void deleteAllMappings(String guildId) {
         enumRoleRepo.deleteByGuildId(guildId);
         rankedRoleRepo.deleteByGuildId(guildId);

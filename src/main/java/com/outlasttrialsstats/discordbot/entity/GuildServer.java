@@ -19,17 +19,23 @@ public class GuildServer {
     @Column(name = "guild_id")
     private String guildId;
 
+    @Column(name = "guild_name")
+    private String guildName;
+
     @Column(nullable = false)
     private String language = "en";
 
     @Column(name = "member_count", nullable = false)
     private int memberCount;
 
+    @Column(name = "verified_member_count", nullable = false)
+    private int verifiedMemberCount;
+
     @Column(name = "auto_nickname", nullable = false)
     private boolean autoNickname = false;
 
-    @Column(name = "leaderboard_public", nullable = false)
-    private boolean leaderboardPublic = false;
+    @Column(name = "leaderboards_public", nullable = false)
+    private boolean leaderboardsPublic = false;
 
     public GuildServer(String guildId) {
         this.guildId = guildId;

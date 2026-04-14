@@ -16,6 +16,7 @@ import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileResponse;
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
 import com.outlasttrialsstats.discordbot.feature.profile.service.RoleAssignmentService;
+import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,9 @@ class RoleSyncSchedulerTest {
 
     @Mock
     private RoleAssignmentService roleAssignmentService;
+
+    @Mock
+    private GuildServerRepository guildServerRepository;
 
     @InjectMocks
     private RoleSyncScheduler roleSyncScheduler;

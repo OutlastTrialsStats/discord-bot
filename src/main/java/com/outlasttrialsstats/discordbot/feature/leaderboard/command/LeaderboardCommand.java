@@ -54,7 +54,7 @@ public class LeaderboardCommand {
 
     private boolean isPublic(String guildId) {
         return guildServerRepository.findById(guildId)
-                .map(GuildServer::isLeaderboardPublic)
+                .map(GuildServer::isLeaderboardsPublic)
                 .orElse(false);
     }
 

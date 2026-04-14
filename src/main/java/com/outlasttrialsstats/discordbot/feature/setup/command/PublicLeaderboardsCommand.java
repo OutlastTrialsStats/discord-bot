@@ -9,21 +9,21 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class LeaderboardVisibilityCommand {
+public class PublicLeaderboardsCommand {
 
     private final GuildServerRepository guildServerRepository;
     private final MessageService messageService;
 
-    public void onLeaderboardVisibility(SlashCommandInteractionEvent event) {
+    public void onPublicLeaderboards(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
         boolean enabled = event.getOption("enabled").getAsBoolean();
 
         GuildServer server = guildServerRepository.findById(guildId)
                 .orElseGet(() -> new GuildServer(guildId));
-        server.setLeaderboardPublic(enabled);
+        server.setLeaderboardsPublic(enabled);
         guildServerRepository.save(server);
 
-        String messageKey = enabled ? "setup.leaderboard_visibility.public" : "setup.leaderboard_visibility.private";
+        String messageKey = enabled ? "setup.public_leaderboards.enabled" : "setup.public_leaderboards.disabled";
         event.reply(messageService.getMessage(guildId, messageKey))
                 .setEphemeral(true).queue();
     }

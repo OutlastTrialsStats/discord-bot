@@ -73,7 +73,7 @@ public class CommandRegistrar {
                                 new SubcommandData("start", "Start the basic role setup wizard"),
                                 new SubcommandData("nickname", "Toggle automatic nickname sync for verified users")
                                         .addOptions(new OptionData(OptionType.BOOLEAN, "enabled", "Enable or disable auto-nickname", true)),
-                                new SubcommandData("leaderboard-visibility", "Toggle whether /leaderboard responses are public")
+                                new SubcommandData("public-leaderboards", "Toggle whether leaderboard command responses are public")
                                         .addOptions(new OptionData(OptionType.BOOLEAN, "enabled", "Enable public leaderboard responses", true))
                         )
                         .addSubcommandGroups(

@@ -6,9 +6,9 @@ import com.outlasttrialsstats.discordbot.feature.profile.command.ProfileCommand;
 import com.outlasttrialsstats.discordbot.feature.profile.command.SyncAllCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.DeleteCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.LanguageCommand;
-import com.outlasttrialsstats.discordbot.feature.setup.command.LeaderboardVisibilityCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.MessagesCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.NicknameCommand;
+import com.outlasttrialsstats.discordbot.feature.setup.command.PublicLeaderboardsCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.RoleMappingCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.StartBasicCommand;
 import java.awt.Color;
@@ -36,7 +36,7 @@ public class CommandRouter extends ListenerAdapter {
     private final LeaderboardCommand leaderboardCommand;
     private final NicknameCommand nicknameCommand;
     private final LeaderboardSetupCommand leaderboardSetupCommand;
-    private final LeaderboardVisibilityCommand leaderboardVisibilityCommand;
+    private final PublicLeaderboardsCommand publicLeaderboardsCommand;
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -72,7 +72,7 @@ public class CommandRouter extends ListenerAdapter {
                 case "messages-download" -> messagesCommand.onDownload(event);
                 case "messages-reset" -> messagesCommand.onReset(event);
                 case "nickname" -> nicknameCommand.onNickname(event);
-                case "leaderboard-visibility" -> leaderboardVisibilityCommand.onLeaderboardVisibility(event);
+                case "public-leaderboards" -> publicLeaderboardsCommand.onPublicLeaderboards(event);
                 case "start" -> startBasicCommand.onStartBasic(event);
                 default -> {}
             }

@@ -8,6 +8,8 @@
     <include file="db/changelog/changes/001-initial-schema.xml"/>
     <include file="db/changelog/changes/002-drop-enum-check-constraints.xml"/>
     <include file="db/changelog/changes/003-add-auto-nickname.xml"/>
-    <include file="db/changelog/changes/004-add-leaderboard-public.xml"/>
+    <include file="db/changelog/changes/004-add-leaderboards-public.xml"/>
+    <include file="db/changelog/changes/005-add-guild-name.xml"/>
+    <include file="db/changelog/changes/006-add-verified-member-count.xml"/>
 
 </databaseChangeLog>

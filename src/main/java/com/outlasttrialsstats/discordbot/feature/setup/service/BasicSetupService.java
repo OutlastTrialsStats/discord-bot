@@ -89,6 +89,13 @@ public class BasicSetupService {
 
             case ACCOUNT_TYPE -> buildEnumRoleDefs(guildId, RoleCategory.ACCOUNT_TYPE,
                     AccountCreationType.values(), RoleConfig.ACCOUNT_TYPE_NAMES::get, _ -> null, AccountCreationType::getValue);
+
+            case CONNECTED_ACCOUNT -> List.of(new RoleDef(
+                    "Account Connected", null, false,
+                    (_, roleId) -> roleMappingService.saveEnumMapping(
+                            guildId, RoleCategory.CONNECTED_ACCOUNT,
+                            RoleConfig.CONNECTED_ACCOUNT_VALUE, roleId)
+            ));
         };
     }
 

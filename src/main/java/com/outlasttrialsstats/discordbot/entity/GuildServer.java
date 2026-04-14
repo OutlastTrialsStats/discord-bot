@@ -28,6 +28,9 @@ public class GuildServer {
     @Column(name = "auto_nickname", nullable = false)
     private boolean autoNickname = false;
 
+    @Column(name = "leaderboard_public", nullable = false)
+    private boolean leaderboardPublic = false;
+
     public GuildServer(String guildId) {
         this.guildId = guildId;
     }

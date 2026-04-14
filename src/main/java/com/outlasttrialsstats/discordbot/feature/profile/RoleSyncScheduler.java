@@ -71,6 +71,7 @@ public class RoleSyncScheduler {
             for (Member member : batch) {
                 var entry = profilesByDiscordId.get(member.getId());
                 if (entry == null) {
+                    roleAssignmentService.cleanupUnverifiedMember(guild, member);
                     unverified.incrementAndGet();
                     continue;
                 }

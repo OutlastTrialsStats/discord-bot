@@ -72,7 +72,9 @@ public class CommandRegistrar {
                                 new SubcommandData("messages-reset", "Reset all custom messages to defaults"),
                                 new SubcommandData("start", "Start the basic role setup wizard"),
                                 new SubcommandData("nickname", "Toggle automatic nickname sync for verified users")
-                                        .addOptions(new OptionData(OptionType.BOOLEAN, "enabled", "Enable or disable auto-nickname", true))
+                                        .addOptions(new OptionData(OptionType.BOOLEAN, "enabled", "Enable or disable auto-nickname", true)),
+                                new SubcommandData("leaderboard-visibility", "Toggle whether /leaderboard responses are public")
+                                        .addOptions(new OptionData(OptionType.BOOLEAN, "enabled", "Enable public leaderboard responses", true))
                         )
                         .addSubcommandGroups(
                                 buildRoleMappingGroup(),
@@ -99,7 +101,9 @@ public class CommandRegistrar {
                         new SubcommandData("platform", "Map a role to a gaming platform")
                                 .addOptions(stringOption("platform", "Gaming platform", PLATFORM_CHOICES), OPTIONAL_ROLE),
                         new SubcommandData("account-type", "Map a role to an account type")
-                                .addOptions(stringOption("account-type", "Account type", ACCOUNT_TYPE_CHOICES), OPTIONAL_ROLE)
+                                .addOptions(stringOption("account-type", "Account type", ACCOUNT_TYPE_CHOICES), OPTIONAL_ROLE),
+                        new SubcommandData("connected-account", "Map a role granted to members with a linked TotStats account")
+                                .addOptions(OPTIONAL_ROLE)
                 );
     }
 
@@ -121,7 +125,8 @@ public class CommandRegistrar {
                         new SubcommandData("platform", "Remove a platform role mapping")
                                 .addOptions(stringOption("platform", "Gaming platform", PLATFORM_CHOICES)),
                         new SubcommandData("account-type", "Remove an account type role mapping")
-                                .addOptions(stringOption("account-type", "Account type", ACCOUNT_TYPE_CHOICES))
+                                .addOptions(stringOption("account-type", "Account type", ACCOUNT_TYPE_CHOICES)),
+                        new SubcommandData("connected-account", "Remove the connected-account role mapping")
                 );
     }
 

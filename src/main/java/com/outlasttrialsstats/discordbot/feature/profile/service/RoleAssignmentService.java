@@ -6,6 +6,7 @@ import com.outlasttrialsstats.discordbot.entity.GuildServer;
 import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
+import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
@@ -36,10 +37,16 @@ public class RoleAssignmentService {
         var profileOpt = statsApiClient.getProfile(member.getId());
         if (profileOpt.isEmpty()) {
             log.debug("Member {} is not verified, skipping", member.getId());
+            cleanupUnverifiedMember(guild, member);
             return RoleAssignmentResult.notVerified();
         }
 
         return assignRolesFromProfile(guild, member, profileOpt.get());
+    }
+
+    public void cleanupUnverifiedMember(Guild guild, Member member) {
+        assignEnumRole(guild, member, guild.getId(), RoleCategory.CONNECTED_ACCOUNT,
+                null, new ArrayList<>(), new ArrayList<>());
     }
 
     public RoleAssignmentResult assignRolesFromProfile(Guild guild, Member member, DiscordProfileResponse profile) {
@@ -103,6 +110,9 @@ public class RoleAssignmentService {
         } else {
             log.debug("Member {}: skipping ACCOUNT_TYPE — value is null", member.getId());
         }
+
+        assignEnumRole(guild, member, guildId, RoleCategory.CONNECTED_ACCOUNT,
+                RoleConfig.CONNECTED_ACCOUNT_VALUE, addedRoles, removedRoles);
 
         if (!addedRoles.isEmpty() || !removedRoles.isEmpty()) {
             log.info("Member {} in guild {}: added [{}], removed [{}]",

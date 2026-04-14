@@ -11,6 +11,8 @@ public final class RoleConfig {
 
     private RoleConfig() {}
 
+    public static final String CONNECTED_ACCOUNT_VALUE = "verified";
+
     public static final int[] PRESTIGE_THRESHOLDS = {1, 10, 20, 30, 40, 50, 60, 70, 80, 90};
     public static final int[] LEVEL_THRESHOLDS = {1, 10, 25, 50, 75, 99 };
     public static final int[] TOTAL_INVASION_MATCHES_THRESHOLDS = {1, 50, 100, 250, 500, 1000};

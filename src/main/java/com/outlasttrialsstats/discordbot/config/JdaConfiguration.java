@@ -22,7 +22,7 @@ public class JdaConfiguration {
         return JDABuilder.createDefault(token)
                 .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES)
                 .setStatus(OnlineStatus.ONLINE)
-                .setActivity(Activity.watching("outlasttrialsstats.com/verify"))
+                .setActivity(Activity.watching("outlasttrialsstats.com/link"))
                 .addEventListeners(listeners.toArray())
                 .build()
                 .awaitReady();

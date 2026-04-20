@@ -62,7 +62,7 @@ You must be at least 13 years old to use the Bot, in accordance with [Discord's 
 ## 7. User Responsibilities
 
 - Server administrators are responsible for configuring the Bot appropriately for their server.
-- Users must link their Discord account on [outlasttrialsstats.com/verify](https://outlasttrialsstats.com/verify) for role assignment to work.
+- Users must link their Discord account on [outlasttrialsstats.com/link](https://outlasttrialsstats.com/link) for role assignment to work.
 - Do not attempt to abuse, exploit, or interfere with the Bot's functionality.
 
 ## 8. Self-Hosting

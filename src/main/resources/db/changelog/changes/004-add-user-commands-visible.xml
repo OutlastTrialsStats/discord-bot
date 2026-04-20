@@ -5,9 +5,9 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet id="004-add-leaderboards-public" author="totstats-bot">
+    <changeSet id="004-add-user-commands-visible" author="totstats-bot">
         <addColumn tableName="guild_server">
-            <column name="leaderboards_public" type="boolean" defaultValueBoolean="false">
+            <column name="user_commands_visible" type="boolean" defaultValueBoolean="false">
                 <constraints nullable="false"/>
             </column>
         </addColumn>

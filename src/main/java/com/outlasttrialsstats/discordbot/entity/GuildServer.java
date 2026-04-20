@@ -34,8 +34,8 @@ public class GuildServer {
     @Column(name = "auto_nickname", nullable = false)
     private boolean autoNickname = false;
 
-    @Column(name = "leaderboards_public", nullable = false)
-    private boolean leaderboardsPublic = false;
+    @Column(name = "user_commands_visible", nullable = false)
+    private boolean userCommandsVisible = false;
 
     public GuildServer(String guildId) {
         this.guildId = guildId;

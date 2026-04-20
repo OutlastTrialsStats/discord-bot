@@ -9,21 +9,21 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class PublicLeaderboardsCommand {
+public class ToggleUserCommandVisibility {
 
     private final GuildServerRepository guildServerRepository;
     private final MessageService messageService;
 
-    public void onPublicLeaderboards(SlashCommandInteractionEvent event) {
+    public void onToggleUserCommandVisibility(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
         boolean enabled = event.getOption("enabled").getAsBoolean();
 
         GuildServer server = guildServerRepository.findById(guildId)
                 .orElseGet(() -> new GuildServer(guildId));
-        server.setLeaderboardsPublic(enabled);
+        server.setUserCommandsVisible(enabled);
         guildServerRepository.save(server);
 
-        String messageKey = enabled ? "setup.public_leaderboards.enabled" : "setup.public_leaderboards.disabled";
+        String messageKey = enabled ? "setup.toggle_user_command_visibility.enabled" : "setup.toggle_user_command_visibility.disabled";
         event.reply(messageService.getMessage(guildId, messageKey))
                 .setEphemeral(true).queue();
     }

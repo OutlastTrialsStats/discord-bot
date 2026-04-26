@@ -2,7 +2,9 @@ package com.outlasttrialsstats.discordbot.feature.profile;
 
 import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileEntry;
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
+import com.outlasttrialsstats.discordbot.entity.GuildServer;
 import com.outlasttrialsstats.discordbot.feature.profile.service.RoleAssignmentService;
+import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,7 @@ public class RoleSyncScheduler {
     private final JDA jda;
     private final TOTStatsApiClient statsApiClient;
     private final RoleAssignmentService roleAssignmentService;
+    private final GuildServerRepository guildServerRepository;
 
     @Scheduled(fixedRate = 1, initialDelay = 1, timeUnit = TimeUnit.HOURS)
     public void syncAllGuilds() {
@@ -71,6 +74,7 @@ public class RoleSyncScheduler {
             for (Member member : batch) {
                 var entry = profilesByDiscordId.get(member.getId());
                 if (entry == null) {
+                    roleAssignmentService.cleanupUnverifiedMember(guild, member);
                     unverified.incrementAndGet();
                     continue;
                 }
@@ -91,8 +95,22 @@ public class RoleSyncScheduler {
             }
         }
 
+        int verified = updated.get() + unchanged.get();
+        saveVerifiedMemberCount(guild, verified);
+
         log.info("Scheduled role sync for guild {}: {} updated, {} unchanged, {} unverified, {} failed",
                 guild.getId(), updated.get(), unchanged.get(), unverified.get(), failed.get());
+    }
+
+    private void saveVerifiedMemberCount(Guild guild, int verified) {
+        try {
+            GuildServer server = guildServerRepository.findById(guild.getId())
+                    .orElseGet(() -> new GuildServer(guild.getId()));
+            server.setVerifiedMemberCount(verified);
+            guildServerRepository.save(server);
+        } catch (Exception e) {
+            log.warn("Failed to save verified member count for guild {}: {}", guild.getId(), e.getMessage());
+        }
     }
 
     private DiscordProfileResponse toProfileResponse(DiscordBulkProfileEntry entry) {

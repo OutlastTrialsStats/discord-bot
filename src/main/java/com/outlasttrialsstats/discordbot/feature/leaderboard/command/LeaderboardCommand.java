@@ -2,7 +2,9 @@ package com.outlasttrialsstats.discordbot.feature.leaderboard.command;
 
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.StatisticType;
+import com.outlasttrialsstats.discordbot.entity.GuildServer;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
+import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,11 +25,13 @@ public class LeaderboardCommand {
 
     private final LeaderboardService leaderboardService;
     private final MessageService messageService;
+    private final GuildServerRepository guildServerRepository;
 
     public void onLeaderboard(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
         String categoryValue = event.getOption("category").getAsString();
         StatisticType category = StatisticType.fromValue(categoryValue);
+        boolean ephemeral = !isPublic(guildId);
 
         Optional<DiscordLeaderboardResponse> response = leaderboardService.fetchLeaderboard(category, 1);
         if (response.isEmpty()) {
@@ -40,12 +44,18 @@ public class LeaderboardCommand {
         int totalPages = data.getTotalPages() != null ? data.getTotalPages() : 1;
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), category, data, true, true, true);
 
-        var reply = event.replyEmbeds(embed).setEphemeral(true);
+        var reply = event.replyEmbeds(embed).setEphemeral(ephemeral);
         List<Button> buttons = buildButtons(categoryValue, 1, totalPages);
         if (!buttons.isEmpty()) {
             reply.addComponents(ActionRow.of(buttons));
         }
         reply.queue();
+    }
+
+    private boolean isPublic(String guildId) {
+        return guildServerRepository.findById(guildId)
+                .map(GuildServer::isUserCommandsVisible)
+                .orElse(false);
     }
 
     public void onButton(ButtonInteractionEvent event) {

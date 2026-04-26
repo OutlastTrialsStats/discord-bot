@@ -26,9 +26,10 @@ public class MemberCountScheduler {
                 int count = guild.getMemberCount();
                 GuildServer server = guildServerRepository.findById(guild.getId())
                         .orElseGet(() -> new GuildServer(guild.getId()));
+                server.setGuildName(guild.getName());
                 server.setMemberCount(count);
                 guildServerRepository.save(server);
-                log.debug("Updated member count for guild {}: {}", guild.getId(), count);
+                log.debug("Updated guild info for {} ({}): {} members", guild.getName(), guild.getId(), count);
             } catch (Exception e) {
                 log.warn("Failed to update member count for guild {}: {}", guild.getId(), e.getMessage());
             }

@@ -34,6 +34,7 @@ public class RoleMappingCommand {
             case "season-invasion-points" -> onSeasonInvasionPoints(event);
             case "platform" -> onPlatform(event);
             case "account-type" -> onAccountType(event);
+            case "connected-account" -> onConnectedAccount(event);
         }
     }
 
@@ -47,6 +48,7 @@ public class RoleMappingCommand {
             case "season-invasion-points" -> onRemoveSeasonInvasionPoints(event);
             case "platform" -> onRemovePlatform(event);
             case "account-type" -> onRemoveAccountType(event);
+            case "connected-account" -> onRemoveConnectedAccount(event);
         }
     }
 
@@ -226,6 +228,28 @@ public class RoleMappingCommand {
         roleMappingService.removeEnumMapping(guildId, RoleCategory.ACCOUNT_TYPE, type.getValue());
         event.reply(messageService.getMessage(guildId, "setup.role_mapping.removed",
                 RoleConfig.ACCOUNT_TYPE_NAMES.get(type)))
+                .setEphemeral(true).queue();
+    }
+
+    // --- Connected Account ---
+
+    private void onConnectedAccount(SlashCommandInteractionEvent event) {
+        String guildId = event.getGuild().getId();
+        Guild guild = event.getJDA().getGuildById(guildId);
+        String roleName = "Account Connected";
+        Role role = getOptionalRole(event);
+
+        createOrLinkRole(guild, guildId, roleName, role,
+                roleId -> roleMappingService.saveEnumMapping(guildId, RoleCategory.CONNECTED_ACCOUNT,
+                        RoleConfig.CONNECTED_ACCOUNT_VALUE, roleId),
+                event, "setup.connected_account_role.success", roleName);
+    }
+
+    private void onRemoveConnectedAccount(SlashCommandInteractionEvent event) {
+        String guildId = event.getGuild().getId();
+        roleMappingService.removeEnumMapping(guildId, RoleCategory.CONNECTED_ACCOUNT,
+                RoleConfig.CONNECTED_ACCOUNT_VALUE);
+        event.reply(messageService.getMessage(guildId, "setup.connected_account_role.removed"))
                 .setEphemeral(true).queue();
     }
 

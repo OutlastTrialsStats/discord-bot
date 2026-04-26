@@ -14,7 +14,8 @@ public enum RoleCategory {
     TOTAL_INVASION_MATCHES("total_invasion_matches", "Total Invasion Matches Roles"),
     SEASON_INVASION_POINTS("season_invasion_points", "Season Invasion Points Roles"),
     PLATFORM("platform", "Platform Roles"),
-    ACCOUNT_TYPE("account_type", "Account Type Roles");
+    ACCOUNT_TYPE("account_type", "Account Type Roles"),
+    CONNECTED_ACCOUNT("connected_account", "Connected Account Role");
 
     private final String id;
     private final String displayName;

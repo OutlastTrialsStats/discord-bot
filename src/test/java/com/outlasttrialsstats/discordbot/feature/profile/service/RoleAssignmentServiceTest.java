@@ -204,7 +204,9 @@ class RoleAssignmentServiceTest {
         assertThat(result.verified()).isTrue();
         assertThat(result.hasChanges()).isFalse();
         verify(roleMappingService, never()).getRankedMappings(any(), any());
-        verify(roleMappingService, never()).getEnumMappings(any(), any());
+        verify(roleMappingService, never()).getEnumMappings(GUILD_ID, RoleCategory.REAGENT_RIG);
+        verify(roleMappingService, never()).getEnumMappings(GUILD_ID, RoleCategory.PLATFORM);
+        verify(roleMappingService, never()).getEnumMappings(GUILD_ID, RoleCategory.ACCOUNT_TYPE);
     }
 
     @Test

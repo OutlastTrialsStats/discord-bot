@@ -17,6 +17,10 @@ spring:
     basename: messages/messages
     fallback-to-system-locale: false
 
+logging:
+  level:
+    net.dv8tion.jda.api.requests.RestRateLimiter: ERROR
+
 discord:
   bot:
     token: ${DISCORD_BOT_TOKEN}

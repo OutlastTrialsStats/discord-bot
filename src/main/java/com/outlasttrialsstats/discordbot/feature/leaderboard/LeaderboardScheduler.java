@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LeaderboardScheduler {
 
-    private static final long EDIT_COOLDOWN_SECONDS = 3;
+    private static final long EDIT_COOLDOWN_SECONDS = 6;
 
     private final JDA jda;
     private final LeaderboardService leaderboardService;

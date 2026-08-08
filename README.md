@@ -114,3 +114,9 @@ DISCORD_BOT_TOKEN=your-bot-token-here
 ```bash
 ./mvnw spring-boot:run
 ```
+
+### Commits and releases
+
+Commits on `main` follow [Conventional Commits](https://www.conventionalcommits.org/) — they drive
+the version bump and the generated [`CHANGELOG.md`](CHANGELOG.md). See
+[docs/commit-convention.md](docs/commit-convention.md) for the types and the release flow.

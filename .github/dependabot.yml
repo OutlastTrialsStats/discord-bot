@@ -1,7 +1,4 @@
 version: 2
-
-# Prefixes map to release-please changelog sections: deps = shipped in the
-# artifact (releasable), chore = dev/test only, ci = workflows.
 updates:
   - package-ecosystem: maven
     directory: /

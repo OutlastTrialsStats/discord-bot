@@ -11,5 +11,6 @@
     <include file="db/changelog/changes/004-add-user-commands-visible.xml"/>
     <include file="db/changelog/changes/005-add-guild-name.xml"/>
     <include file="db/changelog/changes/006-add-verified-member-count.xml"/>
+    <include file="db/changelog/changes/007-widget-enrollment.xml"/>
 
 </databaseChangeLog>

@@ -258,7 +258,6 @@ components:
           type: integer
         level:
           type: integer
-
         activeReagentSkill:
           $ref: '#/components/schemas/ActiveReagentSkillType'
         invasionRanking:
@@ -269,7 +268,21 @@ components:
           type: integer
         platformType:
           $ref: './common.yml#/components/schemas/PlatformType'
+        trialsInHours:
+          type: number
+        completedTrials:
+          type: integer
+        failedTrials:
+          type: integer
+        deaths:
+          type: integer
         reagentReleases:
+          type: integer
+        armWrestlingWins:
+          type: integer
+        chessWins:
+          type: integer
+        tennisWins:
           type: integer
         accountCreationType:
           $ref: '#/components/schemas/AccountCreationType'

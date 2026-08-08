@@ -11,6 +11,7 @@ import com.outlasttrialsstats.discordbot.feature.setup.command.NicknameCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.ToggleUserCommandVisibility;
 import com.outlasttrialsstats.discordbot.feature.setup.command.RoleMappingCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.StartBasicCommand;
+import com.outlasttrialsstats.discordbot.feature.widget.command.WidgetCommand;
 import java.awt.Color;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class CommandRouter extends ListenerAdapter {
     private final NicknameCommand nicknameCommand;
     private final LeaderboardSetupCommand leaderboardSetupCommand;
     private final ToggleUserCommandVisibility toggleUserCommandVisibility;
+    private final WidgetCommand widgetCommand;
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -45,6 +47,7 @@ public class CommandRouter extends ListenerAdapter {
                 case "sync-profile" -> profileCommand.onProfileUpdate(event);
                 case "sync-all" -> syncAllCommand.onSyncAll(event);
                 case "leaderboard" -> leaderboardCommand.onLeaderboard(event);
+                case "widget" -> widgetCommand.onWidget(event);
                 case "setup" -> routeSetup(event);
                 default -> {}
             }

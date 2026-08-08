@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.command;
 
 import com.outlasttrialsstats.backend.api.model.StatisticType;
+import com.outlasttrialsstats.discordbot.shared.EnumFormatter;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,14 @@ public class CommandRegistrar {
 
                 Commands.slash("sync-profile", "Sync your roles based on your Outlast Trials stats")
                         .setContexts(InteractionContextType.GUILD),
+
+                Commands.slash("widget", "Show your Outlast Trials stats on your Discord profile")
+                        .setContexts(InteractionContextType.GUILD)
+                        .addSubcommands(
+                                new SubcommandData("enable", "Authorize and enable the profile widget"),
+                                new SubcommandData("disable", "Disable the widget and clear its data"),
+                                new SubcommandData("status", "Show your widget status"),
+                                new SubcommandData("refresh", "Push your latest stats to the widget now")),
 
                 Commands.slash("sync-all", "Sync roles for all members in this server")
                         .setContexts(InteractionContextType.GUILD)
@@ -140,7 +149,7 @@ public class CommandRegistrar {
 
     static List<Choice> leaderboardChoices() {
         return Arrays.stream(StatisticType.values())
-                .map(t -> new Choice(formatCategoryName(t), t.getValue()))
+                .map(t -> new Choice(EnumFormatter.titleCase(t.getValue()), t.getValue()))
                 .toList();
     }
 
@@ -148,12 +157,5 @@ public class CommandRegistrar {
         return Arrays.stream(values)
                 .map(v -> new Choice(v, v))
                 .toList();
-    }
-
-    private static String formatCategoryName(StatisticType type) {
-        return Arrays.stream(type.getValue().toLowerCase().split("_"))
-                .map(w -> Character.toUpperCase(w.charAt(0)) + w.substring(1))
-                .reduce((a, b) -> a + " " + b)
-                .orElse(type.getValue());
     }
 }

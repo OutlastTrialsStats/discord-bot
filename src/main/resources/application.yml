@@ -24,7 +24,15 @@ logging:
 discord:
   bot:
     token: ${DISCORD_BOT_TOKEN}
+  application-id: ${DISCORD_APPLICATION_ID:}
+  oauth:
+    client-secret: ${DISCORD_CLIENT_SECRET:}
 
 totstats:
   api:
     base-url: https://outlasttrialsstats.com
+
+widget:
+  enabled: ${WIDGET_ENABLED:false}
+  public-base-url: ${WIDGET_PUBLIC_BASE_URL:}
+  refresh-cooldown-ms: 1500

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="007-widget-enrollment" author="totstats-bot">
+        <createTable tableName="widget_enrollment">
+            <column name="discord_user_id" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="status" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="oauth_state" type="varchar(64)"/>
+            <column name="state_expires_at" type="timestamp with time zone"/>
+            <column name="enabled_at" type="timestamp with time zone"/>
+            <column name="last_pushed_at" type="timestamp with time zone"/>
+            <column name="last_error" type="varchar(512)"/>
+        </createTable>
+        <createIndex tableName="widget_enrollment" indexName="idx_widget_enrollment_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="widget_enrollment" indexName="idx_widget_enrollment_oauth_state">
+            <column name="oauth_state"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

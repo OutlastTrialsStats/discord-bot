@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.3.2](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.1...v1.3.2) (2026-08-08)
+
+
+### Miscellaneous Chores
+
+* **ci:** add manual workflow to publish branch images to GHCR ([4ef3bdc](https://github.com/OutlastTrialsStats/discord-bot/commit/4ef3bdc5134db31a424c8117b63d9ac2b2f66a48))
+* **ci:** add manual workflow to publish branch images to GHCR ([d3adf86](https://github.com/OutlastTrialsStats/discord-bot/commit/d3adf86fdd927b390c3abf01159a387b702a8542))
+* **deps:** bump org.springdoc:springdoc-openapi-starter-webflux-ui ([368b12f](https://github.com/OutlastTrialsStats/discord-bot/commit/368b12f10429725e37811f8be109e76336c88190))
+* **deps:** bump org.springdoc:springdoc-openapi-starter-webflux-ui from 3.0.3 to 3.1.0 ([58f18b0](https://github.com/OutlastTrialsStats/discord-bot/commit/58f18b09123098f74d9c0ee74070bedd9b45689a))
+
+
+### Continuous Integration
+
+* bump actions/checkout from 4 to 7 ([08915d1](https://github.com/OutlastTrialsStats/discord-bot/commit/08915d11637370a695bab4c841080c7d42e2d51c))
+* bump actions/checkout from 4 to 7 ([a810355](https://github.com/OutlastTrialsStats/discord-bot/commit/a81035503a43e3172fab19f00799bd1294bec051))
+* bump actions/setup-java from 4 to 5 ([8285a18](https://github.com/OutlastTrialsStats/discord-bot/commit/8285a18f03d0c72b75ef03d239c4d3d1383339e0))
+* bump actions/setup-java from 4 to 5 ([9bdbe50](https://github.com/OutlastTrialsStats/discord-bot/commit/9bdbe50dbc12e473b9d323f984829d695ee13136))
+* bump docker/build-push-action from 6 to 7 ([88d419f](https://github.com/OutlastTrialsStats/discord-bot/commit/88d419f988f8eed4e4c4f4b44762f9afc8361458))
+* bump docker/build-push-action from 6 to 7 ([bc6642f](https://github.com/OutlastTrialsStats/discord-bot/commit/bc6642f6ffd25ce8aead600be50d485a80379570))
+* bump docker/login-action from 3 to 4 ([1a2b624](https://github.com/OutlastTrialsStats/discord-bot/commit/1a2b62426ff54ccec0536a2162b1375f304ca538))
+* bump docker/login-action from 3 to 4 ([237b27e](https://github.com/OutlastTrialsStats/discord-bot/commit/237b27e8b8fa3e0052e370c7e5147cae702d283d))
+* bump docker/metadata-action from 5 to 6 ([638b705](https://github.com/OutlastTrialsStats/discord-bot/commit/638b705b645f234c7f79956e913c8a35ecf8b2b4))
+* bump docker/metadata-action from 5 to 6 ([44f0c59](https://github.com/OutlastTrialsStats/discord-bot/commit/44f0c59e36201504b040d34a05e7704316648ad4))
+* bump docker/setup-buildx-action from 3 to 4 ([41256b5](https://github.com/OutlastTrialsStats/discord-bot/commit/41256b57bdb62f15c16526768547e59bfc52d487))
+* bump docker/setup-buildx-action from 3 to 4 ([bc571e2](https://github.com/OutlastTrialsStats/discord-bot/commit/bc571e2e9a90612df63f37cc2cdfc5ec224869a3))
+* clean up comments in Dependabot config ([790dbd9](https://github.com/OutlastTrialsStats/discord-bot/commit/790dbd9b11bec3df893cdc2071c1201d8516c8ef))
+* switch releases to release-please ([18a4752](https://github.com/OutlastTrialsStats/discord-bot/commit/18a475284ecf6e3a3be50ee15b1b6ead54f5c0e0))
+* switch releases to release-please ([fcced82](https://github.com/OutlastTrialsStats/discord-bot/commit/fcced821a35b489e74563f62dd49880053c59f9a))
+
 ## [1.3.1] - 2026-08-02
 
 - fix(leaderboard): avoid Discord 429 rate limits on scheduled message edits (8ce2402)

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.2...v1.3.3) (2026-08-14)
+
+
+### Dependencies
+
+* **deps:** bump org.apache.maven:apache-maven from 3.9.12 to 3.9.16 ([1946d84](https://github.com/OutlastTrialsStats/discord-bot/commit/1946d84fc26365e344866a5d6631489fb27e1e15))
+
 ## [1.3.2](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.1...v1.3.2) (2026-08-08)
 
 

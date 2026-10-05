@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.3.3](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.2...v1.3.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* **leaderboard:** support news channels and skip inaccessible channels ([0ffa3b1](https://github.com/OutlastTrialsStats/discord-bot/commit/0ffa3b16bdab38872f0cd6ab142b14121470cb89))
+* **leaderboard:** support news channels and skip inaccessible channels ([ce267d1](https://github.com/OutlastTrialsStats/discord-bot/commit/ce267d16b247b1b9a5848d8e4c36838ef3a42c7c))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump org.openapitools:openapi-generator-maven-plugin ([9fa788e](https://github.com/OutlastTrialsStats/discord-bot/commit/9fa788e8147e0de8574c840cd6b5935ad0eb808a))
+* **deps-dev:** bump org.openapitools:openapi-generator-maven-plugin from 7.24.0 to 7.25.0 ([627f8ba](https://github.com/OutlastTrialsStats/discord-bot/commit/627f8ba7fbc2572a91f61c230feb3f6e59876b89))
+
+
+### Dependencies
+
+* **deps:** bump org.apache.maven:apache-maven from 3.9.12 to 3.9.16 ([1946d84](https://github.com/OutlastTrialsStats/discord-bot/commit/1946d84fc26365e344866a5d6631489fb27e1e15))
+* **deps:** bump org.apache.maven:apache-maven from 3.9.16 to 3.10.0 ([8be9f94](https://github.com/OutlastTrialsStats/discord-bot/commit/8be9f946016fbf4603457ed102fb5eb166160c7f))
+* **deps:** bump org.openapitools:jackson-databind-nullable ([03d33d3](https://github.com/OutlastTrialsStats/discord-bot/commit/03d33d37264f875a3a014b67d1e33d0dbae84a3f))
+* **deps:** bump org.openapitools:openapi-generator-cli ([6da3da6](https://github.com/OutlastTrialsStats/discord-bot/commit/6da3da6e41bbf3d3afe143cf0a5f2749effc6a06))
+* **deps:** bump org.springdoc:springdoc-openapi-starter-webflux-ui ([3e180d7](https://github.com/OutlastTrialsStats/discord-bot/commit/3e180d7138cd1fc72b1fc2c27a7a8be7f5e0c72b))
+* **deps:** bump org.springframework.boot:spring-boot-starter-parent ([5bce9d5](https://github.com/OutlastTrialsStats/discord-bot/commit/5bce9d5473977d50f39227e727b46c580190962f))
+
+
+### Continuous Integration
+
+* bump actions/setup-java from 5 to 6 ([b33d20f](https://github.com/OutlastTrialsStats/discord-bot/commit/b33d20fbf338f333bf2d1f4a66eebb7f6f12737f))
+* bump actions/setup-java from 5 to 6 ([744ff71](https://github.com/OutlastTrialsStats/discord-bot/commit/744ff71ee72cd3bcccd96d317c301db5f65ab5ab))
+
 ## [1.3.2](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.1...v1.3.2) (2026-08-08)
 
 

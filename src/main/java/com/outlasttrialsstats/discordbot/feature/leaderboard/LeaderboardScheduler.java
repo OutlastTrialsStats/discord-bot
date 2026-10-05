@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -38,10 +38,14 @@ public class LeaderboardScheduler {
     }
 
     private void processChannelBindings(String channelId, List<LeaderboardChannel> bindings) {
-        TextChannel channel = jda.getTextChannelById(channelId);
+        StandardGuildMessageChannel channel = jda.getChannelById(StandardGuildMessageChannel.class, channelId);
         if (channel == null) {
             log.info("Channel {} no longer exists, removing leaderboard bindings", channelId);
             bindings.forEach(b -> leaderboardService.removeBinding(b.getGuildId(), b.getCategory()));
+            return;
+        }
+        if (channel.isObfuscated() || !channel.getGuild().getSelfMember().hasAccess(channel)) {
+            log.warn("No access to channel {}, skipping leaderboard update", channelId);
             return;
         }
 
@@ -58,7 +62,7 @@ public class LeaderboardScheduler {
         }
     }
 
-    private CompletableFuture<?> editLeaderboardMessage(TextChannel channel, LeaderboardChannel binding,
+    private CompletableFuture<?> editLeaderboardMessage(StandardGuildMessageChannel channel, LeaderboardChannel binding,
                                                          String messageId, int page) {
         Optional<DiscordLeaderboardResponse> response = leaderboardService
                 .fetchLeaderboard(binding.getCategory(), page);

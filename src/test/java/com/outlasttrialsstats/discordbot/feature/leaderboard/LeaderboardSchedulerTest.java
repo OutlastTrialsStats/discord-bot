@@ -18,8 +18,9 @@ import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.restaction.MessageEditAction;
@@ -57,7 +58,7 @@ class LeaderboardSchedulerTest {
         LeaderboardChannel binding = new LeaderboardChannel(
                 GUILD_ID, StatisticType.PRESTIGE, CHANNEL_ID, List.of("msg-1"), 1);
         when(leaderboardService.getAllBindings()).thenReturn(List.of(binding));
-        when(jda.getTextChannelById(CHANNEL_ID)).thenReturn(null);
+        when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(null);
 
         leaderboardScheduler.updateLeaderboards();
 
@@ -70,8 +71,8 @@ class LeaderboardSchedulerTest {
                 GUILD_ID, StatisticType.PRESTIGE, CHANNEL_ID, List.of("msg-1"), 1);
         when(leaderboardService.getAllBindings()).thenReturn(List.of(binding));
 
-        TextChannel channel = mock(TextChannel.class);
-        when(jda.getTextChannelById(CHANNEL_ID)).thenReturn(channel);
+        StandardGuildMessageChannel channel = accessibleChannel();
+        when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
         when(leaderboardService.fetchLeaderboard(StatisticType.PRESTIGE, 1)).thenReturn(Optional.empty());
 
         leaderboardScheduler.updateLeaderboards();
@@ -86,9 +87,9 @@ class LeaderboardSchedulerTest {
                 GUILD_ID, StatisticType.PRESTIGE, CHANNEL_ID, List.of("msg-1", "msg-2"), 2);
         when(leaderboardService.getAllBindings()).thenReturn(List.of(binding));
 
-        TextChannel channel = mock(TextChannel.class);
+        StandardGuildMessageChannel channel = accessibleChannel();
         Guild guild = mock(Guild.class);
-        when(jda.getTextChannelById(CHANNEL_ID)).thenReturn(channel);
+        when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
         when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
 
         DiscordLeaderboardResponse response = new DiscordLeaderboardResponse();
@@ -124,8 +125,8 @@ class LeaderboardSchedulerTest {
                 "guild-2", StatisticType.DEATHS, "channel-2", List.of("msg-2"), 1);
 
         when(leaderboardService.getAllBindings()).thenReturn(List.of(binding1, binding2));
-        when(jda.getTextChannelById(CHANNEL_ID)).thenReturn(null);
-        when(jda.getTextChannelById("channel-2")).thenReturn(null);
+        when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(null);
+        when(jda.getChannelById(StandardGuildMessageChannel.class, "channel-2")).thenReturn(null);
 
         leaderboardScheduler.updateLeaderboards();
 
@@ -139,9 +140,9 @@ class LeaderboardSchedulerTest {
                 GUILD_ID, StatisticType.PRESTIGE, CHANNEL_ID, List.of("msg-1"), 1);
         when(leaderboardService.getAllBindings()).thenReturn(List.of(binding));
 
-        TextChannel channel = mock(TextChannel.class);
+        StandardGuildMessageChannel channel = accessibleChannel();
         Guild guild = mock(Guild.class);
-        when(jda.getTextChannelById(CHANNEL_ID)).thenReturn(channel);
+        when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
         when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
 
         DiscordLeaderboardResponse response = new DiscordLeaderboardResponse();
@@ -172,9 +173,9 @@ class LeaderboardSchedulerTest {
                 GUILD_ID, StatisticType.PRESTIGE, CHANNEL_ID, List.of("msg-1"), 1);
         when(leaderboardService.getAllBindings()).thenReturn(List.of(binding));
 
-        TextChannel channel = mock(TextChannel.class);
+        StandardGuildMessageChannel channel = accessibleChannel();
         Guild guild = mock(Guild.class);
-        when(jda.getTextChannelById(CHANNEL_ID)).thenReturn(channel);
+        when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
         when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
 
         DiscordLeaderboardResponse response = new DiscordLeaderboardResponse();
@@ -198,11 +199,58 @@ class LeaderboardSchedulerTest {
     }
 
     @Test
+    void updateLeaderboards_channelObfuscated_skipsWithoutRemovingBinding() {
+        LeaderboardChannel binding = new LeaderboardChannel(
+                GUILD_ID, StatisticType.PRESTIGE, CHANNEL_ID, List.of("msg-1"), 1);
+        when(leaderboardService.getAllBindings()).thenReturn(List.of(binding));
+
+        StandardGuildMessageChannel channel = mock(StandardGuildMessageChannel.class);
+        when(channel.isObfuscated()).thenReturn(true);
+        when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
+
+        leaderboardScheduler.updateLeaderboards();
+
+        verify(leaderboardService, never()).removeBinding(any(), any());
+        verify(leaderboardService, never()).fetchLeaderboard(any(), any(int.class));
+        verify(channel, never()).editMessageEmbedsById(any(String.class), any(MessageEmbed.class));
+    }
+
+    @Test
+    void updateLeaderboards_noChannelAccess_skipsWithoutRemovingBinding() {
+        LeaderboardChannel binding = new LeaderboardChannel(
+                GUILD_ID, StatisticType.PRESTIGE, CHANNEL_ID, List.of("msg-1"), 1);
+        when(leaderboardService.getAllBindings()).thenReturn(List.of(binding));
+
+        StandardGuildMessageChannel channel = channelWithAccess(false);
+        when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
+
+        leaderboardScheduler.updateLeaderboards();
+
+        verify(leaderboardService, never()).removeBinding(any(), any());
+        verify(leaderboardService, never()).fetchLeaderboard(any(), any(int.class));
+        verify(channel, never()).editMessageEmbedsById(any(String.class), any(MessageEmbed.class));
+    }
+
+    @Test
     void updateLeaderboards_noBindings_doesNothing() {
         when(leaderboardService.getAllBindings()).thenReturn(List.of());
 
         leaderboardScheduler.updateLeaderboards();
 
         verify(jda, never()).getTextChannelById(any());
+    }
+
+    private StandardGuildMessageChannel accessibleChannel() {
+        return channelWithAccess(true);
+    }
+
+    private StandardGuildMessageChannel channelWithAccess(boolean hasAccess) {
+        StandardGuildMessageChannel channel = mock(StandardGuildMessageChannel.class);
+        Guild channelGuild = mock(Guild.class);
+        Member selfMember = mock(Member.class);
+        when(channel.getGuild()).thenReturn(channelGuild);
+        when(channelGuild.getSelfMember()).thenReturn(selfMember);
+        when(selfMember.hasAccess(channel)).thenReturn(hasAccess);
+        return channel;
     }
 }

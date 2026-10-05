@@ -14,7 +14,7 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +36,7 @@ public class LeaderboardSetupCommand {
                     .setEphemeral(true).queue();
             return;
         }
-        TextChannel channel = channelUnion.asTextChannel();
+        StandardGuildMessageChannel channel = channelUnion.asStandardGuildMessageChannel();
 
         if (!guild.getSelfMember().hasPermission(channel, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND)) {
             event.reply(messageService.getMessage(guildId, "error.missing_permission.channel_write", channel.getAsMention()))
@@ -88,7 +88,7 @@ public class LeaderboardSetupCommand {
 
     private void deleteOldMessages(Guild guild, LeaderboardChannel binding) {
         try {
-            TextChannel oldChannel = guild.getTextChannelById(binding.getChannelId());
+            StandardGuildMessageChannel oldChannel = guild.getChannelById(StandardGuildMessageChannel.class, binding.getChannelId());
             if (oldChannel != null) {
                 for (String messageId : binding.getMessageIds()) {
                     oldChannel.deleteMessageById(messageId).queue(

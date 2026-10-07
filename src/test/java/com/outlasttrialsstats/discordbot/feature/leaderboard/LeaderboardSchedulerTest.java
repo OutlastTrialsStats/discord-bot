@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.SelfMember;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
@@ -247,7 +247,7 @@ class LeaderboardSchedulerTest {
     private StandardGuildMessageChannel channelWithAccess(boolean hasAccess) {
         StandardGuildMessageChannel channel = mock(StandardGuildMessageChannel.class);
         Guild channelGuild = mock(Guild.class);
-        Member selfMember = mock(Member.class);
+        SelfMember selfMember = mock(SelfMember.class);
         when(channel.getGuild()).thenReturn(channelGuild);
         when(channelGuild.getSelfMember()).thenReturn(selfMember);
         when(selfMember.hasAccess(channel)).thenReturn(hasAccess);

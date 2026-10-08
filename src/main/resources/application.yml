@@ -7,6 +7,9 @@ spring:
     url: jdbc:postgresql://localhost:5432/totstats
     username: dev
     password: dev
+    hikari:
+      maximum-pool-size: 4
+      minimum-idle: 1
   jpa:
     hibernate:
       ddl-auto: validate

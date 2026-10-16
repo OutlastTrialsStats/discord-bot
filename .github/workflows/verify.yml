@@ -20,13 +20,17 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
-          cache: 'maven'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Run tests
-        run: mvn verify -B
+        run: ./gradlew build
 
       - name: Build Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
           push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -2,20 +2,17 @@ FROM eclipse-temurin:25-alpine AS build
 
 WORKDIR /build
 
-RUN apk add --no-cache maven
-
-COPY pom.xml .
-RUN mvn dependency:go-offline -q
-
+COPY gradlew settings.gradle.kts build.gradle.kts version.txt ./
+COPY gradle ./gradle
 COPY src ./src
-RUN mvn package -DskipTests -q
+RUN --mount=type=cache,target=/root/.gradle ./gradlew bootJar --no-daemon -q
 
 FROM eclipse-temurin:25-jre-alpine
 
 RUN addgroup -S app && adduser -S app -G app
 
 WORKDIR /app
-COPY --from=build /build/target/discord-bot-*.jar app.jar
+COPY --from=build /build/build/libs/discord-bot-*.jar app.jar
 
 RUN chown app:app app.jar
 USER app

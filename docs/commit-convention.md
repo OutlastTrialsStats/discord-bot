@@ -68,6 +68,6 @@ not show up in the changelog.
 
 Every push to `main` runs [`release.yml`](../.github/workflows/release.yml), which maintains a
 **release PR** collecting all releasable commits since the last tag. Merging that PR is the
-release: it bumps the version in `pom.xml`, updates `CHANGELOG.md`, tags `vX.Y.Z`, creates the
+release: it bumps the version in `version.txt`, updates `CHANGELOG.md`, tags `vX.Y.Z`, creates the
 GitHub release and pushes the Docker image to `ghcr.io/outlasttrialsstats/discord-bot` under both
 `X.Y.Z` and `latest`. Nothing goes live before a maintainer merges the release PR.

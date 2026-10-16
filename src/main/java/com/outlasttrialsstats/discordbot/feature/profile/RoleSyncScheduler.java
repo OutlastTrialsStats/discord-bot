@@ -3,6 +3,7 @@ package com.outlasttrialsstats.discordbot.feature.profile;
 import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileEntry;
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
 import com.outlasttrialsstats.discordbot.entity.GuildServer;
+import com.outlasttrialsstats.discordbot.feature.profile.service.GuildMemberLoader;
 import com.outlasttrialsstats.discordbot.feature.profile.service.RoleAssignmentService;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
@@ -28,6 +29,7 @@ public class RoleSyncScheduler {
     private static final int BULK_BATCH_SIZE = 100;
 
     private final JDA jda;
+    private final GuildMemberLoader memberLoader;
     private final TOTStatsApiClient statsApiClient;
     private final RoleAssignmentService roleAssignmentService;
     private final GuildServerRepository guildServerRepository;
@@ -38,12 +40,9 @@ public class RoleSyncScheduler {
 
         for (Guild guild : jda.getGuilds()) {
             try {
-                guild.loadMembers()
-                        .onSuccess(members -> syncGuildMembers(guild, members))
-                        .onError(error -> log.warn("Failed to load members for guild {}: {}",
-                                guild.getId(), error.getMessage()));
+                syncGuildMembers(guild, memberLoader.load(guild));
             } catch (Exception e) {
-                log.warn("Failed to sync guild {}: {}", guild.getId(), e.getMessage());
+                log.warn("Failed to sync guild {}", guild.getId(), e);
             }
         }
     }

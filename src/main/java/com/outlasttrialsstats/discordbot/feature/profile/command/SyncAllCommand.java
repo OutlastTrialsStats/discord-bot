@@ -1,5 +1,6 @@
 package com.outlasttrialsstats.discordbot.feature.profile.command;
 
+import com.outlasttrialsstats.discordbot.feature.profile.service.GuildMemberLoader;
 import com.outlasttrialsstats.discordbot.feature.profile.service.GuildSyncService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,9 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,7 +20,10 @@ import org.springframework.stereotype.Component;
 public class SyncAllCommand {
 
     private final GuildSyncService guildSyncService;
+    private final GuildMemberLoader memberLoader;
     private final MessageService messageService;
+    @Qualifier(TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME)
+    private final TaskExecutor taskExecutor;
 
     public void onSyncAll(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -33,11 +40,25 @@ public class SyncAllCommand {
 
         hook.editOriginal(messageService.getMessage(guildId, "sync.starting")).queue();
 
-        guild.loadMembers().onSuccess(members -> {
-            var result = guildSyncService.syncMembers(guild, members);
+        try {
+            taskExecutor.execute(() -> syncAndReport(guild, hook));
+        } catch (RuntimeException e) {
+            replyFailed(guild, hook, e);
+        }
+    }
 
-            hook.editOriginal(messageService.getMessage(guildId, "sync.completed",
+    private void syncAndReport(Guild guild, InteractionHook hook) {
+        try {
+            var result = guildSyncService.syncMembers(guild, memberLoader.load(guild));
+            hook.editOriginal(messageService.getMessage(guild.getId(), "sync.completed",
                     result.updated(), result.unchanged(), result.unverified(), result.failed())).queue();
-        });
+        } catch (Exception e) {
+            replyFailed(guild, hook, e);
+        }
+    }
+
+    private void replyFailed(Guild guild, InteractionHook hook, Exception e) {
+        log.warn("Failed to sync members for guild {}", guild.getId(), e);
+        hook.editOriginal(messageService.getMessage(guild.getId(), "sync.failed")).queue();
     }
 }

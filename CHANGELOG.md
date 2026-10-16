@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.5](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.4...v1.3.5) (2026-10-16)
+
+
+### Bug Fixes
+
+* **role:** stop member loading from timing out during role sync ([c90ea5b](https://github.com/OutlastTrialsStats/discord-bot/commit/c90ea5bf4970dc6a634114a02051dc97b43b0ca9))
+
+
+### Continuous Integration
+
+* set up buildx for docker layer caching in verify ([4f12b8a](https://github.com/OutlastTrialsStats/discord-bot/commit/4f12b8a90100dc4f3958b52c16fa439a6de769cf))
+
 ## [1.3.4](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.3...v1.3.4) (2026-10-08)
 
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.4](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.3...v1.3.4) (2026-10-08)
+
+
+### Performance Improvements
+
+* cap the bot's memory use ([77d9b02](https://github.com/OutlastTrialsStats/discord-bot/commit/77d9b0287aec4254bb3904b5317961a53e1b7543))
+* cap the bot's memory use ([a2af46f](https://github.com/OutlastTrialsStats/discord-bot/commit/a2af46f33115e642de2d1da4f86c432ba1296ee9))
+
 ## [1.3.3](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.2...v1.3.3) (2026-10-05)
 
 

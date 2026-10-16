@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -15,6 +16,7 @@ import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileEntry;
 import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileResponse;
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
+import com.outlasttrialsstats.discordbot.feature.profile.service.GuildMemberLoader;
 import com.outlasttrialsstats.discordbot.feature.profile.service.RoleAssignmentService;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
@@ -29,6 +31,7 @@ import net.dv8tion.jda.api.entities.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,6 +41,9 @@ class RoleSyncSchedulerTest {
 
     @Mock
     private JDA jda;
+
+    @Mock
+    private GuildMemberLoader memberLoader;
 
     @Mock
     private TOTStatsApiClient statsApiClient;
@@ -60,6 +66,41 @@ class RoleSyncSchedulerTest {
         roleSyncScheduler.syncAllGuilds();
 
         verify(statsApiClient, never()).getBulkProfiles(anyList());
+    }
+
+    @Test
+    void syncAllGuilds_processesGuildsSequentially() {
+        var guild1 = mockGuild("guild-1");
+        var guild2 = mockGuild("guild-2");
+        var member1 = mockMember("user-1", false);
+        var member2 = mockMember("user-2", false);
+        when(memberLoader.load(guild1)).thenReturn(List.of(member1));
+        when(memberLoader.load(guild2)).thenReturn(List.of(member2));
+        when(jda.getGuilds()).thenReturn(List.of(guild1, guild2));
+        when(statsApiClient.getBulkProfiles(anyList())).thenReturn(Optional.of(emptyBulkResponse()));
+
+        roleSyncScheduler.syncAllGuilds();
+
+        InOrder order = inOrder(memberLoader, statsApiClient);
+        order.verify(memberLoader).load(guild1);
+        order.verify(statsApiClient).getBulkProfiles(List.of("user-1"));
+        order.verify(memberLoader).load(guild2);
+        order.verify(statsApiClient).getBulkProfiles(List.of("user-2"));
+    }
+
+    @Test
+    void syncAllGuilds_failingGuild_doesNotStopOtherGuilds() {
+        var failingGuild = mockGuild("guild-1");
+        var healthyGuild = mockGuild("guild-2");
+        when(memberLoader.load(failingGuild)).thenThrow(new IllegalStateException("boom"));
+        var member = mockMember("user-2", false);
+        when(memberLoader.load(healthyGuild)).thenReturn(List.of(member));
+        when(jda.getGuilds()).thenReturn(List.of(failingGuild, healthyGuild));
+        when(statsApiClient.getBulkProfiles(anyList())).thenReturn(Optional.of(emptyBulkResponse()));
+
+        roleSyncScheduler.syncAllGuilds();
+
+        verify(statsApiClient).getBulkProfiles(List.of("user-2"));
     }
 
     @Test
@@ -153,9 +194,19 @@ class RoleSyncSchedulerTest {
     }
 
     private Guild mockGuild() {
+        return mockGuild(GUILD_ID);
+    }
+
+    private Guild mockGuild(String id) {
         var guild = mock(Guild.class);
-        lenient().when(guild.getId()).thenReturn(GUILD_ID);
+        lenient().when(guild.getId()).thenReturn(id);
         return guild;
+    }
+
+    private DiscordBulkProfileResponse emptyBulkResponse() {
+        var response = new DiscordBulkProfileResponse();
+        response.setProfiles(List.of());
+        return response;
     }
 
     private Member mockMember(String id, boolean isBot) {

@@ -112,7 +112,7 @@ DISCORD_BOT_TOKEN=your-bot-token-here
 ### 3. Run the bot
 
 ```bash
-./mvnw spring-boot:run
+./gradlew bootRun
 ```
 
 ### Commits and releases

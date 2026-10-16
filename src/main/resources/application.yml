@@ -19,6 +19,10 @@ spring:
   messages:
     basename: messages/messages
     fallback-to-system-locale: false
+  task:
+    scheduling:
+      pool:
+        size: 2
 
 logging:
   level:

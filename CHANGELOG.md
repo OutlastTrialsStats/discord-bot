@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.6](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.5...v1.3.6) (2026-10-25)
+
+
+### Dependencies
+
+* **deps:** bump gradle-wrapper from 9.8.1 to 9.8.2 ([9b9d4f8](https://github.com/OutlastTrialsStats/discord-bot/commit/9b9d4f821ddb828ad9e32d3095211a38d21acf91))
+
 ## [1.3.5](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.4...v1.3.5) (2026-10-18)
 
 

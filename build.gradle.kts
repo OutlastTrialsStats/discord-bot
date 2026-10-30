@@ -28,7 +28,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
     implementation("net.dv8tion:JDA:6.7.0")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:3.1.1")
-    implementation("org.openapitools:jackson-databind-nullable:0.2.12")
+    implementation("org.openapitools:jackson-databind-nullable:0.2.13")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")

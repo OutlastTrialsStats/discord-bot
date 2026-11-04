@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.6](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.5...v1.3.6) (2026-11-04)
+
+
+### Dependencies
+
+* **deps:** bump gradle-wrapper from 9.8.1 to 9.8.2 ([9b9d4f8](https://github.com/OutlastTrialsStats/discord-bot/commit/9b9d4f821ddb828ad9e32d3095211a38d21acf91))
+* **deps:** bump org.springframework.boot from 4.1.1 to 4.1.2 ([20fc12b](https://github.com/OutlastTrialsStats/discord-bot/commit/20fc12b5e546f84d1b6bd1d0f6907a0b8a815c90))
+
 ## [1.3.5](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.4...v1.3.5) (2026-10-18)
 
 

@@ -9,6 +9,7 @@ import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
+import com.outlasttrialsstats.discordbot.shared.ProfileLookup;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,19 +35,36 @@ public class RoleAssignmentService {
     public RoleAssignmentResult assignRoles(Guild guild, Member member) {
         log.debug("Assigning roles for member {} in guild {}", member.getId(), guild.getId());
 
-        var profileOpt = statsApiClient.getProfile(member.getId());
-        if (profileOpt.isEmpty()) {
-            log.debug("Member {} is not verified, skipping", member.getId());
-            cleanupUnverifiedMember(guild, member);
-            return RoleAssignmentResult.notVerified();
-        }
-
-        return assignRolesFromProfile(guild, member, profileOpt.get());
+        return switch (statsApiClient.getProfile(member.getId())) {
+            case ProfileLookup.Found(var profile) -> assignRolesFromProfile(guild, member, profile);
+            case ProfileLookup.NotLinked() -> {
+                log.debug("Member {} is not linked, removing bot-managed roles", member.getId());
+                yield cleanupUnverifiedMember(guild, member);
+            }
+            case ProfileLookup.Failed(var reason) -> {
+                log.warn("Profile lookup for member {} in guild {} failed ({}), leaving roles untouched",
+                        member.getId(), guild.getId(), reason);
+                yield RoleAssignmentResult.lookupFailed();
+            }
+        };
     }
 
-    public void cleanupUnverifiedMember(Guild guild, Member member) {
-        assignEnumRole(guild, member, guild.getId(), RoleCategory.CONNECTED_ACCOUNT,
-                null, new ArrayList<>(), new ArrayList<>());
+    /**
+     * Removes every role the bot manages in this guild from the member. Must only be called when the
+     * backend confirmed that the member has no linked profile (never on lookup failures).
+     */
+    public RoleAssignmentResult cleanupUnverifiedMember(Guild guild, Member member) {
+        List<String> removedRoles = new ArrayList<>();
+        List<String> allRoleIds = roleMappingService.getAllRoleIds(guild.getId()).stream()
+                .distinct()
+                .toList();
+        syncRoles(guild, member, allRoleIds, Set.of(), new ArrayList<>(), removedRoles);
+
+        if (!removedRoles.isEmpty()) {
+            log.info("Member {} in guild {} is not linked: removed [{}]",
+                    member.getId(), guild.getId(), String.join(", ", removedRoles));
+        }
+        return RoleAssignmentResult.notVerified(removedRoles);
     }
 
     public RoleAssignmentResult assignRolesFromProfile(Guild guild, Member member, DiscordProfileResponse profile) {

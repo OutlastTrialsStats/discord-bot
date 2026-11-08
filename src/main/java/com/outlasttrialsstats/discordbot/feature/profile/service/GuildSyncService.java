@@ -33,7 +33,9 @@ public class GuildSyncService {
         for (var member : members) {
             try {
                 var result = syncMember(guild, member);
-                if (!result.verified()) {
+                if (result.isLookupFailed()) {
+                    failed++;
+                } else if (!result.verified()) {
                     unverified++;
                 } else if (result.hasChanges()) {
                     updated++;

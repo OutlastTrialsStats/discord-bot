@@ -149,4 +149,29 @@ class VerificationPollSchedulerTest {
 
         verify(guildSyncService, times(1)).syncMember(guild, member);
     }
+
+    @Test
+    void pollRecentVerifications_lookupFailed_retriesOnNextPoll() {
+        var verification = new DiscordVerificationEntry();
+        verification.setDiscordUserId("user-1");
+        verification.setDisplayName("TestUser");
+
+        var response = new DiscordRecentVerificationsResponse();
+        response.setVerifications(List.of(verification));
+        when(statsApiClient.getRecentVerifications(10)).thenReturn(Optional.of(response));
+
+        var guild = mock(Guild.class);
+        var member = mock(Member.class);
+        when(jda.getGuilds()).thenReturn(List.of(guild));
+        when(guild.getMemberById("user-1")).thenReturn(member);
+        when(guildSyncService.syncMember(guild, member))
+                .thenReturn(RoleAssignmentResult.lookupFailed())
+                .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
+
+        verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
+
+        verify(guildSyncService, times(2)).syncMember(guild, member);
+    }
 }

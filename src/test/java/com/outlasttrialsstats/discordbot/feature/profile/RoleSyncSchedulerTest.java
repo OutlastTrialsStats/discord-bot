@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileEntry;
 import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileResponse;
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
+import com.outlasttrialsstats.discordbot.entity.GuildServer;
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
 import com.outlasttrialsstats.discordbot.feature.profile.service.GuildMemberLoader;
 import com.outlasttrialsstats.discordbot.feature.profile.service.RoleAssignmentService;
@@ -113,6 +114,53 @@ class RoleSyncSchedulerTest {
         roleSyncScheduler.syncGuildMembers(guild, List.of(member));
 
         verify(roleAssignmentService, never()).assignRolesFromProfile(any(), any(), any());
+        verify(roleAssignmentService, never()).cleanupUnverifiedMember(any(), any());
+        verify(guildServerRepository, never()).save(any());
+    }
+
+    @Test
+    void syncGuildMembers_oneBatchFails_doesNotOverwriteVerifiedCountOrCleanUpFailedBatch() {
+        var guild = mockGuild();
+        List<Member> members = new ArrayList<>();
+        for (int i = 0; i < 150; i++) {
+            members.add(mockMember("user-" + i, false));
+        }
+
+        var firstBatch = new DiscordBulkProfileResponse();
+        firstBatch.setProfiles(List.of(bulkProfileEntry("user-0", 10, 50)));
+        when(statsApiClient.getBulkProfiles(anyList()))
+                .thenReturn(Optional.of(firstBatch))
+                .thenReturn(Optional.empty());
+        when(roleAssignmentService.assignRolesFromProfile(any(), any(), any()))
+                .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
+
+        roleSyncScheduler.syncGuildMembers(guild, members);
+
+        // user-1..user-99 are confirmed missing in batch 1; batch 2 (user-100..149) failed entirely
+        verify(roleAssignmentService, times(99)).cleanupUnverifiedMember(eq(guild), any());
+        for (int i = 100; i < 150; i++) {
+            verify(roleAssignmentService, never()).cleanupUnverifiedMember(guild, members.get(i));
+        }
+        verify(guildServerRepository, never()).save(any());
+    }
+
+    @Test
+    void syncGuildMembers_allBatchesSucceed_savesVerifiedCount() {
+        var guild = mockGuild();
+        var member = mockMember("user-1", false);
+
+        var response = new DiscordBulkProfileResponse();
+        response.setProfiles(List.of(bulkProfileEntry("user-1", 10, 50)));
+        when(statsApiClient.getBulkProfiles(List.of("user-1"))).thenReturn(Optional.of(response));
+        when(roleAssignmentService.assignRolesFromProfile(any(), any(), any()))
+                .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
+        when(guildServerRepository.findById(GUILD_ID)).thenReturn(Optional.empty());
+
+        roleSyncScheduler.syncGuildMembers(guild, List.of(member));
+
+        var serverCaptor = ArgumentCaptor.forClass(GuildServer.class);
+        verify(guildServerRepository).save(serverCaptor.capture());
+        assertThat(serverCaptor.getValue().getVerifiedMemberCount()).isEqualTo(1);
     }
 
     @Test

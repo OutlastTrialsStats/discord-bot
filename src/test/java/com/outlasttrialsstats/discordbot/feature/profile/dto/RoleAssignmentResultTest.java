@@ -50,4 +50,23 @@ class RoleAssignmentResultTest {
         var result = RoleAssignmentResult.of(List.of("Added"), List.of("Removed"));
         assertThat(result.hasChanges()).isTrue();
     }
+
+    @Test
+    void lookupFailed_isNeitherVerifiedNorChanged() {
+        var result = RoleAssignmentResult.lookupFailed();
+
+        assertThat(result.isLookupFailed()).isTrue();
+        assertThat(result.verified()).isFalse();
+        assertThat(result.hasChanges()).isFalse();
+    }
+
+    @Test
+    void notVerified_withRemovedRoles_reportsChanges() {
+        var result = RoleAssignmentResult.notVerified(List.of("Connected"));
+
+        assertThat(result.verified()).isFalse();
+        assertThat(result.isLookupFailed()).isFalse();
+        assertThat(result.removedRoles()).containsExactly("Connected");
+        assertThat(result.hasChanges()).isTrue();
+    }
 }

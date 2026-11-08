@@ -27,6 +27,9 @@ public class MemberJoinListener extends ListenerAdapter {
         if (result.verified()) {
             log.info("Assigned roles to verified member {}: added={}, removed={}",
                     member.getId(), result.addedRoles(), result.removedRoles());
+        } else if (result.isLookupFailed()) {
+            log.warn("Could not look up profile for joining member {} in guild {}, roles left untouched",
+                    member.getId(), event.getGuild().getId());
         } else {
             log.debug("Member {} is not verified, skipping role assignment", member.getId());
         }

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.outlasttrialsstats.backend.api.model.ActiveReagentSkillType;
@@ -17,6 +18,7 @@ import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
+import com.outlasttrialsstats.discordbot.shared.ProfileLookup;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.util.List;
 import java.util.Optional;
@@ -63,12 +65,56 @@ class RoleAssignmentServiceTest {
 
     @Test
     void assignRoles_memberNotVerified_returnsNotVerified() {
-        when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(Optional.empty());
+        when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(new ProfileLookup.NotLinked());
 
         var result = roleAssignmentService.assignRoles(guild, member);
 
         assertThat(result.verified()).isFalse();
+        assertThat(result.isLookupFailed()).isFalse();
         verify(roleMappingService, never()).getRankedMappings(any(), any());
+    }
+
+    @Test
+    void assignRoles_notLinked_removesAllBotMappedRoles() {
+        when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(new ProfileLookup.NotLinked());
+        when(roleMappingService.getAllRoleIds(GUILD_ID))
+                .thenReturn(List.of("role-connected", "role-prestige", "role-platform", "role-prestige"));
+
+        Role connected = mockRole("Connected");
+        Role prestige = mockRole("Prestige 20+");
+        Role platform = mock(Role.class);
+        Role unrelated = mock(Role.class);
+        when(guild.getRoleById("role-connected")).thenReturn(connected);
+        when(guild.getRoleById("role-prestige")).thenReturn(prestige);
+        when(guild.getRoleById("role-platform")).thenReturn(platform);
+        when(member.getRoles()).thenReturn(List.of(connected, prestige, unrelated));
+        stubRemoveRole(member, connected);
+        stubRemoveRole(member, prestige);
+
+        var result = roleAssignmentService.assignRoles(guild, member);
+
+        assertThat(result.verified()).isFalse();
+        assertThat(result.removedRoles()).containsExactlyInAnyOrder("Connected", "Prestige 20+");
+        verify(guild).removeRoleFromMember(member, connected);
+        verify(guild).removeRoleFromMember(member, prestige);
+        verify(guild, never()).removeRoleFromMember(member, platform);
+        verify(guild, never()).removeRoleFromMember(member, unrelated);
+        verify(guild, never()).addRoleToMember(any(), any());
+    }
+
+    @Test
+    void assignRoles_lookupFailed_doesNotTouchRoles() {
+        when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(new ProfileLookup.Failed("503"));
+
+        var result = roleAssignmentService.assignRoles(guild, member);
+
+        assertThat(result.isLookupFailed()).isTrue();
+        assertThat(result.verified()).isFalse();
+        assertThat(result.hasChanges()).isFalse();
+        verify(guild, never()).removeRoleFromMember(any(), any());
+        verify(guild, never()).addRoleToMember(any(), any());
+        verify(guild, never()).modifyNickname(any(), any());
+        verifyNoInteractions(roleMappingService, guildServerRepository);
     }
 
     @Test
@@ -197,7 +243,7 @@ class RoleAssignmentServiceTest {
     @Test
     void assignRoles_nullProfileFields_skipsAllCategories() {
         when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(
-                Optional.of(createProfile(null, null, null, null)));
+                new ProfileLookup.Found(createProfile(null, null, null, null)));
 
         var result = roleAssignmentService.assignRoles(guild, member);
 
@@ -312,7 +358,7 @@ class RoleAssignmentServiceTest {
     }
 
     private void stubProfileWithEmptyMappings(DiscordProfileResponse profile) {
-        when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(Optional.of(profile));
+        when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(new ProfileLookup.Found(profile));
         lenient().when(roleMappingService.getRankedMappings(eq(GUILD_ID), any())).thenReturn(List.of());
         lenient().when(roleMappingService.getEnumMappings(eq(GUILD_ID), any())).thenReturn(List.of());
     }

@@ -65,7 +65,12 @@ public class VerificationPollScheduler {
 
                 try {
                     var result = guildSyncService.syncMember(guild, member);
-                    if (result.verified() && result.hasChanges()) {
+                    if (result.isLookupFailed()) {
+                        // Allow a retry on the next poll while the verification is still in the window
+                        processedUserIds.remove(discordUserId);
+                        log.warn("Profile lookup failed for recently verified user {} in guild {}",
+                                discordUserId, guild.getId());
+                    } else if (result.verified() && result.hasChanges()) {
                         log.info("Synced recently verified user {} ({}) in guild {}",
                                 verification.getDisplayName(), discordUserId, guild.getId());
                     }

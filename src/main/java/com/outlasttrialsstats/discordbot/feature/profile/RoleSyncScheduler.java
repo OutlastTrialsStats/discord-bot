@@ -56,6 +56,7 @@ public class RoleSyncScheduler {
         var unchanged = new AtomicInteger();
         var unverified = new AtomicInteger();
         var failed = new AtomicInteger();
+        int failedBatches = 0;
 
         for (int i = 0; i < nonBotMembers.size(); i += BULK_BATCH_SIZE) {
             List<Member> batch = nonBotMembers.subList(i, Math.min(i + BULK_BATCH_SIZE, nonBotMembers.size()));
@@ -63,7 +64,11 @@ public class RoleSyncScheduler {
 
             var responseOpt = statsApiClient.getBulkProfiles(discordIds);
             if (responseOpt.isEmpty() || responseOpt.get().getProfiles() == null) {
-                unverified.addAndGet(batch.size());
+                // Backend unavailable: never treat this as "not linked", leave roles untouched
+                log.warn("Bulk profile lookup failed for {} members in guild {}, skipping batch",
+                        batch.size(), guild.getId());
+                failedBatches++;
+                failed.addAndGet(batch.size());
                 continue;
             }
 
@@ -94,8 +99,12 @@ public class RoleSyncScheduler {
             }
         }
 
-        int verified = updated.get() + unchanged.get();
-        saveVerifiedMemberCount(guild, verified);
+        if (failedBatches == 0) {
+            saveVerifiedMemberCount(guild, updated.get() + unchanged.get());
+        } else {
+            log.warn("Not updating verified member count for guild {}: {} batch(es) failed",
+                    guild.getId(), failedBatches);
+        }
 
         log.info("Scheduled role sync for guild {}: {} updated, {} unchanged, {} unverified, {} failed",
                 guild.getId(), updated.get(), unchanged.get(), unverified.get(), failed.get());

@@ -28,6 +28,12 @@ public class ProfileCommand {
 
         RoleAssignmentResult result = roleAssignmentService.assignRoles(guild, event.getMember());
 
+        if (result.isLookupFailed()) {
+            event.reply(messageService.getMessage(guildId, "profile.backend_unavailable"))
+                    .setEphemeral(true).queue();
+            return;
+        }
+
         if (!result.verified()) {
             event.reply(messageService.getMessage(guildId, "profile.not_verified"))
                     .setEphemeral(true).queue();

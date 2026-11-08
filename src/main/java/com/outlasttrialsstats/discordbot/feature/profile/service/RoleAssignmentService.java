@@ -13,6 +13,7 @@ import com.outlasttrialsstats.discordbot.shared.ProfileLookup;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
@@ -143,21 +144,57 @@ public class RoleAssignmentService {
     }
 
     private void updateNicknameIfEnabled(Guild guild, Member member, DiscordProfileResponse profile) {
-        String displayName = profile.getDisplayName();
-        if (displayName == null) return;
+        String nickname = toNickname(profile.getDisplayName());
+        if (nickname == null) return;
 
         boolean autoNickname = guildServerRepository.findById(guild.getId())
                 .map(GuildServer::isAutoNickname)
                 .orElse(false);
 
         if (!autoNickname) return;
+        if (nickname.equals(member.getEffectiveName())) return;
 
-        if (!displayName.equals(member.getEffectiveName())) {
-            guild.modifyNickname(member, displayName).queue(
-                    _ -> log.debug("Updated nickname for {} to '{}'", member.getId(), displayName),
+        if (member.isOwner()) {
+            log.debug("Not updating nickname for {} in guild {}: member is the guild owner",
+                    member.getId(), guild.getId());
+            return;
+        }
+
+        Member selfMember = guild.getSelfMember();
+        if (!selfMember.hasPermission(Permission.NICKNAME_MANAGE)) {
+            log.debug("Not updating nickname for {} in guild {}: missing NICKNAME_MANAGE permission",
+                    member.getId(), guild.getId());
+            return;
+        }
+        if (!selfMember.canInteract(member)) {
+            log.debug("Not updating nickname for {} in guild {}: member is above the bot in the role hierarchy",
+                    member.getId(), guild.getId());
+            return;
+        }
+
+        try {
+            guild.modifyNickname(member, nickname).queue(
+                    _ -> log.debug("Updated nickname for {} to '{}'", member.getId(), nickname),
                     error -> log.warn("Failed to update nickname for {}: {}", member.getId(), error.getMessage())
             );
+        } catch (Exception e) {
+            log.warn("Cannot update nickname for {} in guild {}: {}", member.getId(), guild.getId(), e.getMessage());
         }
+    }
+
+    /**
+     * Normalizes a display name into a valid Discord nickname: stripped, at most
+     * {@link Member#MAX_NICKNAME_LENGTH} code points. Returns {@code null} for blank names.
+     */
+    static String toNickname(String displayName) {
+        if (displayName == null) return null;
+        String stripped = displayName.strip();
+        if (stripped.isEmpty()) return null;
+        if (stripped.codePointCount(0, stripped.length()) <= Member.MAX_NICKNAME_LENGTH) {
+            return stripped;
+        }
+        String truncated = stripped.substring(0, stripped.offsetByCodePoints(0, Member.MAX_NICKNAME_LENGTH)).strip();
+        return truncated.isEmpty() ? null : truncated;
     }
 
     private void assignRankedRole(Guild guild, Member member, String guildId,

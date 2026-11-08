@@ -22,9 +22,11 @@ import com.outlasttrialsstats.discordbot.shared.ProfileLookup;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.SelfMember;
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,8 +61,8 @@ class RoleAssignmentServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(guild.getId()).thenReturn(GUILD_ID);
-        when(member.getId()).thenReturn(MEMBER_ID);
+        lenient().when(guild.getId()).thenReturn(GUILD_ID);
+        lenient().when(member.getId()).thenReturn(MEMBER_ID);
     }
 
     @Test
@@ -303,6 +305,7 @@ class RoleAssignmentServiceTest {
         server.setAutoNickname(true);
         when(guildServerRepository.findById(GUILD_ID)).thenReturn(Optional.of(server));
         when(member.getEffectiveName()).thenReturn("OldNickname");
+        stubSelfMember(true, true);
 
         @SuppressWarnings("unchecked")
         AuditableRestAction<Void> modifyAction = mock(AuditableRestAction.class);
@@ -311,6 +314,115 @@ class RoleAssignmentServiceTest {
         roleAssignmentService.assignRoles(guild, member);
 
         verify(guild).modifyNickname(member, "GamePlayer123");
+    }
+
+    @Test
+    void assignRoles_autoNicknameLongName_truncatesToMaxCodePoints() {
+        // 40 emoji (surrogate pairs): truncation must not split a code point
+        String emoji = new String(Character.toChars(0x1F600));
+        var profile = createProfile(0, 0, 0, null);
+        profile.setDisplayName(emoji.repeat(40));
+        stubProfileWithEmptyMappings(profile);
+        enableAutoNickname();
+        when(member.getEffectiveName()).thenReturn("OldNickname");
+        stubSelfMember(true, true);
+        String expected = emoji.repeat(Member.MAX_NICKNAME_LENGTH);
+        when(guild.modifyNickname(member, expected)).thenReturn(mock());
+
+        roleAssignmentService.assignRoles(guild, member);
+
+        verify(guild).modifyNickname(member, expected);
+    }
+
+    @Test
+    void assignRoles_autoNicknameBlankName_doesNotModify() {
+        var profile = createProfile(0, 0, 0, null);
+        profile.setDisplayName("   ");
+        stubProfileWithEmptyMappings(profile);
+
+        roleAssignmentService.assignRoles(guild, member);
+
+        verify(guild, never()).modifyNickname(any(), any());
+        verify(guildServerRepository, never()).findById(any());
+    }
+
+    @Test
+    void assignRoles_autoNicknameGuildOwner_doesNotModify() {
+        var profile = createProfile(0, 0, 0, null);
+        profile.setDisplayName("GamePlayer123");
+        stubProfileWithEmptyMappings(profile);
+        enableAutoNickname();
+        when(member.getEffectiveName()).thenReturn("OldNickname");
+        when(member.isOwner()).thenReturn(true);
+
+        roleAssignmentService.assignRoles(guild, member);
+
+        verify(guild, never()).modifyNickname(any(), any());
+    }
+
+    @Test
+    void assignRoles_autoNicknameMissingPermission_doesNotModify() {
+        var profile = createProfile(0, 0, 0, null);
+        profile.setDisplayName("GamePlayer123");
+        stubProfileWithEmptyMappings(profile);
+        enableAutoNickname();
+        when(member.getEffectiveName()).thenReturn("OldNickname");
+        stubSelfMember(false, true);
+
+        roleAssignmentService.assignRoles(guild, member);
+
+        verify(guild, never()).modifyNickname(any(), any());
+    }
+
+    @Test
+    void assignRoles_autoNicknameMemberAboveBot_doesNotModify() {
+        var profile = createProfile(0, 0, 0, null);
+        profile.setDisplayName("GamePlayer123");
+        stubProfileWithEmptyMappings(profile);
+        enableAutoNickname();
+        when(member.getEffectiveName()).thenReturn("OldNickname");
+        stubSelfMember(true, false);
+
+        roleAssignmentService.assignRoles(guild, member);
+
+        verify(guild, never()).modifyNickname(any(), any());
+    }
+
+    @Test
+    void assignRoles_autoNicknameModifyThrows_stillReturnsResult() {
+        var profile = createProfile(0, 0, 0, null);
+        profile.setDisplayName("GamePlayer123");
+        stubProfileWithEmptyMappings(profile);
+        enableAutoNickname();
+        when(member.getEffectiveName()).thenReturn("OldNickname");
+        stubSelfMember(true, true);
+        when(guild.modifyNickname(member, "GamePlayer123"))
+                .thenThrow(new IllegalStateException("hierarchy"));
+
+        var result = roleAssignmentService.assignRoles(guild, member);
+
+        assertThat(result.verified()).isTrue();
+    }
+
+    @Test
+    void toNickname_normalizesDisplayNames() {
+        assertThat(RoleAssignmentService.toNickname("  Name  ")).isEqualTo("Name");
+        assertThat(RoleAssignmentService.toNickname(null)).isNull();
+        assertThat(RoleAssignmentService.toNickname("")).isNull();
+        assertThat(RoleAssignmentService.toNickname("a".repeat(40))).hasSize(Member.MAX_NICKNAME_LENGTH);
+    }
+
+    private void enableAutoNickname() {
+        var server = new GuildServer(GUILD_ID);
+        server.setAutoNickname(true);
+        when(guildServerRepository.findById(GUILD_ID)).thenReturn(Optional.of(server));
+    }
+
+    private void stubSelfMember(boolean canManageNicknames, boolean canInteract) {
+        var selfMember = mock(SelfMember.class);
+        when(guild.getSelfMember()).thenReturn(selfMember);
+        when(selfMember.hasPermission(Permission.NICKNAME_MANAGE)).thenReturn(canManageNicknames);
+        lenient().when(selfMember.canInteract(member)).thenReturn(canInteract);
     }
 
     @Test

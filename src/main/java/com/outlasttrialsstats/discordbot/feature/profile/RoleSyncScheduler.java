@@ -1,23 +1,12 @@
 package com.outlasttrialsstats.discordbot.feature.profile;
 
-import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileEntry;
-import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
-import com.outlasttrialsstats.discordbot.entity.GuildServer;
 import com.outlasttrialsstats.discordbot.feature.profile.service.GuildMemberLoader;
-import com.outlasttrialsstats.discordbot.feature.profile.service.RoleAssignmentService;
-import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
-import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
-import java.util.List;
-import java.util.Map;
+import com.outlasttrialsstats.discordbot.feature.profile.service.GuildSyncService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -26,113 +15,30 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class RoleSyncScheduler {
 
-    private static final int BULK_BATCH_SIZE = 100;
-
     private final JDA jda;
     private final GuildMemberLoader memberLoader;
-    private final TOTStatsApiClient statsApiClient;
-    private final RoleAssignmentService roleAssignmentService;
-    private final GuildServerRepository guildServerRepository;
+    private final GuildSyncService guildSyncService;
 
     @Scheduled(fixedRate = 1, initialDelay = 1, timeUnit = TimeUnit.HOURS)
     public void syncAllGuilds() {
         log.info("Starting scheduled role sync for all guilds");
 
         for (Guild guild : jda.getGuilds()) {
-            try {
-                syncGuildMembers(guild, memberLoader.load(guild));
-            } catch (Exception e) {
-                log.warn("Failed to sync guild {}", guild.getId(), e);
-            }
+            syncGuild(guild);
         }
     }
 
-    void syncGuildMembers(Guild guild, List<Member> members) {
-        List<Member> nonBotMembers = members.stream()
-                .filter(m -> !m.getUser().isBot())
-                .toList();
-
-        var updated = new AtomicInteger();
-        var unchanged = new AtomicInteger();
-        var unverified = new AtomicInteger();
-        var failed = new AtomicInteger();
-        int failedBatches = 0;
-
-        for (int i = 0; i < nonBotMembers.size(); i += BULK_BATCH_SIZE) {
-            List<Member> batch = nonBotMembers.subList(i, Math.min(i + BULK_BATCH_SIZE, nonBotMembers.size()));
-            List<String> discordIds = batch.stream().map(Member::getId).toList();
-
-            var responseOpt = statsApiClient.getBulkProfiles(discordIds);
-            if (responseOpt.isEmpty() || responseOpt.get().getProfiles() == null) {
-                // Backend unavailable: never treat this as "not linked", leave roles untouched
-                log.warn("Bulk profile lookup failed for {} members in guild {}, skipping batch",
-                        batch.size(), guild.getId());
-                failedBatches++;
-                failed.addAndGet(batch.size());
-                continue;
-            }
-
-            Map<String, DiscordBulkProfileEntry> profilesByDiscordId = responseOpt.get().getProfiles().stream()
-                    .collect(Collectors.toMap(DiscordBulkProfileEntry::getDiscordUserId, Function.identity()));
-
-            for (Member member : batch) {
-                var entry = profilesByDiscordId.get(member.getId());
-                try {
-                    if (entry == null) {
-                        roleAssignmentService.cleanupUnverifiedMember(guild, member);
-                        unverified.incrementAndGet();
-                        continue;
-                    }
-
-                    var profile = toProfileResponse(entry);
-                    var result = roleAssignmentService.assignRolesFromProfile(guild, member, profile);
-                    if (result.hasChanges()) {
-                        updated.incrementAndGet();
-                    } else {
-                        unchanged.incrementAndGet();
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to sync roles for member {} in guild {}: {}",
-                            member.getId(), guild.getId(), e.getMessage());
-                    failed.incrementAndGet();
-                }
-            }
+    private void syncGuild(Guild guild) {
+        if (!guildSyncService.tryStartGuildSync(guild.getId())) {
+            log.info("Skipping scheduled role sync for guild {}: a sync is already in progress", guild.getId());
+            return;
         }
-
-        if (failedBatches == 0) {
-            saveVerifiedMemberCount(guild, updated.get() + unchanged.get());
-        } else {
-            log.warn("Not updating verified member count for guild {}: {} batch(es) failed",
-                    guild.getId(), failedBatches);
-        }
-
-        log.info("Scheduled role sync for guild {}: {} updated, {} unchanged, {} unverified, {} failed",
-                guild.getId(), updated.get(), unchanged.get(), unverified.get(), failed.get());
-    }
-
-    private void saveVerifiedMemberCount(Guild guild, int verified) {
         try {
-            GuildServer server = guildServerRepository.findById(guild.getId())
-                    .orElseGet(() -> new GuildServer(guild.getId()));
-            server.setVerifiedMemberCount(verified);
-            guildServerRepository.save(server);
+            guildSyncService.syncMembers(guild, memberLoader.load(guild));
         } catch (Exception e) {
-            log.warn("Failed to save verified member count for guild {}: {}", guild.getId(), e.getMessage());
+            log.warn("Failed to sync guild {}", guild.getId(), e);
+        } finally {
+            guildSyncService.finishGuildSync(guild.getId());
         }
-    }
-
-    private DiscordProfileResponse toProfileResponse(DiscordBulkProfileEntry entry) {
-        var profile = new DiscordProfileResponse();
-        profile.setProfileId(entry.getProfileId());
-        profile.setDisplayName(entry.getDisplayName());
-        profile.setPrestigeLevel(entry.getPrestigeLevel());
-        profile.setLevel(entry.getLevel());
-        profile.setActiveReagentSkill(entry.getActiveReagentSkill());
-        profile.setInvasionRanking(entry.getInvasionRanking());
-        profile.setTotalInvasionMatchesPlayed(entry.getTotalInvasionMatchesPlayed());
-        profile.setSeasonTotalInvasionPoints(entry.getSeasonTotalInvasionPoints());
-        profile.setPlatformType(entry.getPlatformType());
-        profile.setAccountCreationType(entry.getAccountCreationType());
-        return profile;
     }
 }

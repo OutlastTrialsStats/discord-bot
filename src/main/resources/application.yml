@@ -19,6 +19,7 @@ spring:
   messages:
     basename: messages/messages
     fallback-to-system-locale: false
+    always-use-message-format: true
   task:
     scheduling:
       pool:

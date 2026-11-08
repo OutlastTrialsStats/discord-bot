@@ -1,9 +1,11 @@
 package com.outlasttrialsstats.discordbot.feature.setup.command;
 
 import com.outlasttrialsstats.discordbot.feature.setup.service.GuildMessageService;
+import com.outlasttrialsstats.discordbot.feature.setup.service.GuildMessageService.ImportResult;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Properties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +19,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class MessagesCommand {
+
+    static final int MAX_FILE_SIZE = 64 * 1024;
+    private static final int MAX_REJECTED_KEYS_LENGTH = 1500;
 
     private final GuildMessageService guildMessageService;
     private final MessageService messageService;
@@ -33,15 +38,22 @@ public class MessagesCommand {
             return;
         }
 
+        if (file.getSize() > MAX_FILE_SIZE) {
+            hook.editOriginal(messageService.getMessage(guildId, "setup.messages.file_too_large", MAX_FILE_SIZE / 1024))
+                    .queue();
+            return;
+        }
+
         file.getProxy().download().thenAccept(inputStream -> {
             try (var reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
                 Properties properties = new Properties();
                 properties.load(reader);
 
-                int count = guildMessageService.importMessages(guildId, properties);
+                ImportResult result = guildMessageService.importMessages(guildId, properties);
 
-                log.info("Guild {} imported {} custom messages", guildId, count);
-                hook.editOriginal(messageService.getMessage(guildId, "setup.messages.uploaded", count)).queue();
+                log.info("Guild {} imported {} custom messages, rejected {}", guildId, result.updated(),
+                        result.rejectedKeys().size());
+                hook.editOriginal(buildUploadReply(guildId, result)).queue();
             } catch (Exception e) {
                 log.error("Failed to import messages for guild {}: {}", guildId, e.getMessage());
                 hook.editOriginal(messageService.getMessage(guildId, "setup.messages.upload_error")).queue();
@@ -51,6 +63,31 @@ public class MessagesCommand {
             hook.editOriginal(messageService.getMessage(guildId, "setup.messages.download_error")).queue();
             return null;
         });
+    }
+
+    private String buildUploadReply(String guildId, ImportResult result) {
+        String reply = messageService.getMessage(guildId, "setup.messages.uploaded", result.updated());
+        if (result.rejectedKeys().isEmpty()) {
+            return reply;
+        }
+        return reply + "\n" + messageService.getMessage(guildId, "setup.messages.rejected",
+                result.rejectedKeys().size(), formatKeys(result.rejectedKeys()));
+    }
+
+    private static String formatKeys(List<String> keys) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < keys.size(); i++) {
+            String entry = "`" + keys.get(i) + "`";
+            if (sb.length() + entry.length() + 2 > MAX_REJECTED_KEYS_LENGTH) {
+                sb.append(sb.isEmpty() ? "" : ", ").append("\u2026 (+").append(keys.size() - i).append(")");
+                break;
+            }
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
+            sb.append(entry);
+        }
+        return sb.toString();
     }
 
     public void onDownload(SlashCommandInteractionEvent event) {

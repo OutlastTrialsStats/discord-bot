@@ -1,17 +1,20 @@
 package com.outlasttrialsstats.discordbot.feature.setup.command;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.outlasttrialsstats.discordbot.feature.setup.service.GuildMessageService;
+import com.outlasttrialsstats.discordbot.feature.setup.service.GuildMessageService.ImportResult;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -69,7 +72,7 @@ class MessagesCommandTest {
         when(event.deferReply(true)).thenReturn(mock(ReplyCallbackAction.class));
         when(event.getHook()).thenReturn(hook);
         when(attachment.getFileName()).thenReturn("messages.properties");
-        when(attachment.getProxy()).thenReturn(proxy);
+        lenient().when(attachment.getProxy()).thenReturn(proxy);
         when(hook.editOriginal(any(String.class))).thenReturn(editAction);
     }
 
@@ -88,11 +91,37 @@ class MessagesCommandTest {
     void onUpload_downloadSucceeds_importsMessages() {
         InputStream content = new ByteArrayInputStream("a.b=c".getBytes(StandardCharsets.UTF_8));
         when(proxy.download()).thenReturn(CompletableFuture.completedFuture(content));
-        when(guildMessageService.importMessages(any(), any())).thenReturn(1);
+        when(guildMessageService.importMessages(any(), any())).thenReturn(new ImportResult(1, List.of()));
         when(messageService.getMessage(GUILD_ID, "setup.messages.uploaded", 1)).thenReturn("uploaded");
 
         messagesCommand.onUpload(event);
 
         verify(hook).editOriginal("uploaded");
+    }
+
+    @Test
+    void onUpload_rejectedKeys_areReported() {
+        InputStream content = new ByteArrayInputStream("a.b=c".getBytes(StandardCharsets.UTF_8));
+        when(proxy.download()).thenReturn(CompletableFuture.completedFuture(content));
+        when(guildMessageService.importMessages(any(), any()))
+                .thenReturn(new ImportResult(0, List.of("a.b", "c.d")));
+        when(messageService.getMessage(GUILD_ID, "setup.messages.uploaded", 0)).thenReturn("uploaded");
+        when(messageService.getMessage(GUILD_ID, "setup.messages.rejected", 2, "`a.b`, `c.d`")).thenReturn("rejected");
+
+        messagesCommand.onUpload(event);
+
+        verify(hook).editOriginal("uploaded\nrejected");
+    }
+
+    @Test
+    void onUpload_fileTooLarge_isRejectedWithoutDownload() {
+        when(attachment.getSize()).thenReturn(MessagesCommand.MAX_FILE_SIZE + 1);
+        when(messageService.getMessage(GUILD_ID, "setup.messages.file_too_large", 64)).thenReturn("too large");
+
+        messagesCommand.onUpload(event);
+
+        verify(hook).editOriginal("too large");
+        verify(proxy, never()).download();
+        verify(guildMessageService, never()).importMessages(any(), any());
     }
 }

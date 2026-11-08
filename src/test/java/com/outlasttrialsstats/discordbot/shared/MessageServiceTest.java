@@ -123,4 +123,50 @@ class MessageServiceTest {
 
         verify(guildMessageRepository, times(2)).findByGuildId(GUILD_ID);
     }
+
+    @Test
+    void getMessage_repeatedCalls_loadLocaleAndCustomMessagesOnlyOnce() {
+        guildLanguage("en");
+        customMessages();
+
+        messageService.getMessage(GUILD_ID, "profile.no_changes");
+        messageService.getMessage(GUILD_ID, "profile.no_changes");
+        messageService.getLocale(GUILD_ID);
+
+        verify(guildServerRepository, times(1)).findById(GUILD_ID);
+        verify(guildMessageRepository, times(1)).findByGuildId(GUILD_ID);
+    }
+
+    @Test
+    void onGuildMessagesChanged_reloadsLocale() {
+        guildLanguage("en");
+        customMessages();
+        messageService.getMessage(GUILD_ID, "profile.no_changes");
+
+        guildLanguage("de");
+        messageService.onGuildMessagesChanged(new GuildMessagesChangedEvent(GUILD_ID));
+
+        assertThat(messageService.getMessage(GUILD_ID, "profile.no_changes")).isEqualTo("Deine Rollen sind bereits aktuell.");
+        verify(guildServerRepository, times(2)).findById(GUILD_ID);
+    }
+
+    @Test
+    void setLanguage_invalidatesCachedLocale() {
+        guildLanguage("en");
+        customMessages();
+        assertThat(messageService.getLocale(GUILD_ID)).isEqualTo(java.util.Locale.ENGLISH);
+
+        messageService.setLanguage(GUILD_ID, "de");
+
+        assertThat(messageService.getMessage(GUILD_ID, "profile.no_changes")).isEqualTo("Deine Rollen sind bereits aktuell.");
+        assertThat(messageService.getLocale(GUILD_ID)).isEqualTo(java.util.Locale.GERMAN);
+    }
+
+    @Test
+    void getLocale_noGuildServer_defaultsToEnglish() {
+        when(guildServerRepository.findById(GUILD_ID)).thenReturn(Optional.empty());
+        customMessages();
+
+        assertThat(messageService.getLocale(GUILD_ID)).isEqualTo(java.util.Locale.ENGLISH);
+    }
 }

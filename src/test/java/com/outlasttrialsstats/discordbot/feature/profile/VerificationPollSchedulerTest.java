@@ -1,7 +1,7 @@
 package com.outlasttrialsstats.discordbot.feature.profile;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -83,7 +83,22 @@ class VerificationPollSchedulerTest {
         verificationPollScheduler.pollRecentVerifications();
 
         verify(guild).retrieveMemberById(USER_ID);
-        verify(guild, never()).getMemberById(anyString());
+        verify(guildSyncService).syncMember(guild, member);
+    }
+
+    @Test
+    void pollRecentVerifications_memberCached_skipsRetrieveRequest() {
+        mockVerification(USER_ID_STR);
+        var guild = mock(Guild.class);
+        var member = mock(Member.class);
+        when(jda.getGuilds()).thenReturn(List.of(guild));
+        when(guild.getMemberById(USER_ID)).thenReturn(member);
+        when(guildSyncService.syncMember(guild, member))
+                .thenReturn(RoleAssignmentResult.of(List.of("Role1"), List.of()));
+
+        verificationPollScheduler.pollRecentVerifications();
+
+        verify(guild, never()).retrieveMemberById(anyLong());
         verify(guildSyncService).syncMember(guild, member);
     }
 

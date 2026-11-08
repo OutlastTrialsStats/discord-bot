@@ -25,12 +25,16 @@ public class MessageService {
     private final GuildServerRepository guildServerRepository;
     private final GuildMessageRepository guildMessageRepository;
 
-    private final Map<String, Map<String, String>> cache = new ConcurrentHashMap<>();
+    /** What is cached per guild: its language and its custom messages. */
+    private record GuildSettings(Locale locale, Map<String, String> customMessages) {
+    }
+
+    private final Map<String, GuildSettings> cache = new ConcurrentHashMap<>();
 
     public String getMessage(String guildId, String key, Object... args) {
-        var guildMessages = cache.computeIfAbsent(guildId, this::loadMessages);
-        String customValue = guildMessages.get(key);
-        Locale locale = getLocale(guildId);
+        GuildSettings settings = settings(guildId);
+        String customValue = settings.customMessages().get(key);
+        Locale locale = settings.locale();
 
         if (customValue != null) {
             try {
@@ -53,10 +57,7 @@ public class MessageService {
     }
 
     public Locale getLocale(String guildId) {
-        return guildServerRepository.findById(guildId)
-                .map(GuildServer::getLanguage)
-                .map(Locale::forLanguageTag)
-                .orElse(Locale.ENGLISH);
+        return settings(guildId).locale();
     }
 
     public void setLanguage(String guildId, String language) {
@@ -64,10 +65,20 @@ public class MessageService {
                 .orElseGet(() -> new GuildServer(guildId));
         server.setLanguage(language);
         guildServerRepository.save(server);
+        invalidateCache(guildId);
     }
 
-    private Map<String, String> loadMessages(String guildId) {
-        return guildMessageRepository.findByGuildId(guildId).stream()
+    private GuildSettings settings(String guildId) {
+        return cache.computeIfAbsent(guildId, this::loadSettings);
+    }
+
+    private GuildSettings loadSettings(String guildId) {
+        Locale locale = guildServerRepository.findById(guildId)
+                .map(GuildServer::getLanguage)
+                .map(Locale::forLanguageTag)
+                .orElse(Locale.ENGLISH);
+        Map<String, String> customMessages = guildMessageRepository.findByGuildId(guildId).stream()
                 .collect(Collectors.toMap(GuildMessage::getMessageKey, GuildMessage::getMessageValue));
+        return new GuildSettings(locale, customMessages);
     }
 }

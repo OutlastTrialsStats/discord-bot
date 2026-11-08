@@ -88,24 +88,22 @@ public class VerificationPollScheduler {
         boolean complete = true;
 
         for (Guild guild : jda.getGuilds()) {
-            Member member;
-            try {
-                // The member cache only holds a few members, so ask Discord directly (scheduler thread may block)
-                member = guild.retrieveMemberById(userId).complete();
-            } catch (ErrorResponseException e) {
-                if (e.getErrorResponse() == ErrorResponse.UNKNOWN_MEMBER
-                        || e.getErrorResponse() == ErrorResponse.UNKNOWN_USER) {
+            Member member = guild.getMemberById(userId);
+            if (member == null) {
+                try {
+                    // The member cache only holds a few members, so ask Discord directly (scheduler thread may block)
+                    member = guild.retrieveMemberById(userId).complete();
+                } catch (Exception e) {
+                    if (e instanceof ErrorResponseException ere
+                            && (ere.getErrorResponse() == ErrorResponse.UNKNOWN_MEMBER
+                            || ere.getErrorResponse() == ErrorResponse.UNKNOWN_USER)) {
+                        continue;
+                    }
+                    complete = false;
+                    log.warn("Failed to retrieve member {} in guild {}, retrying next poll: {}",
+                            discordUserId, guild.getId(), e.getMessage());
                     continue;
                 }
-                complete = false;
-                log.warn("Failed to retrieve member {} in guild {}, retrying next poll: {}",
-                        discordUserId, guild.getId(), e.getMessage());
-                continue;
-            } catch (Exception e) {
-                complete = false;
-                log.warn("Failed to retrieve member {} in guild {}, retrying next poll: {}",
-                        discordUserId, guild.getId(), e.getMessage());
-                continue;
             }
 
             if (member == null) {

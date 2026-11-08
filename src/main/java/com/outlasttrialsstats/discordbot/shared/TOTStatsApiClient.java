@@ -30,21 +30,15 @@ public class TOTStatsApiClient {
     private final WebClient statsWebClient;
 
     public Optional<DiscordLeaderboardResponse> getLeaderboard(StatisticType category, int page) {
-        try {
-            return statsWebClient
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/api/discord/leaderboard")
-                            .queryParam("category", category.getValue())
-                            .queryParam("page", page)
-                            .build())
-                    .retrieve()
-                    .bodyToMono(DiscordLeaderboardResponse.class)
-                    .blockOptional();
-        } catch (Exception e) {
-            log.warn("Failed to fetch leaderboard for category {}: {}", category, e.getMessage());
-            return Optional.empty();
-        }
+        return blockOrEmpty(statsWebClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/discord/leaderboard")
+                        .queryParam("category", category.getValue())
+                        .queryParam("page", page)
+                        .build())
+                .retrieve()
+                .bodyToMono(DiscordLeaderboardResponse.class), "leaderboard for category " + category);
     }
 
     /**
@@ -79,35 +73,32 @@ public class TOTStatsApiClient {
      * @return the bulk response, or {@link Optional#empty()} if the request failed for any reason
      */
     public Optional<DiscordBulkProfileResponse> getBulkProfiles(List<String> discordUserIds) {
-        try {
-            var request = new DiscordBulkProfileRequest().discordUserIds(discordUserIds);
-            return statsWebClient
-                    .post()
-                    .uri("/api/discord/profiles")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .retrieve()
-                    .bodyToMono(DiscordBulkProfileResponse.class)
-                    .blockOptional();
-        } catch (Exception e) {
-            log.warn("Failed to fetch bulk profiles: {}", e.getMessage());
-            return Optional.empty();
-        }
+        var request = new DiscordBulkProfileRequest().discordUserIds(discordUserIds);
+        return blockOrEmpty(statsWebClient
+                .post()
+                .uri("/api/discord/profiles")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(DiscordBulkProfileResponse.class), "bulk profiles");
     }
 
     public Optional<DiscordRecentVerificationsResponse> getRecentVerifications(int seconds) {
+        return blockOrEmpty(statsWebClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/discord/verifications/recent")
+                        .queryParam("seconds", seconds)
+                        .build())
+                .retrieve()
+                .bodyToMono(DiscordRecentVerificationsResponse.class), "recent verifications");
+    }
+
+    private <T> Optional<T> blockOrEmpty(Mono<T> request, String what) {
         try {
-            return statsWebClient
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/api/discord/verifications/recent")
-                            .queryParam("seconds", seconds)
-                            .build())
-                    .retrieve()
-                    .bodyToMono(DiscordRecentVerificationsResponse.class)
-                    .blockOptional();
+            return request.blockOptional();
         } catch (Exception e) {
-            log.warn("Failed to fetch recent verifications: {}", e.getMessage());
+            log.warn("Failed to fetch {}: {}", what, e.getMessage());
             return Optional.empty();
         }
     }

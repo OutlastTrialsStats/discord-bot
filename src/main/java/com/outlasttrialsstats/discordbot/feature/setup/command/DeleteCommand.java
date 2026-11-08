@@ -1,9 +1,12 @@
 package com.outlasttrialsstats.discordbot.feature.setup.command;
 
+import com.outlasttrialsstats.discordbot.feature.setup.RoleSafety;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService.MappedRole;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,9 +57,12 @@ public class DeleteCommand {
         AtomicInteger deleted = new AtomicInteger(0);
         AtomicInteger unlinked = new AtomicInteger(0);
         AtomicInteger failed = new AtomicInteger(0);
+        // Roles whose mapping may go: deleted or unlinked, never the ones whose deletion failed.
+        Collection<String> removableRoleIds = new ConcurrentLinkedQueue<>();
 
         Runnable taskDone = () -> {
             if (pending.decrementAndGet() == 0) {
+                removeMappings(guildId, removableRoleIds);
                 hook.editOriginal(messageService.getMessage(guildId, "setup.delete.completed",
                         deleted.get(), unlinked.get(), failed.get())).queue();
             }
@@ -68,12 +74,12 @@ public class DeleteCommand {
 
             if (role == null || !mappedRole.botCreated()) {
                 // Already gone, or not ours to delete: only drop the mapping.
-                roleMappingService.deleteMappingsByRoleId(guildId, roleId);
+                removableRoleIds.add(roleId);
                 unlinked.incrementAndGet();
                 continue;
             }
 
-            if (role.isManaged() || role.isPublicRole() || !selfMember.canInteract(role)) {
+            if (RoleSafety.checkReachable(role, selfMember).isPresent()) {
                 log.warn("Skipping deletion of role {} in guild {}: managed, public or above the bot", roleId, guildId);
                 failed.incrementAndGet();
                 continue;
@@ -83,7 +89,7 @@ public class DeleteCommand {
             try {
                 role.delete().queue(
                         _ -> {
-                            roleMappingService.deleteMappingsByRoleId(guildId, roleId);
+                            removableRoleIds.add(roleId);
                             deleted.incrementAndGet();
                             taskDone.run();
                         },
@@ -101,5 +107,16 @@ public class DeleteCommand {
         }
 
         taskDone.run();
+    }
+
+    private void removeMappings(String guildId, Collection<String> roleIds) {
+        if (roleIds.isEmpty()) {
+            return;
+        }
+        try {
+            roleMappingService.deleteMappingsByRoleIds(guildId, List.copyOf(roleIds));
+        } catch (Exception e) {
+            log.warn("Failed to remove role mappings in guild {}: {}", guildId, e.getMessage());
+        }
     }
 }

@@ -8,6 +8,7 @@ import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResul
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
+import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService.MappedRole;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.ProfileLookup;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
@@ -20,6 +21,7 @@ import net.dv8tion.jda.api.entities.Role;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,17 +57,30 @@ public class RoleAssignmentService {
      * backend confirmed that the member has no linked profile (never on lookup failures).
      */
     public RoleAssignmentResult cleanupUnverifiedMember(Guild guild, Member member) {
+        return cleanupUnverifiedMember(guild, member, getMappedRoleIds(guild.getId()));
+    }
+
+    /**
+     * Same as {@link #cleanupUnverifiedMember(Guild, Member)} for callers that clean up many members and
+     * load the guild's mapped role ids once via {@link #getMappedRoleIds(String)}.
+     */
+    public RoleAssignmentResult cleanupUnverifiedMember(Guild guild, Member member,
+                                                        Collection<String> mappedRoleIds) {
         List<String> removedRoles = new ArrayList<>();
-        List<String> allRoleIds = roleMappingService.getAllRoleIds(guild.getId()).stream()
-                .distinct()
-                .toList();
-        syncRoles(guild, member, allRoleIds, Set.of(), new ArrayList<>(), removedRoles);
+        syncRoles(guild, member, mappedRoleIds, Set.of(), new ArrayList<>(), removedRoles);
 
         if (!removedRoles.isEmpty()) {
             log.info("Member {} in guild {} is not linked: removed [{}]",
                     member.getId(), guild.getId(), String.join(", ", removedRoles));
         }
         return RoleAssignmentResult.notVerified(removedRoles);
+    }
+
+    /** The distinct ids of every role the bot manages in the guild. */
+    public List<String> getMappedRoleIds(String guildId) {
+        return roleMappingService.getMappedRoles(guildId).stream()
+                .map(MappedRole::roleId)
+                .toList();
     }
 
     public RoleAssignmentResult assignRolesFromProfile(Guild guild, Member member, DiscordProfileResponse profile) {
@@ -147,12 +162,13 @@ public class RoleAssignmentService {
         String nickname = toNickname(profile.getDisplayName());
         if (nickname == null) return;
 
+        if (nickname.equals(member.getEffectiveName())) return;
+
         boolean autoNickname = guildServerRepository.findById(guild.getId())
                 .map(GuildServer::isAutoNickname)
                 .orElse(false);
 
         if (!autoNickname) return;
-        if (nickname.equals(member.getEffectiveName())) return;
 
         if (member.isOwner()) {
             log.debug("Not updating nickname for {} in guild {}: member is the guild owner",
@@ -244,7 +260,7 @@ public class RoleAssignmentService {
                 targetRoleIds, addedRoles, removedRoles);
     }
 
-    private void syncRoles(Guild guild, Member member, List<String> allRoleIds,
+    private void syncRoles(Guild guild, Member member, Collection<String> allRoleIds,
                            Set<String> targetRoleIds, List<String> addedRoles, List<String> removedRoles) {
         for (String roleId : allRoleIds) {
             Role role = guild.getRoleById(roleId);

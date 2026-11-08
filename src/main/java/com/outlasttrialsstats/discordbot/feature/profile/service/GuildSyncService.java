@@ -70,6 +70,8 @@ public class GuildSyncService {
         int unverified = 0;
         int failed = 0;
         int failedBatches = 0;
+        // Loaded on the first unlinked member and reused for the whole sync
+        List<String> mappedRoleIds = null;
 
         for (int i = 0; i < nonBotMembers.size(); i += BULK_BATCH_SIZE) {
             List<Member> batch = nonBotMembers.subList(i, Math.min(i + BULK_BATCH_SIZE, nonBotMembers.size()));
@@ -95,7 +97,10 @@ public class GuildSyncService {
                 var entry = profilesByDiscordId.get(member.getId());
                 try {
                     if (entry == null) {
-                        roleAssignmentService.cleanupUnverifiedMember(guild, member);
+                        if (mappedRoleIds == null) {
+                            mappedRoleIds = roleAssignmentService.getMappedRoleIds(guild.getId());
+                        }
+                        roleAssignmentService.cleanupUnverifiedMember(guild, member, mappedRoleIds);
                         unverified++;
                         continue;
                     }

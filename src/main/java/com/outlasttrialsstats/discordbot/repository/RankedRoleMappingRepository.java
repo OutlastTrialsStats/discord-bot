@@ -2,6 +2,7 @@ package com.outlasttrialsstats.discordbot.repository;
 
 import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,9 +20,9 @@ public interface RankedRoleMappingRepository extends JpaRepository<RankedRoleMap
 
     void deleteByGuildIdAndCategoryAndMinRank(String guildId, RoleCategory category, int minRank);
 
-    void deleteByGuildId(String guildId);
-
     void deleteByGuildIdAndRoleId(String guildId, String roleId);
+
+    void deleteByGuildIdAndRoleIdIn(String guildId, Collection<String> roleIds);
 
     List<RankedRoleMapping> findByGuildIdAndRoleIdAndCategoryNot(String guildId, String roleId, RoleCategory category);
 }

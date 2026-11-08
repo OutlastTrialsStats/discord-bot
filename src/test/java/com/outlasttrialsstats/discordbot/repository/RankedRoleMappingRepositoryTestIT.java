@@ -95,16 +95,4 @@ class RankedRoleMappingRepositoryTestIT {
                 .extracting(RankedRoleMapping::getMinRank)
                 .containsExactly(10);
     }
-
-    @Test
-    void deleteByGuildId_removesAllForGuild() {
-        repository.save(new RankedRoleMapping(GUILD_ID, RoleCategory.PRESTIGE, 1, "role-1"));
-        repository.save(new RankedRoleMapping(GUILD_ID, RoleCategory.LEVEL, 50, "role-2"));
-        repository.save(new RankedRoleMapping(OTHER_GUILD_ID, RoleCategory.PRESTIGE, 1, "role-3"));
-
-        repository.deleteByGuildId(GUILD_ID);
-
-        assertThat(repository.findByGuildId(GUILD_ID)).isEmpty();
-        assertThat(repository.findByGuildId(OTHER_GUILD_ID)).hasSize(1);
-    }
 }

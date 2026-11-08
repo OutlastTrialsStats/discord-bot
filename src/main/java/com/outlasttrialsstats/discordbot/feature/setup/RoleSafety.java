@@ -18,7 +18,7 @@ import net.dv8tion.jda.api.entities.Role;
  */
 public final class RoleSafety {
 
-    public static final Set<Permission> DANGEROUS_PERMISSIONS = Collections.unmodifiableSet(EnumSet.of(
+    private static final Set<Permission> DANGEROUS_PERMISSIONS = Collections.unmodifiableSet(EnumSet.of(
             Permission.ADMINISTRATOR,
             Permission.MANAGE_SERVER,
             Permission.MANAGE_ROLES,
@@ -66,6 +66,24 @@ public final class RoleSafety {
      * @param invoker the member who asked for the link; {@code null} skips the invoker hierarchy check
      */
     public static Optional<Violation> check(Role role, Member selfMember, Member invoker) {
+        Optional<Violation> unreachable = checkReachable(role, selfMember);
+        if (unreachable.isPresent()) {
+            return unreachable;
+        }
+        if (invoker != null && !invoker.canInteract(role)) {
+            return Optional.of(Violation.INVOKER_CANNOT_INTERACT);
+        }
+        if (hasDangerousPermissions(role)) {
+            return Optional.of(Violation.DANGEROUS_PERMISSIONS);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Checks only whether the bot can manage the role at all (not public, not managed, not above the bot),
+     * ignoring its permissions. Enough for deleting a role the bot created itself.
+     */
+    public static Optional<Violation> checkReachable(Role role, Member selfMember) {
         if (role.isPublicRole()) {
             return Optional.of(Violation.PUBLIC_ROLE);
         }
@@ -74,12 +92,6 @@ public final class RoleSafety {
         }
         if (!selfMember.canInteract(role)) {
             return Optional.of(Violation.BOT_CANNOT_INTERACT);
-        }
-        if (invoker != null && !invoker.canInteract(role)) {
-            return Optional.of(Violation.INVOKER_CANNOT_INTERACT);
-        }
-        if (hasDangerousPermissions(role)) {
-            return Optional.of(Violation.DANGEROUS_PERMISSIONS);
         }
         return Optional.empty();
     }

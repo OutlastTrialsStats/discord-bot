@@ -100,7 +100,7 @@ class GuildSyncServiceTest {
         var result = guildSyncService.syncMembers(guild, List.of(updated, unchanged, unverified, throwing));
 
         assertThat(result).isEqualTo(new GuildSyncResult(1, 1, 1, 1));
-        verify(roleAssignmentService).cleanupUnverifiedMember(guild, unverified);
+        verify(roleAssignmentService).cleanupUnverifiedMember(eq(guild), eq(unverified), any());
     }
 
     @Test
@@ -112,7 +112,7 @@ class GuildSyncServiceTest {
 
         assertThat(result).isEqualTo(new GuildSyncResult(0, 0, 0, 1));
         verify(roleAssignmentService, never()).assignRolesFromProfile(any(), any(), any());
-        verify(roleAssignmentService, never()).cleanupUnverifiedMember(any(), any());
+        verify(roleAssignmentService, never()).cleanupUnverifiedMember(any(), any(), any());
         verify(guildServerRepository, never()).save(any());
     }
 
@@ -125,7 +125,7 @@ class GuildSyncServiceTest {
         var result = guildSyncService.syncMembers(guild, List.of(member));
 
         assertThat(result.failed()).isEqualTo(1);
-        verify(roleAssignmentService, never()).cleanupUnverifiedMember(any(), any());
+        verify(roleAssignmentService, never()).cleanupUnverifiedMember(any(), any(), any());
     }
 
     @Test
@@ -139,14 +139,18 @@ class GuildSyncServiceTest {
                 .thenReturn(Optional.empty());
         when(roleAssignmentService.assignRolesFromProfile(any(), any(), any()))
                 .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
+        List<String> mappedRoleIds = List.of("role-1", "role-2");
+        when(roleAssignmentService.getMappedRoleIds(GUILD_ID)).thenReturn(mappedRoleIds);
 
         var result = guildSyncService.syncMembers(guild, members);
 
         // user-1..user-99 are confirmed missing in batch 1; batch 2 (user-100..149) failed entirely
         assertThat(result).isEqualTo(new GuildSyncResult(0, 1, 99, 50));
-        verify(roleAssignmentService, times(99)).cleanupUnverifiedMember(eq(guild), any());
+        // the guild's mapped role ids are loaded once and shared by all 99 cleanups
+        verify(roleAssignmentService, times(1)).getMappedRoleIds(GUILD_ID);
+        verify(roleAssignmentService, times(99)).cleanupUnverifiedMember(eq(guild), any(), eq(mappedRoleIds));
         for (int i = 100; i < 150; i++) {
-            verify(roleAssignmentService, never()).cleanupUnverifiedMember(guild, members.get(i));
+            verify(roleAssignmentService, never()).cleanupUnverifiedMember(eq(guild), eq(members.get(i)), any());
         }
         verify(guildServerRepository, never()).save(any());
     }
@@ -217,7 +221,7 @@ class GuildSyncServiceTest {
         var result = guildSyncService.syncMembers(guild, List.of(bot, human));
 
         assertThat(result).isEqualTo(new GuildSyncResult(0, 0, 1, 0));
-        verify(roleAssignmentService, never()).cleanupUnverifiedMember(guild, bot);
+        verify(roleAssignmentService, never()).cleanupUnverifiedMember(eq(guild), eq(bot), any());
     }
 
     @Test

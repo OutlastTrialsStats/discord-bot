@@ -68,16 +68,4 @@ class EnumRoleMappingRepositoryTestIT {
                 .extracting(EnumRoleMapping::getEnumValue)
                 .containsExactly("HEAL");
     }
-
-    @Test
-    void deleteByGuildId_removesAllForGuild() {
-        repository.save(new EnumRoleMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-1"));
-        repository.save(new EnumRoleMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-2"));
-        repository.save(new EnumRoleMapping(OTHER_GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-3"));
-
-        repository.deleteByGuildId(GUILD_ID);
-
-        assertThat(repository.findByGuildId(GUILD_ID)).isEmpty();
-        assertThat(repository.findByGuildId(OTHER_GUILD_ID)).hasSize(1);
-    }
 }

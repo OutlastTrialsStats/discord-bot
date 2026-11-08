@@ -6,6 +6,7 @@ import com.outlasttrialsstats.discordbot.IntegrationTest;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.repository.EnumRoleMappingRepository;
 import com.outlasttrialsstats.discordbot.repository.RankedRoleMappingRepository;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +35,8 @@ class RoleMappingServiceTestIT {
 
     @Test
     void findOtherCategoryUsingRole_roleUsedInOtherCategory_returnsThatCategory() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-1");
-        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-2");
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-1", false);
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-2", false);
 
         assertThat(roleMappingService.findOtherCategoryUsingRole(GUILD_ID, "role-1", RoleCategory.PRESTIGE))
                 .contains(RoleCategory.LEVEL);
@@ -45,8 +46,8 @@ class RoleMappingServiceTestIT {
 
     @Test
     void findOtherCategoryUsingRole_sameCategoryOrOtherGuild_returnsEmpty() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-1");
-        roleMappingService.saveRankedMapping("guild-2", RoleCategory.LEVEL, 10, "role-1");
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-1", false);
+        roleMappingService.saveRankedMapping("guild-2", RoleCategory.LEVEL, 10, "role-1", false);
 
         assertThat(roleMappingService.findOtherCategoryUsingRole(GUILD_ID, "role-1", RoleCategory.PRESTIGE))
                 .isEmpty();
@@ -55,8 +56,8 @@ class RoleMappingServiceTestIT {
 
     @Test
     void saveMapping_defaultsToNotBotCreated() {
-        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-1");
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-2");
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-1", false);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-2", false);
 
         assertThat(roleMappingService.getMappedRoles(GUILD_ID)).containsExactly(
                 new RoleMappingService.MappedRole("role-1", false),
@@ -107,7 +108,7 @@ class RoleMappingServiceTestIT {
 
     @Test
     void saveEnumMapping_newMapping_persists() {
-        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-1");
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-1", false);
 
         var mappings = roleMappingService.getEnumMappings(GUILD_ID, RoleCategory.REAGENT_RIG);
         assertThat(mappings).hasSize(1);
@@ -116,8 +117,8 @@ class RoleMappingServiceTestIT {
 
     @Test
     void saveEnumMapping_existingMapping_updatesRoleId() {
-        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-1");
-        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-2");
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-1", false);
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-2", false);
 
         var mappings = roleMappingService.getEnumMappings(GUILD_ID, RoleCategory.REAGENT_RIG);
         assertThat(mappings).hasSize(1);
@@ -126,8 +127,8 @@ class RoleMappingServiceTestIT {
 
     @Test
     void removeEnumMapping_deletesCorrectEntry() {
-        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-1");
-        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "HEAL", "role-2");
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-1", false);
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "HEAL", "role-2", false);
 
         roleMappingService.removeEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN");
 
@@ -138,7 +139,7 @@ class RoleMappingServiceTestIT {
 
     @Test
     void saveRankedMapping_newMapping_persists() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10");
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10", false);
 
         var mappings = roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.PRESTIGE);
         assertThat(mappings).hasSize(1);
@@ -147,8 +148,8 @@ class RoleMappingServiceTestIT {
 
     @Test
     void saveRankedMapping_existingMapping_updatesRoleId() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-old");
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-new");
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-old", false);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-new", false);
 
         var mappings = roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.PRESTIGE);
         assertThat(mappings).hasSize(1);
@@ -157,8 +158,8 @@ class RoleMappingServiceTestIT {
 
     @Test
     void removeRankedMapping_deletesCorrectEntry() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10");
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 20, "role-20");
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10", false);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 20, "role-20", false);
 
         roleMappingService.removeRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10);
 
@@ -169,9 +170,9 @@ class RoleMappingServiceTestIT {
 
     @Test
     void getBestRankedMapping_returnsHighestQualifyingThreshold() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 1, "role-1");
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10");
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 20, "role-20");
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 1, "role-1", false);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10", false);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 20, "role-20", false);
 
         var result = roleMappingService.getBestRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 15);
         assertThat(result).isPresent();
@@ -180,7 +181,7 @@ class RoleMappingServiceTestIT {
 
     @Test
     void getBestRankedMapping_withExactMatch_returnsExact() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10");
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10", false);
 
         var result = roleMappingService.getBestRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10);
         assertThat(result).isPresent();
@@ -189,36 +190,48 @@ class RoleMappingServiceTestIT {
 
     @Test
     void getBestRankedMapping_belowAll_returnsEmpty() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10");
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-10", false);
 
         var result = roleMappingService.getBestRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 5);
         assertThat(result).isEmpty();
     }
 
     @Test
-    void getAllRoleIds_combinesBothTypes() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 1, "ranked-role");
-        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "enum-role");
+    void getMappedRoles_combinesBothTypes() {
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 1, "ranked-role", false);
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "enum-role", false);
 
-        var roleIds = roleMappingService.getAllRoleIds(GUILD_ID);
-        assertThat(roleIds).containsExactlyInAnyOrder("ranked-role", "enum-role");
+        assertThat(roleMappingService.getMappedRoles(GUILD_ID))
+                .extracting(RoleMappingService.MappedRole::roleId)
+                .containsExactlyInAnyOrder("ranked-role", "enum-role");
     }
 
     @Test
-    void getAllRoleIds_noMappings_returnsEmptyList() {
-        var roleIds = roleMappingService.getAllRoleIds(GUILD_ID);
-        assertThat(roleIds).isEmpty();
+    void getMappedRoles_noMappings_returnsEmptyList() {
+        assertThat(roleMappingService.getMappedRoles(GUILD_ID)).isEmpty();
     }
 
     @Test
-    void deleteAllMappings_clearsEverythingForGuild() {
-        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 1, "role-1");
-        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-2");
-        roleMappingService.saveRankedMapping("guild-2", RoleCategory.PRESTIGE, 1, "role-3");
+    void deleteMappingsByRoleIds_removesOnlyGivenRolesOfThatGuild() {
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 1, "role-1", false);
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-2", false);
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-3", false);
+        roleMappingService.saveRankedMapping("guild-2", RoleCategory.PRESTIGE, 1, "role-1", false);
 
-        roleMappingService.deleteAllMappings(GUILD_ID);
+        roleMappingService.deleteMappingsByRoleIds(GUILD_ID, List.of("role-1", "role-2"));
 
-        assertThat(roleMappingService.getAllRoleIds(GUILD_ID)).isEmpty();
-        assertThat(roleMappingService.getAllRoleIds("guild-2")).hasSize(1);
+        assertThat(roleMappingService.getMappedRoles(GUILD_ID))
+                .extracting(RoleMappingService.MappedRole::roleId)
+                .containsExactly("role-3");
+        assertThat(roleMappingService.getMappedRoles("guild-2")).hasSize(1);
+    }
+
+    @Test
+    void deleteMappingsByRoleIds_emptyCollection_deletesNothing() {
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 1, "role-1", false);
+
+        roleMappingService.deleteMappingsByRoleIds(GUILD_ID, List.of());
+
+        assertThat(roleMappingService.getMappedRoles(GUILD_ID)).hasSize(1);
     }
 }

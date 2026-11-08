@@ -17,6 +17,7 @@ import com.outlasttrialsstats.discordbot.entity.GuildServer;
 import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
+import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService.MappedRole;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.ProfileLookup;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
@@ -79,8 +80,10 @@ class RoleAssignmentServiceTest {
     @Test
     void assignRoles_notLinked_removesAllBotMappedRoles() {
         when(statsApiClient.getProfile(MEMBER_ID)).thenReturn(new ProfileLookup.NotLinked());
-        when(roleMappingService.getAllRoleIds(GUILD_ID))
-                .thenReturn(List.of("role-connected", "role-prestige", "role-platform", "role-prestige"));
+        when(roleMappingService.getMappedRoles(GUILD_ID)).thenReturn(List.of(
+                new MappedRole("role-connected", false),
+                new MappedRole("role-prestige", true),
+                new MappedRole("role-platform", false)));
 
         Role connected = mockRole("Connected");
         Role prestige = mockRole("Prestige 20+");
@@ -102,6 +105,19 @@ class RoleAssignmentServiceTest {
         verify(guild, never()).removeRoleFromMember(member, platform);
         verify(guild, never()).removeRoleFromMember(member, unrelated);
         verify(guild, never()).addRoleToMember(any(), any());
+    }
+
+    @Test
+    void cleanupUnverifiedMember_withPreloadedRoleIds_doesNotQueryMappings() {
+        Role connected = mockRole("Connected");
+        when(guild.getRoleById("role-connected")).thenReturn(connected);
+        when(member.getRoles()).thenReturn(List.of(connected));
+        stubRemoveRole(member, connected);
+
+        var result = roleAssignmentService.cleanupUnverifiedMember(guild, member, List.of("role-connected"));
+
+        assertThat(result.removedRoles()).containsExactly("Connected");
+        verifyNoInteractions(roleMappingService);
     }
 
     @Test
@@ -446,14 +462,12 @@ class RoleAssignmentServiceTest {
         profile.setDisplayName("GamePlayer123");
         stubProfileWithEmptyMappings(profile);
 
-        var server = new GuildServer(GUILD_ID);
-        server.setAutoNickname(true);
-        when(guildServerRepository.findById(GUILD_ID)).thenReturn(Optional.of(server));
         when(member.getEffectiveName()).thenReturn("GamePlayer123");
 
         roleAssignmentService.assignRoles(guild, member);
 
         verify(guild, never()).modifyNickname(any(), any());
+        verify(guildServerRepository, never()).findById(any());
     }
 
     @Test

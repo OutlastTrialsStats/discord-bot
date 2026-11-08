@@ -5,6 +5,7 @@ import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.repository.EnumRoleMappingRepository;
 import com.outlasttrialsstats.discordbot.repository.RankedRoleMappingRepository;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,11 +23,6 @@ public class RoleMappingService {
     private final RankedRoleMappingRepository rankedRoleRepo;
 
     // --- Enum-based mappings (Skill, Platform, AccountType) ---
-
-    @Transactional
-    public void saveEnumMapping(String guildId, RoleCategory category, String enumValue, String roleId) {
-        saveEnumMapping(guildId, category, enumValue, roleId, false);
-    }
 
     /**
      * @param botCreated {@code true} only if the bot created the role itself, so that /setup delete may delete it
@@ -73,11 +69,6 @@ public class RoleMappingService {
 
     // --- Ranked mappings (Prestige, InvasionRanking) ---
 
-    @Transactional
-    public void saveRankedMapping(String guildId, RoleCategory category, int minRank, String roleId) {
-        saveRankedMapping(guildId, category, minRank, roleId, false);
-    }
-
     /**
      * @param botCreated {@code true} only if the bot created the role itself, so that /setup delete may delete it
      */
@@ -119,26 +110,17 @@ public class RoleMappingService {
 
     // --- Common operations ---
 
-    public List<String> getAllRoleIds(String guildId) {
-        return Stream.concat(
-                enumRoleRepo.findByGuildId(guildId).stream().map(EnumRoleMapping::getRoleId),
-                rankedRoleRepo.findByGuildId(guildId).stream().map(RankedRoleMapping::getRoleId)
-        ).toList();
-    }
-
     /**
      * Returns every distinct mapped role of the guild. A role counts as bot-created if any of its mappings
      * says so, because only the bot's own createRole callback ever sets the flag.
      */
     public List<MappedRole> getMappedRoles(String guildId) {
-        Map<String, Boolean> botCreatedByRoleId = new LinkedHashMap<>();
-        Stream.concat(
-                enumRoleRepo.findByGuildId(guildId).stream()
-                        .map(m -> new MappedRole(m.getRoleId(), m.isBotCreated())),
-                rankedRoleRepo.findByGuildId(guildId).stream()
-                        .map(m -> new MappedRole(m.getRoleId(), m.isBotCreated()))
-        ).forEach(r -> botCreatedByRoleId.merge(r.roleId(), r.botCreated(), Boolean::logicalOr));
-        return botCreatedByRoleId.entrySet().stream()
+        Map<String, Boolean> merged = new LinkedHashMap<>();
+        enumRoleRepo.findByGuildId(guildId)
+                .forEach(m -> merged.merge(m.getRoleId(), m.isBotCreated(), Boolean::logicalOr));
+        rankedRoleRepo.findByGuildId(guildId)
+                .forEach(m -> merged.merge(m.getRoleId(), m.isBotCreated(), Boolean::logicalOr));
+        return merged.entrySet().stream()
                 .map(e -> new MappedRole(e.getKey(), e.getValue()))
                 .toList();
     }
@@ -160,14 +142,17 @@ public class RoleMappingService {
     }
 
     @Transactional
-    public void deleteMappingsByRoleId(String guildId, String roleId) {
-        enumRoleRepo.deleteByGuildIdAndRoleId(guildId, roleId);
-        rankedRoleRepo.deleteByGuildIdAndRoleId(guildId, roleId);
+    public void deleteMappingsByRoleIds(String guildId, Collection<String> roleIds) {
+        if (roleIds.isEmpty()) {
+            return;
+        }
+        enumRoleRepo.deleteByGuildIdAndRoleIdIn(guildId, roleIds);
+        rankedRoleRepo.deleteByGuildIdAndRoleIdIn(guildId, roleIds);
     }
 
     @Transactional
-    public void deleteAllMappings(String guildId) {
-        enumRoleRepo.deleteByGuildId(guildId);
-        rankedRoleRepo.deleteByGuildId(guildId);
+    public void deleteMappingsByRoleId(String guildId, String roleId) {
+        enumRoleRepo.deleteByGuildIdAndRoleId(guildId, roleId);
+        rankedRoleRepo.deleteByGuildIdAndRoleId(guildId, roleId);
     }
 }

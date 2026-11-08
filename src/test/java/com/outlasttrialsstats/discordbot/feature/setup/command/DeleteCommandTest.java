@@ -2,10 +2,14 @@ package com.outlasttrialsstats.discordbot.feature.setup.command;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +33,7 @@ import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -87,8 +92,25 @@ class DeleteCommandTest {
         deleteCommand.onDelete(event);
 
         verify(role).delete();
-        verify(roleMappingService).deleteMappingsByRoleId(GUILD_ID, "role-1");
+        verify(roleMappingService).deleteMappingsByRoleIds(GUILD_ID, List.of("role-1"));
         verify(hook).editOriginal("setup.delete.completed:1,0,0");
+    }
+
+    @Test
+    void severalRoles_mappingsRemovedInOneCallBeforeReply() {
+        Role role = deletableRole("role-1");
+        succeedDelete(role);
+        when(guild.getRoleById("role-2")).thenReturn(null);
+        when(roleMappingService.getMappedRoles(GUILD_ID)).thenReturn(List.of(
+                new MappedRole("role-1", true), new MappedRole("role-2", false)));
+
+        deleteCommand.onDelete(event);
+
+        InOrder inOrder = inOrder(roleMappingService, hook);
+        inOrder.verify(roleMappingService).deleteMappingsByRoleIds(eq(GUILD_ID),
+                argThat(ids -> ids.size() == 2 && ids.containsAll(List.of("role-1", "role-2"))));
+        inOrder.verify(hook).editOriginal("setup.delete.completed:1,1,0");
+        verify(hook, times(1)).editOriginal(anyString());
     }
 
     @Test
@@ -100,7 +122,7 @@ class DeleteCommandTest {
         deleteCommand.onDelete(event);
 
         verify(role, never()).delete();
-        verify(roleMappingService).deleteMappingsByRoleId(GUILD_ID, "role-1");
+        verify(roleMappingService).deleteMappingsByRoleIds(GUILD_ID, List.of("role-1"));
         verify(hook).editOriginal("setup.delete.completed:0,1,0");
     }
 
@@ -111,7 +133,7 @@ class DeleteCommandTest {
 
         deleteCommand.onDelete(event);
 
-        verify(roleMappingService).deleteMappingsByRoleId(GUILD_ID, "role-1");
+        verify(roleMappingService).deleteMappingsByRoleIds(GUILD_ID, List.of("role-1"));
         verify(hook).editOriginal("setup.delete.completed:0,1,0");
     }
 
@@ -125,7 +147,7 @@ class DeleteCommandTest {
         deleteCommand.onDelete(event);
 
         verify(role, never()).delete();
-        verify(roleMappingService, never()).deleteMappingsByRoleId(any(), any());
+        verify(roleMappingService, never()).deleteMappingsByRoleIds(any(), any());
         verify(hook).editOriginal("setup.delete.completed:0,0,1");
     }
 
@@ -155,7 +177,7 @@ class DeleteCommandTest {
 
         deleteCommand.onDelete(event);
 
-        verify(roleMappingService, never()).deleteMappingsByRoleId(any(), any());
+        verify(roleMappingService, never()).deleteMappingsByRoleIds(any(), any());
         verify(hook).editOriginal("setup.delete.completed:0,0,1");
     }
 
@@ -170,8 +192,7 @@ class DeleteCommandTest {
 
         deleteCommand.onDelete(event);
 
-        verify(roleMappingService, never()).deleteMappingsByRoleId(GUILD_ID, "role-1");
-        verify(roleMappingService).deleteMappingsByRoleId(GUILD_ID, "role-2");
+        verify(roleMappingService).deleteMappingsByRoleIds(GUILD_ID, List.of("role-2"));
         verify(hook).editOriginal("setup.delete.completed:1,0,1");
     }
 

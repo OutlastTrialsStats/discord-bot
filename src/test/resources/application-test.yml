@@ -1,10 +1,10 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     open-in-view: false
   liquibase:
-    enabled: false
+    enabled: true
 
 discord:
   bot:

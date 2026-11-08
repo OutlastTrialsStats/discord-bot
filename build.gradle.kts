@@ -19,8 +19,6 @@ repositories {
     mavenCentral()
 }
 
-val testcontainersVersion = "1.21.4"
-
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -42,8 +40,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
-    testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -59,7 +57,13 @@ openApiGenerate {
         "useSpringBoot3" to "true",
         "useTags" to "true",
         "useBeanValidation" to "true",
+        "hideGenerationTimestamp" to "true",
     )
+}
+
+tasks.openApiGenerate {
+    // api.yml references sibling spec files, so track the whole directory for up-to-date checks
+    inputs.dir("src/main/resources/api")
 }
 
 sourceSets.main {

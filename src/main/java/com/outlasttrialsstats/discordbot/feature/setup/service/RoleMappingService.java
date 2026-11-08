@@ -5,7 +5,9 @@ import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.repository.EnumRoleMappingRepository;
 import com.outlasttrialsstats.discordbot.repository.RankedRoleMappingRepository;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -23,11 +25,21 @@ public class RoleMappingService {
 
     @Transactional
     public void saveEnumMapping(String guildId, RoleCategory category, String enumValue, String roleId) {
+        saveEnumMapping(guildId, category, enumValue, roleId, false);
+    }
+
+    /**
+     * @param botCreated {@code true} only if the bot created the role itself, so that /setup delete may delete it
+     */
+    @Transactional
+    public void saveEnumMapping(String guildId, RoleCategory category, String enumValue, String roleId,
+                                boolean botCreated) {
         var existing = enumRoleRepo.findByGuildIdAndCategoryAndEnumValue(guildId, category, enumValue);
-        if (existing.isPresent()) {
-            existing.get().setRoleId(roleId);
-        } else {
-            enumRoleRepo.save(new EnumRoleMapping(guildId, category, enumValue, roleId));
+        EnumRoleMapping mapping = existing.orElseGet(() -> new EnumRoleMapping(guildId, category, enumValue, roleId));
+        mapping.setRoleId(roleId);
+        mapping.setBotCreated(botCreated);
+        if (existing.isEmpty()) {
+            enumRoleRepo.save(mapping);
         }
     }
 
@@ -44,11 +56,21 @@ public class RoleMappingService {
 
     @Transactional
     public void saveRankedMapping(String guildId, RoleCategory category, int minRank, String roleId) {
+        saveRankedMapping(guildId, category, minRank, roleId, false);
+    }
+
+    /**
+     * @param botCreated {@code true} only if the bot created the role itself, so that /setup delete may delete it
+     */
+    @Transactional
+    public void saveRankedMapping(String guildId, RoleCategory category, int minRank, String roleId,
+                                  boolean botCreated) {
         var existing = rankedRoleRepo.findByGuildIdAndCategoryAndMinRank(guildId, category, minRank);
-        if (existing.isPresent()) {
-            existing.get().setRoleId(roleId);
-        } else {
-            rankedRoleRepo.save(new RankedRoleMapping(guildId, category, minRank, roleId));
+        RankedRoleMapping mapping = existing.orElseGet(() -> new RankedRoleMapping(guildId, category, minRank, roleId));
+        mapping.setRoleId(roleId);
+        mapping.setBotCreated(botCreated);
+        if (existing.isEmpty()) {
+            rankedRoleRepo.save(mapping);
         }
     }
 
@@ -73,6 +95,26 @@ public class RoleMappingService {
                 enumRoleRepo.findByGuildId(guildId).stream().map(EnumRoleMapping::getRoleId),
                 rankedRoleRepo.findByGuildId(guildId).stream().map(RankedRoleMapping::getRoleId)
         ).toList();
+    }
+
+    /**
+     * Returns every distinct mapped role of the guild. A role counts as bot-created if any of its mappings
+     * says so, because only the bot's own createRole callback ever sets the flag.
+     */
+    public List<MappedRole> getMappedRoles(String guildId) {
+        Map<String, Boolean> botCreatedByRoleId = new LinkedHashMap<>();
+        Stream.concat(
+                enumRoleRepo.findByGuildId(guildId).stream()
+                        .map(m -> new MappedRole(m.getRoleId(), m.isBotCreated())),
+                rankedRoleRepo.findByGuildId(guildId).stream()
+                        .map(m -> new MappedRole(m.getRoleId(), m.isBotCreated()))
+        ).forEach(r -> botCreatedByRoleId.merge(r.roleId(), r.botCreated(), Boolean::logicalOr));
+        return botCreatedByRoleId.entrySet().stream()
+                .map(e -> new MappedRole(e.getKey(), e.getValue()))
+                .toList();
+    }
+
+    public record MappedRole(String roleId, boolean botCreated) {
     }
 
     /**

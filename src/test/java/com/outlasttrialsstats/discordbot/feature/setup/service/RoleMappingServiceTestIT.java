@@ -54,6 +54,45 @@ class RoleMappingServiceTestIT {
 
 
     @Test
+    void saveMapping_defaultsToNotBotCreated() {
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-1");
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-2");
+
+        assertThat(roleMappingService.getMappedRoles(GUILD_ID)).containsExactly(
+                new RoleMappingService.MappedRole("role-1", false),
+                new RoleMappingService.MappedRole("role-2", false));
+    }
+
+    @Test
+    void saveMapping_botCreated_isReportedByGetMappedRoles() {
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-1", true);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-2", true);
+
+        assertThat(roleMappingService.getMappedRoles(GUILD_ID)).containsExactly(
+                new RoleMappingService.MappedRole("role-1", true),
+                new RoleMappingService.MappedRole("role-2", true));
+    }
+
+    @Test
+    void saveMapping_relinkToExistingRole_clearsBotCreated() {
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "created-role", true);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "linked-role", false);
+
+        assertThat(roleMappingService.getMappedRoles(GUILD_ID))
+                .containsExactly(new RoleMappingService.MappedRole("linked-role", false));
+    }
+
+    @Test
+    void getMappedRoles_sameRoleInSeveralMappings_returnsItOnceAndBotCreatedIfAnyIs() {
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-1", true);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 20, "role-1", false);
+        roleMappingService.saveRankedMapping("guild-2", RoleCategory.LEVEL, 10, "role-9", true);
+
+        assertThat(roleMappingService.getMappedRoles(GUILD_ID))
+                .containsExactly(new RoleMappingService.MappedRole("role-1", true));
+    }
+
+    @Test
     void saveEnumMapping_newMapping_persists() {
         roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.REAGENT_RIG, "STUN", "role-1");
 

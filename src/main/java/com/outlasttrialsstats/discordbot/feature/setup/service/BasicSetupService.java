@@ -30,7 +30,7 @@ public class BasicSetupService {
 
     private final RoleMappingService roleMappingService;
 
-    private record RoleDef(String name, Color color, boolean hoisted, BiConsumer<String, String> saveMapping) {
+    private record RoleDef(String name, Color color, boolean hoisted, BiConsumer<String, Boolean> saveMapping) {
     }
 
     public void setupRoles(Guild guild, Set<RoleCategory> categories,
@@ -56,31 +56,31 @@ public class BasicSetupService {
             case PRESTIGE -> Arrays.stream(RoleConfig.PRESTIGE_THRESHOLDS)
                     .mapToObj(t -> new RoleDef(
                             "Prestige " + t + "+", null, true,
-                            (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.PRESTIGE, t, roleId)
+                            (roleId, botCreated) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.PRESTIGE, t, roleId, botCreated)
                     )).toList();
 
             case LEVEL -> Arrays.stream(RoleConfig.LEVEL_THRESHOLDS)
                     .mapToObj(t -> new RoleDef(
                             "Level " + t + "+", null, false,
-                            (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.LEVEL, t, roleId)
+                            (roleId, botCreated) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.LEVEL, t, roleId, botCreated)
                     )).toList();
 
             case INVASION_RANKING -> Arrays.stream(InvasionRanking.values())
                     .map(r -> new RoleDef(
                             RoleConfig.INVASION_RANKING_NAMES.get(r), RoleConfig.INVASION_RANKING_COLORS.get(r), false,
-                            (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.INVASION_RANKING, r.ordinal(), roleId)
+                            (roleId, botCreated) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.INVASION_RANKING, r.ordinal(), roleId, botCreated)
                     )).toList();
 
             case TOTAL_INVASION_MATCHES -> Arrays.stream(RoleConfig.TOTAL_INVASION_MATCHES_THRESHOLDS)
                     .mapToObj(t -> new RoleDef(
                             "Invasion Matches " + t + "+", null, false,
-                            (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.TOTAL_INVASION_MATCHES, t, roleId)
+                            (roleId, botCreated) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.TOTAL_INVASION_MATCHES, t, roleId, botCreated)
                     )).toList();
 
             case SEASON_INVASION_POINTS -> Arrays.stream(RoleConfig.SEASON_INVASION_POINTS_THRESHOLDS)
                     .mapToObj(t -> new RoleDef(
                             "Invasion Points " + t + "+", null, false,
-                            (_, roleId) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.SEASON_INVASION_POINTS, t, roleId)
+                            (roleId, botCreated) -> roleMappingService.saveRankedMapping(guildId, RoleCategory.SEASON_INVASION_POINTS, t, roleId, botCreated)
                     )).toList();
 
             case REAGENT_RIG -> buildEnumRoleDefs(guildId, RoleCategory.REAGENT_RIG,
@@ -94,9 +94,9 @@ public class BasicSetupService {
 
             case CONNECTED_ACCOUNT -> List.of(new RoleDef(
                     "Account Connected", null, false,
-                    (_, roleId) -> roleMappingService.saveEnumMapping(
+                    (roleId, botCreated) -> roleMappingService.saveEnumMapping(
                             guildId, RoleCategory.CONNECTED_ACCOUNT,
-                            RoleConfig.CONNECTED_ACCOUNT_VALUE, roleId)
+                            RoleConfig.CONNECTED_ACCOUNT_VALUE, roleId, botCreated)
             ));
         };
     }
@@ -108,7 +108,7 @@ public class BasicSetupService {
                 .filter(e -> nameMapper.apply(e) != null)
                 .map(e -> new RoleDef(
                         nameMapper.apply(e), colorMapper.apply(e), false,
-                        (_, roleId) -> roleMappingService.saveEnumMapping(guildId, category, valueMapper.apply(e), roleId)
+                        (roleId, botCreated) -> roleMappingService.saveEnumMapping(guildId, category, valueMapper.apply(e), roleId, botCreated)
                 )).toList();
     }
 
@@ -117,7 +117,7 @@ public class BasicSetupService {
                                   BiConsumer<Integer, List<String>> onComplete) {
         Role existing = findLinkableRoleByName(guild, existingRoles, def.name());
         if (existing != null) {
-            def.saveMapping().accept(def.name(), existing.getId());
+            def.saveMapping().accept(existing.getId(), false);
             return;
         }
 
@@ -132,7 +132,7 @@ public class BasicSetupService {
         }
 
         action.queue(createdRole -> {
-            def.saveMapping().accept(def.name(), createdRole.getId());
+            def.saveMapping().accept(createdRole.getId(), true);
             createdRoles.add(createdRole.getName());
             if (pendingTasks.decrementAndGet() == 0) {
                 onComplete.accept(createdRoles.size(), createdRoles);

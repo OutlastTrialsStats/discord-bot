@@ -40,6 +40,13 @@ public class RankedRoleMapping {
     @Column(name = "role_id", nullable = false)
     private String roleId;
 
+    /**
+     * Whether the bot created this Discord role itself. Only such roles are deleted by /setup delete;
+     * roles that were linked or matched by name are merely unlinked.
+     */
+    @Column(name = "bot_created", nullable = false)
+    private boolean botCreated;
+
     public RankedRoleMapping(String guildId, RoleCategory category, int minRank, String roleId) {
         this.guildId = guildId;
         this.category = category;

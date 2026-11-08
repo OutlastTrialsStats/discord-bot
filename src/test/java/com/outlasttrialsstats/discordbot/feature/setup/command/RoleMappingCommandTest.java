@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.feature.setup.command;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -99,7 +100,7 @@ class RoleMappingCommandTest {
 
         roleMappingCommand.onRoleMapping(event, "prestige");
 
-        verify(roleMappingService).saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, ROLE_ID);
+        verify(roleMappingService).saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, ROLE_ID, false);
         verify(event).reply("ok");
     }
 
@@ -149,7 +150,7 @@ class RoleMappingCommandTest {
         roleMappingCommand.onRoleMapping(event, "prestige");
 
         verify(event).reply("already mapped");
-        verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any());
+        verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any(), anyBoolean());
     }
 
     @Test
@@ -160,7 +161,7 @@ class RoleMappingCommandTest {
         roleMappingCommand.onRoleMapping(event, "prestige");
 
         verify(event).reply("no perm");
-        verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any());
+        verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any(), anyBoolean());
     }
 
     private void expectRejection(String messageKey) {
@@ -170,7 +171,7 @@ class RoleMappingCommandTest {
 
         verify(event).reply("rejected");
         verify(replyAction).setEphemeral(true);
-        verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any());
+        verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any(), anyBoolean());
         verify(roleMappingService, never()).findOtherCategoryUsingRole(any(), any(), any());
     }
 }

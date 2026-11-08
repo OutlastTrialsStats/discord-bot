@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.feature.setup.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -80,7 +81,7 @@ class BasicSetupServiceTest {
 
         for (int threshold : RoleConfig.PRESTIGE_THRESHOLDS) {
             verify(roleMappingService).saveRankedMapping(
-                    eq(GUILD_ID), eq(RoleCategory.PRESTIGE), eq(threshold), eq("role-" + threshold));
+                    eq(GUILD_ID), eq(RoleCategory.PRESTIGE), eq(threshold), eq("role-" + threshold), eq(false));
         }
         verify(guild, never()).createRole();
     }
@@ -151,6 +152,10 @@ class BasicSetupServiceTest {
         }
 
         verify(onComplete).accept(eq(callbacks.size()), any());
+        for (int i = 0; i < callbacks.size(); i++) {
+            verify(roleMappingService).saveEnumMapping(
+                    eq(GUILD_ID), eq(RoleCategory.ACCOUNT_TYPE), anyString(), eq("created-" + i), eq(true));
+        }
     }
 
     @Test
@@ -170,7 +175,7 @@ class BasicSetupServiceTest {
 
         verify(guild).createRole();
         verify(adminRole, never()).getId();
-        verify(roleMappingService, never()).saveEnumMapping(any(), any(), any(), any());
+        verify(roleMappingService, never()).saveEnumMapping(any(), any(), any(), any(), anyBoolean());
         verify(onNoChanges, never()).run();
     }
 
@@ -190,7 +195,7 @@ class BasicSetupServiceTest {
         basicSetupService.setupRoles(guild, Set.of(RoleCategory.CONNECTED_ACCOUNT), onComplete, onNoChanges);
 
         verify(guild).createRole();
-        verify(roleMappingService, never()).saveEnumMapping(any(), any(), any(), any());
+        verify(roleMappingService, never()).saveEnumMapping(any(), any(), any(), any(), anyBoolean());
     }
 
     private Role mockRole(String id, String name) {

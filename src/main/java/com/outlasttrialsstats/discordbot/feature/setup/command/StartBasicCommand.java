@@ -3,6 +3,7 @@ package com.outlasttrialsstats.discordbot.feature.setup.command;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.service.BasicSetupService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -74,12 +75,23 @@ public class StartBasicCommand {
         InteractionHook hook = event.getHook();
 
         basicSetupService.setupRoles(guild, selectedCategories,
-                (count, roles) -> hook.editOriginal(
-                        messageService.getMessage(guildId, "setup.basic.completed", count, String.join(", ", roles))
-                ).queue(),
+                result -> hook.editOriginal(buildResultMessage(guildId, result)).queue(),
                 () -> hook.editOriginal(
                         messageService.getMessage(guildId, "setup.basic.no_changes")
                 ).queue()
         );
+    }
+
+    String buildResultMessage(String guildId, BasicSetupService.SetupResult result) {
+        List<String> lines = new ArrayList<>();
+        if (!result.createdRoles().isEmpty()) {
+            lines.add(messageService.getMessage(guildId, "setup.basic.completed",
+                    result.createdRoles().size(), String.join(", ", result.createdRoles())));
+        }
+        if (!result.failedRoles().isEmpty()) {
+            lines.add(messageService.getMessage(guildId, "setup.basic.failed",
+                    result.failedRoles().size(), String.join(", ", result.failedRoles())));
+        }
+        return String.join("\n", lines);
     }
 }

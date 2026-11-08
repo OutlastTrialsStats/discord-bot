@@ -46,6 +46,10 @@ public class MessagesCommand {
                 log.error("Failed to import messages for guild {}: {}", guildId, e.getMessage());
                 hook.editOriginal(messageService.getMessage(guildId, "setup.messages.upload_error")).queue();
             }
+        }).exceptionally(error -> {
+            log.warn("Failed to download messages file for guild {}: {}", guildId, error.getMessage());
+            hook.editOriginal(messageService.getMessage(guildId, "setup.messages.download_error")).queue();
+            return null;
         });
     }
 

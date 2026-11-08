@@ -8,6 +8,7 @@ import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleSafety;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -22,10 +23,12 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BasicSetupService {
 
     private final RoleMappingService roleMappingService;
@@ -33,21 +36,45 @@ public class BasicSetupService {
     private record RoleDef(String name, Color color, boolean hoisted, BiConsumer<String, Boolean> saveMapping) {
     }
 
+    /**
+     * Outcome of a basic setup run: the names of the roles that were created and of those that could not be
+     * created (or whose mapping could not be saved).
+     */
+    public record SetupResult(List<String> createdRoles, List<String> failedRoles) {
+    }
+
+    /**
+     * Creates or links the roles of the given categories. Exactly one of the callbacks is invoked once all
+     * role creations have finished: {@code onComplete} if any role was created or failed, otherwise
+     * {@code onNoChanges}.
+     */
     public void setupRoles(Guild guild, Set<RoleCategory> categories,
-                           BiConsumer<Integer, List<String>> onComplete, Runnable onNoChanges) {
+                           Consumer<SetupResult> onComplete, Runnable onNoChanges) {
         String guildId = guild.getId();
         List<Role> existingRoles = guild.getRoles();
-        AtomicInteger pendingTasks = new AtomicInteger(0);
+        // Starts at 1 as a sentinel for the loop itself, so that creations completing while the loop is still
+        // queueing further ones cannot drop the counter to 0 and finish early.
+        AtomicInteger pendingTasks = new AtomicInteger(1);
         List<String> createdRoles = new CopyOnWriteArrayList<>();
-
-        for (RoleCategory category : categories) {
-            for (RoleDef def : buildRoleDefs(guildId, category).reversed()) {
-                createOrLinkRole(guild, existingRoles, def, pendingTasks, createdRoles, onComplete);
+        List<String> failedRoles = new CopyOnWriteArrayList<>();
+        Runnable taskDone = () -> {
+            if (pendingTasks.decrementAndGet() == 0) {
+                if (createdRoles.isEmpty() && failedRoles.isEmpty()) {
+                    onNoChanges.run();
+                } else {
+                    onComplete.accept(new SetupResult(List.copyOf(createdRoles), List.copyOf(failedRoles)));
+                }
             }
-        }
+        };
 
-        if (pendingTasks.get() == 0) {
-            onNoChanges.run();
+        try {
+            for (RoleCategory category : categories) {
+                for (RoleDef def : buildRoleDefs(guildId, category).reversed()) {
+                    createOrLinkRole(guild, existingRoles, def, pendingTasks, createdRoles, failedRoles, taskDone);
+                }
+            }
+        } finally {
+            taskDone.run();
         }
     }
 
@@ -113,8 +140,8 @@ public class BasicSetupService {
     }
 
     private void createOrLinkRole(Guild guild, List<Role> existingRoles, RoleDef def,
-                                  AtomicInteger pendingTasks, List<String> createdRoles,
-                                  BiConsumer<Integer, List<String>> onComplete) {
+                                  AtomicInteger pendingTasks, List<String> createdRoles, List<String> failedRoles,
+                                  Runnable taskDone) {
         Role existing = findLinkableRoleByName(guild, existingRoles, def.name());
         if (existing != null) {
             def.saveMapping().accept(existing.getId(), false);
@@ -122,22 +149,37 @@ public class BasicSetupService {
         }
 
         pendingTasks.incrementAndGet();
-        var action = guild.createRole()
-                .setName(def.name())
-                .setHoisted(def.hoisted())
-                .setPermissions(EnumSet.noneOf(Permission.class));
+        try {
+            var action = guild.createRole()
+                    .setName(def.name())
+                    .setHoisted(def.hoisted())
+                    .setPermissions(EnumSet.noneOf(Permission.class));
 
-        if (def.color() != null) {
-            action = action.setColor(def.color());
-        }
-
-        action.queue(createdRole -> {
-            def.saveMapping().accept(createdRole.getId(), true);
-            createdRoles.add(createdRole.getName());
-            if (pendingTasks.decrementAndGet() == 0) {
-                onComplete.accept(createdRoles.size(), createdRoles);
+            if (def.color() != null) {
+                action = action.setColor(def.color());
             }
-        });
+
+            action.queue(createdRole -> {
+                try {
+                    def.saveMapping().accept(createdRole.getId(), true);
+                    createdRoles.add(createdRole.getName());
+                } catch (Exception e) {
+                    log.error("Failed to save mapping for created role {} in guild {}",
+                            createdRole.getName(), guild.getId(), e);
+                    failedRoles.add(def.name());
+                } finally {
+                    taskDone.run();
+                }
+            }, error -> {
+                log.warn("Failed to create role {} in guild {}: {}", def.name(), guild.getId(), error.getMessage());
+                failedRoles.add(def.name());
+                taskDone.run();
+            });
+        } catch (Exception e) {
+            log.warn("Failed to create role {} in guild {}: {}", def.name(), guild.getId(), e.getMessage());
+            failedRoles.add(def.name());
+            taskDone.run();
+        }
     }
 
     /**

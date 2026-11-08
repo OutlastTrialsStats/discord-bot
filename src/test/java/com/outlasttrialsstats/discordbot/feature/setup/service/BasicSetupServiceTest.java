@@ -1,10 +1,13 @@
 package com.outlasttrialsstats.discordbot.feature.setup.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -12,6 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.outlasttrialsstats.backend.api.model.AccountCreationType;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
 import java.awt.Color;
@@ -19,7 +23,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import net.dv8tion.jda.api.Permission;
@@ -49,13 +52,19 @@ class BasicSetupServiceTest {
     private Guild guild;
 
     @Mock
-    private BiConsumer<Integer, List<String>> onComplete;
+    private Consumer<BasicSetupService.SetupResult> onComplete;
 
     @Mock
     private Runnable onNoChanges;
 
     @Captor
     private ArgumentCaptor<Consumer<Role>> callbackCaptor;
+
+    @Captor
+    private ArgumentCaptor<Consumer<Throwable>> failureCaptor;
+
+    @Captor
+    private ArgumentCaptor<BasicSetupService.SetupResult> resultCaptor;
 
     private static final String GUILD_ID = "guild-1";
 
@@ -112,7 +121,7 @@ class BasicSetupServiceTest {
         basicSetupService.setupRoles(guild, Set.of(RoleCategory.PRESTIGE), onComplete, onNoChanges);
 
         verify(onNoChanges).run();
-        verify(onComplete, never()).accept(any(), any());
+        verify(onComplete, never()).accept(any());
     }
 
     @Test
@@ -143,7 +152,7 @@ class BasicSetupServiceTest {
 
         basicSetupService.setupRoles(guild, Set.of(RoleCategory.ACCOUNT_TYPE), onComplete, onNoChanges);
 
-        verify(roleAction, atLeastOnce()).queue(callbackCaptor.capture());
+        verify(roleAction, atLeastOnce()).queue(callbackCaptor.capture(), failureCaptor.capture());
 
         List<Consumer<Role>> callbacks = callbackCaptor.getAllValues();
         for (int i = 0; i < callbacks.size(); i++) {
@@ -151,7 +160,9 @@ class BasicSetupServiceTest {
             callbacks.get(i).accept(createdRole);
         }
 
-        verify(onComplete).accept(eq(callbacks.size()), any());
+        verify(onComplete).accept(resultCaptor.capture());
+        assertThat(resultCaptor.getValue().createdRoles()).hasSize(callbacks.size());
+        assertThat(resultCaptor.getValue().failedRoles()).isEmpty();
         for (int i = 0; i < callbacks.size(); i++) {
             verify(roleMappingService).saveEnumMapping(
                     eq(GUILD_ID), eq(RoleCategory.ACCOUNT_TYPE), anyString(), eq("created-" + i), eq(true));
@@ -196,6 +207,87 @@ class BasicSetupServiceTest {
 
         verify(guild).createRole();
         verify(roleMappingService, never()).saveEnumMapping(any(), any(), any(), any(), anyBoolean());
+    }
+
+    @Test
+    void setupRoles_creationFails_reportsFailedRoleWhenAllDone() {
+        when(guild.getRoles()).thenReturn(List.of());
+        RoleAction roleAction = stubRoleAction();
+
+        basicSetupService.setupRoles(guild, Set.of(RoleCategory.ACCOUNT_TYPE), onComplete, onNoChanges);
+
+        verify(roleAction, atLeastOnce()).queue(callbackCaptor.capture(), failureCaptor.capture());
+        List<Consumer<Role>> callbacks = callbackCaptor.getAllValues();
+        List<Consumer<Throwable>> failures = failureCaptor.getAllValues();
+        assertThat(callbacks).hasSizeGreaterThan(1);
+
+        failures.get(0).accept(new RuntimeException("role limit reached"));
+        verify(onComplete, never()).accept(any());
+        for (int i = 1; i < callbacks.size(); i++) {
+            callbacks.get(i).accept(mockRole("created-" + i, "Role " + i));
+        }
+
+        verify(onComplete).accept(resultCaptor.capture());
+        assertThat(resultCaptor.getValue().failedRoles()).hasSize(1);
+        assertThat(resultCaptor.getValue().createdRoles()).hasSize(callbacks.size() - 1);
+        verify(onNoChanges, never()).run();
+    }
+
+    @Test
+    void setupRoles_callbacksRunSynchronously_completesExactlyOnceAfterLoop() {
+        when(guild.getRoles()).thenReturn(List.of());
+        RoleAction roleAction = stubRoleAction();
+        doAnswer(invocation -> {
+            Consumer<Role> success = invocation.getArgument(0);
+            success.accept(mockRole("created", "Created"));
+            return null;
+        }).when(roleAction).queue(any(), any());
+
+        basicSetupService.setupRoles(guild, Set.of(RoleCategory.ACCOUNT_TYPE), onComplete, onNoChanges);
+
+        verify(onComplete, times(1)).accept(resultCaptor.capture());
+        int expectedRoles = (int) Arrays.stream(AccountCreationType.values())
+                .filter(t -> RoleConfig.ACCOUNT_TYPE_NAMES.get(t) != null)
+                .count();
+        assertThat(resultCaptor.getValue().createdRoles()).hasSize(expectedRoles);
+    }
+
+    @Test
+    void setupRoles_savingMappingFails_reportsRoleAsFailed() {
+        when(guild.getRoles()).thenReturn(List.of());
+        RoleAction roleAction = stubRoleAction();
+        doThrow(new RuntimeException("db down")).when(roleMappingService)
+                .saveEnumMapping(any(), any(), any(), any(), anyBoolean());
+
+        basicSetupService.setupRoles(guild, Set.of(RoleCategory.CONNECTED_ACCOUNT), onComplete, onNoChanges);
+
+        verify(roleAction).queue(callbackCaptor.capture(), failureCaptor.capture());
+        callbackCaptor.getValue().accept(mockRole("created", "Account Connected"));
+
+        verify(onComplete).accept(resultCaptor.capture());
+        assertThat(resultCaptor.getValue().failedRoles()).containsExactly("Account Connected");
+        assertThat(resultCaptor.getValue().createdRoles()).isEmpty();
+    }
+
+    @Test
+    void setupRoles_createRoleThrows_reportsRoleAsFailedAndCompletes() {
+        when(guild.getRoles()).thenReturn(List.of());
+        when(guild.createRole()).thenThrow(new RuntimeException("missing permission"));
+
+        basicSetupService.setupRoles(guild, Set.of(RoleCategory.CONNECTED_ACCOUNT), onComplete, onNoChanges);
+
+        verify(onComplete).accept(resultCaptor.capture());
+        assertThat(resultCaptor.getValue().failedRoles()).containsExactly("Account Connected");
+        verify(onNoChanges, never()).run();
+    }
+
+    private RoleAction stubRoleAction() {
+        RoleAction roleAction = mock(RoleAction.class);
+        when(guild.createRole()).thenReturn(roleAction);
+        when(roleAction.setName(anyString())).thenReturn(roleAction);
+        when(roleAction.setHoisted(false)).thenReturn(roleAction);
+        when(roleAction.setPermissions(EnumSet.noneOf(Permission.class))).thenReturn(roleAction);
+        return roleAction;
     }
 
     private Role mockRole(String id, String name) {

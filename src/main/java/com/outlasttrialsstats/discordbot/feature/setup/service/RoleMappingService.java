@@ -43,9 +43,19 @@ public class RoleMappingService {
         }
     }
 
+    /**
+     * @return the role id of the removed mapping, empty if there was none
+     */
     @Transactional
-    public void removeEnumMapping(String guildId, RoleCategory category, String enumValue) {
-        enumRoleRepo.deleteByGuildIdAndCategoryAndEnumValue(guildId, category, enumValue);
+    public Optional<String> removeEnumMapping(String guildId, RoleCategory category, String enumValue) {
+        Optional<EnumRoleMapping> existing = enumRoleRepo.findByGuildIdAndCategoryAndEnumValue(guildId, category, enumValue);
+        existing.ifPresent(enumRoleRepo::delete);
+        return existing.map(EnumRoleMapping::getRoleId);
+    }
+
+    public Optional<String> findEnumMappingRoleId(String guildId, RoleCategory category, String enumValue) {
+        return enumRoleRepo.findByGuildIdAndCategoryAndEnumValue(guildId, category, enumValue)
+                .map(EnumRoleMapping::getRoleId);
     }
 
     /**
@@ -83,9 +93,19 @@ public class RoleMappingService {
         }
     }
 
+    /**
+     * @return the role id of the removed mapping, empty if there was none
+     */
     @Transactional
-    public void removeRankedMapping(String guildId, RoleCategory category, int minRank) {
-        rankedRoleRepo.deleteByGuildIdAndCategoryAndMinRank(guildId, category, minRank);
+    public Optional<String> removeRankedMapping(String guildId, RoleCategory category, int minRank) {
+        Optional<RankedRoleMapping> existing = rankedRoleRepo.findByGuildIdAndCategoryAndMinRank(guildId, category, minRank);
+        existing.ifPresent(rankedRoleRepo::delete);
+        return existing.map(RankedRoleMapping::getRoleId);
+    }
+
+    public Optional<String> findRankedMappingRoleId(String guildId, RoleCategory category, int minRank) {
+        return rankedRoleRepo.findByGuildIdAndCategoryAndMinRank(guildId, category, minRank)
+                .map(RankedRoleMapping::getRoleId);
     }
 
     public List<RankedRoleMapping> getRankedMappings(String guildId, RoleCategory category) {

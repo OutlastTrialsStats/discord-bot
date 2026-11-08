@@ -9,6 +9,7 @@ import com.outlasttrialsstats.discordbot.shared.MessageService;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -238,32 +239,82 @@ public class LeaderboardService {
         return escaped.replace("[", "\\[").replace("]", "\\]");
     }
 
+    /**
+     * Creates or replaces the binding for the guild and category.
+     *
+     * @return a snapshot of the binding as it was before, so the caller can delete its old messages
+     */
     @Transactional
-    public void saveBinding(String guildId, StatisticType category, String channelId, List<String> messageIds, int maxPages) {
+    public Optional<LeaderboardBinding> saveBinding(String guildId, StatisticType category, String channelId,
+                                                    List<String> messageIds, int maxPages) {
         Optional<LeaderboardChannel> existing = leaderboardChannelRepository
                 .findByGuildIdAndCategory(guildId, category);
 
         if (existing.isPresent()) {
             LeaderboardChannel binding = existing.get();
+            LeaderboardBinding previous = LeaderboardBinding.of(binding);
             binding.setChannelId(channelId);
             binding.setMessageIds(new ArrayList<>(messageIds));
             binding.setMaxPages(maxPages);
             leaderboardChannelRepository.save(binding);
-        } else {
-            leaderboardChannelRepository.save(new LeaderboardChannel(guildId, category, channelId, messageIds, maxPages));
+            return Optional.of(previous);
         }
+        leaderboardChannelRepository.save(new LeaderboardChannel(guildId, category, channelId, messageIds, maxPages));
+        return Optional.empty();
     }
 
     @Transactional
-    public Optional<LeaderboardChannel> removeBinding(String guildId, StatisticType category) {
-        Optional<LeaderboardChannel> existing = leaderboardChannelRepository
-                .findByGuildIdAndCategory(guildId, category);
-        existing.ifPresent(leaderboardChannelRepository::delete);
-        return existing;
+    public Optional<LeaderboardBinding> removeBinding(String guildId, StatisticType category) {
+        return leaderboardChannelRepository.findByGuildIdAndCategory(guildId, category)
+                .map(this::delete);
     }
 
-    public List<LeaderboardChannel> getAllBindings() {
-        return leaderboardChannelRepository.findAllWithMessageIds();
+    /**
+     * Removes the binding only if it still references {@code messageId}. A stale failure for a message
+     * that has since been replaced by a new setup must not delete the new binding.
+     */
+    @Transactional
+    public Optional<LeaderboardBinding> removeBindingIfContainsMessage(Long bindingId, String messageId) {
+        if (bindingId == null) {
+            return Optional.empty();
+        }
+        return leaderboardChannelRepository.findById(bindingId)
+                .filter(binding -> binding.getMessageIds().contains(messageId))
+                .map(this::delete);
+    }
+
+    /** Removes the binding only if it still points to {@code channelId}. */
+    @Transactional
+    public Optional<LeaderboardBinding> removeBindingIfInChannel(Long bindingId, String channelId) {
+        if (bindingId == null) {
+            return Optional.empty();
+        }
+        return leaderboardChannelRepository.findById(bindingId)
+                .filter(binding -> channelId.equals(binding.getChannelId()))
+                .map(this::delete);
+    }
+
+    /** Removes every binding that references one of the given messages. */
+    @Transactional
+    public List<LeaderboardBinding> removeBindingsByMessageIds(Collection<String> messageIds) {
+        if (messageIds.isEmpty()) {
+            return List.of();
+        }
+        return leaderboardChannelRepository.findByMessageIdIn(messageIds).stream()
+                .map(this::delete)
+                .toList();
+    }
+
+    private LeaderboardBinding delete(LeaderboardChannel binding) {
+        LeaderboardBinding snapshot = LeaderboardBinding.of(binding);
+        leaderboardChannelRepository.delete(binding);
+        return snapshot;
+    }
+
+    public List<LeaderboardBinding> getAllBindings() {
+        return leaderboardChannelRepository.findAllWithMessageIds().stream()
+                .map(LeaderboardBinding::of)
+                .toList();
     }
 
     public String getCategoryDisplayName(String guildId, StatisticType category) {

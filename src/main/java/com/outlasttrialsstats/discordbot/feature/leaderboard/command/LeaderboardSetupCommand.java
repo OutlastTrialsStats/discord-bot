@@ -2,7 +2,7 @@ package com.outlasttrialsstats.discordbot.feature.leaderboard.command;
 
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.StatisticType;
-import com.outlasttrialsstats.discordbot.entity.LeaderboardChannel;
+import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.ArrayList;
@@ -23,6 +23,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LeaderboardSetupCommand {
 
+    /** Sending and later editing the embeds needs all of these in the target channel. */
+    static final Permission[] REQUIRED_PERMISSIONS = {
+            Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.MESSAGE_EMBED_LINKS,
+            Permission.MESSAGE_HISTORY
+    };
+
     private final LeaderboardService leaderboardService;
     private final MessageService messageService;
 
@@ -40,7 +46,7 @@ public class LeaderboardSetupCommand {
         }
         StandardGuildMessageChannel channel = channelUnion.asStandardGuildMessageChannel();
 
-        if (!guild.getSelfMember().hasPermission(channel, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND)) {
+        if (!guild.getSelfMember().hasPermission(channel, REQUIRED_PERMISSIONS)) {
             hook.editOriginal(messageService.getMessage(guildId, "error.missing_permission.channel_write", channel.getAsMention())).queue();
             return;
         }
@@ -57,47 +63,60 @@ public class LeaderboardSetupCommand {
             return;
         }
 
-        // Cap maxPages to actual total pages
-        int totalPages = firstResponse.get().getTotalPages() != null ? firstResponse.get().getTotalPages() : 1;
+        // Cap maxPages to actual total pages, but always post at least one (possibly empty) page
+        Integer reportedPages = firstResponse.get().getTotalPages();
+        int totalPages = Math.max(1, reportedPages != null ? reportedPages : 1);
         maxPages = Math.min(maxPages, totalPages);
 
-        // Delete old messages if binding exists
-        Optional<LeaderboardChannel> oldBinding = leaderboardService.removeBinding(guildId, statisticType);
-        oldBinding.ifPresent(binding -> deleteOldMessages(guild, binding));
-
-        // Post embeds for each page
+        // Post the new messages first, so a failure leaves the existing leaderboard untouched
         List<String> messageIds = new ArrayList<>();
-        for (int page = 1; page <= maxPages; page++) {
-            Optional<DiscordLeaderboardResponse> response = page == 1
-                    ? firstResponse
-                    : leaderboardService.fetchLeaderboard(statisticType, page);
-            if (response.isEmpty()) break;
+        Optional<LeaderboardBinding> oldBinding;
+        try {
+            for (int page = 1; page <= maxPages; page++) {
+                Optional<DiscordLeaderboardResponse> response = page == 1
+                        ? firstResponse
+                        : leaderboardService.fetchLeaderboard(statisticType, page);
+                if (response.isEmpty()) break;
 
-            MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
-                    guildId, guild, statisticType, response.get(), page == 1, true, false);
-            var message = channel.sendMessageEmbeds(embed).complete();
-            messageIds.add(message.getId());
+                MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
+                        guildId, guild, statisticType, response.get(), page == 1, true, false);
+                var message = channel.sendMessageEmbeds(embed).complete();
+                messageIds.add(message.getId());
+            }
+            oldBinding = leaderboardService.saveBinding(guildId, statisticType, channel.getId(),
+                    messageIds, messageIds.size());
+        } catch (Exception e) {
+            log.warn("Failed to set up leaderboard {} in guild {}: {}", statisticType, guildId, e.getMessage());
+            deleteMessages(guild, channel.getId(), messageIds);
+            hook.editOriginal(messageService.getMessage(guildId, "setup.leaderboard.post_failed",
+                    channel.getAsMention())).queue();
+            return;
         }
 
-        leaderboardService.saveBinding(guildId, statisticType, channel.getId(), messageIds, maxPages);
+        oldBinding.ifPresent(binding -> deleteMessages(guild, binding.channelId(), binding.messageIds()));
+
         hook.editOriginal(messageService.getMessage(guildId, "setup.leaderboard.success",
                         categoryName, channel.getAsMention()))
                 .queue();
     }
 
-    private void deleteOldMessages(Guild guild, LeaderboardChannel binding) {
+    private void deleteMessages(Guild guild, String channelId, List<String> messageIds) {
+        if (messageIds.isEmpty()) {
+            return;
+        }
         try {
-            StandardGuildMessageChannel oldChannel = guild.getChannelById(StandardGuildMessageChannel.class, binding.getChannelId());
-            if (oldChannel != null) {
-                for (String messageId : binding.getMessageIds()) {
-                    oldChannel.deleteMessageById(messageId).queue(
-                            _ -> {},
-                            _ -> log.debug("Could not delete old leaderboard message {}", messageId)
-                    );
-                }
+            StandardGuildMessageChannel targetChannel = guild.getChannelById(StandardGuildMessageChannel.class, channelId);
+            if (targetChannel == null) {
+                return;
+            }
+            for (String messageId : messageIds) {
+                targetChannel.deleteMessageById(messageId).queue(
+                        _ -> {},
+                        _ -> log.debug("Could not delete leaderboard message {}", messageId)
+                );
             }
         } catch (Exception e) {
-            log.debug("Could not delete old leaderboard messages: {}", e.getMessage());
+            log.debug("Could not delete leaderboard messages: {}", e.getMessage());
         }
     }
 }

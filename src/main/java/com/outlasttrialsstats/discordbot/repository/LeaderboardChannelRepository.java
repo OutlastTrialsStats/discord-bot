@@ -2,6 +2,7 @@ package com.outlasttrialsstats.discordbot.repository;
 
 import com.outlasttrialsstats.backend.api.model.StatisticType;
 import com.outlasttrialsstats.discordbot.entity.LeaderboardChannel;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,5 +20,8 @@ public interface LeaderboardChannelRepository extends JpaRepository<LeaderboardC
 
     @Query("SELECT lc FROM LeaderboardChannel lc JOIN lc.messageIds m WHERE m = :messageId")
     Optional<LeaderboardChannel> findByMessageId(@Param("messageId") String messageId);
+
+    @Query("SELECT DISTINCT lc FROM LeaderboardChannel lc JOIN lc.messageIds m WHERE m IN :messageIds")
+    List<LeaderboardChannel> findByMessageIdIn(@Param("messageIds") Collection<String> messageIds);
 
 }

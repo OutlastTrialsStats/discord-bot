@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.outlasttrialsstats.backend.api.model.StatisticType;
 import com.outlasttrialsstats.discordbot.IntegrationTest;
@@ -91,6 +92,21 @@ class LeaderboardChannelRepositoryTestIT {
         var result = repository.findByMessageId("nonexistent");
 
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findByMessageIdIn_findsEachBindingOnce() {
+        repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.PRESTIGE, "channel-1", List.of("msg-1", "msg-2"), 2));
+        repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.DEATHS, "channel-1", List.of("msg-3"), 1));
+        repository.save(new LeaderboardChannel(OTHER_GUILD_ID, StatisticType.PRESTIGE, "channel-2", List.of("msg-4"), 1));
+
+        var result = repository.findByMessageIdIn(List.of("msg-1", "msg-2", "msg-3", "nonexistent"));
+
+        assertThat(result)
+                .extracting(LeaderboardChannel::getGuildId, LeaderboardChannel::getCategory)
+                .containsExactlyInAnyOrder(
+                        tuple(GUILD_ID, StatisticType.PRESTIGE),
+                        tuple(GUILD_ID, StatisticType.DEATHS));
     }
 
     @Test

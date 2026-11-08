@@ -1,29 +1,62 @@
 package com.outlasttrialsstats.discordbot.feature.leaderboard.listener;
 
-import com.outlasttrialsstats.discordbot.repository.LeaderboardChannelRepository;
+import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
+import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Removes a leaderboard binding when one of its messages is deleted, and deletes the binding's remaining
+ * pages so no orphaned, never-updated leaderboard messages stay behind.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class LeaderboardMessageDeleteListener extends ListenerAdapter {
 
-    private final LeaderboardChannelRepository leaderboardChannelRepository;
+    private final LeaderboardService leaderboardService;
 
     @Override
-    @Transactional
     public void onMessageDelete(MessageDeleteEvent event) {
-        String messageId = event.getMessageId();
+        handleDeletedMessages(event.getChannel(), List.of(event.getMessageId()));
+    }
 
-        leaderboardChannelRepository.findByMessageId(messageId).ifPresent(binding -> {
-            log.info("Leaderboard message {} deleted in guild {}, removing binding for category {}",
-                    messageId, binding.getGuildId(), binding.getCategory());
-            leaderboardChannelRepository.delete(binding);
-        });
+    @Override
+    public void onMessageBulkDelete(MessageBulkDeleteEvent event) {
+        handleDeletedMessages(event.getChannel(), event.getMessageIds());
+    }
+
+    private void handleDeletedMessages(MessageChannel channel, Collection<String> deletedMessageIds) {
+        List<LeaderboardBinding> removed = leaderboardService.removeBindingsByMessageIds(deletedMessageIds);
+        Set<String> deleted = Set.copyOf(deletedMessageIds);
+
+        for (LeaderboardBinding binding : removed) {
+            log.info("Leaderboard message deleted in guild {}, removing binding for category {}",
+                    binding.guildId(), binding.category());
+            if (!binding.channelId().equals(channel.getId())) {
+                continue;
+            }
+            for (String messageId : binding.messageIds()) {
+                if (deleted.contains(messageId)) {
+                    continue;
+                }
+                try {
+                    channel.deleteMessageById(messageId).queue(
+                            _ -> {},
+                            error -> log.debug("Could not delete leaderboard message {}: {}",
+                                    messageId, error.getMessage()));
+                } catch (Exception e) {
+                    log.debug("Could not delete leaderboard message {}: {}", messageId, e.getMessage());
+                }
+            }
+        }
     }
 }

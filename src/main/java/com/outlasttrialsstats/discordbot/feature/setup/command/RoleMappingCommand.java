@@ -6,9 +6,12 @@ import com.outlasttrialsstats.backend.api.model.InvasionRanking;
 import com.outlasttrialsstats.backend.api.model.PlatformType;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
+import com.outlasttrialsstats.discordbot.feature.setup.RoleSafety;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.EnumSet;
+import java.util.Optional;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
@@ -61,7 +64,7 @@ public class RoleMappingCommand {
         Role role = getOptionalRole(event);
         String roleName = "Prestige " + threshold + "+";
 
-        createOrLinkRole(guild, guildId, roleName, role,
+        createOrLinkRole(guild, guildId, roleName, role, RoleCategory.PRESTIGE,
                 roleId -> roleMappingService.saveRankedMapping(guildId, RoleCategory.PRESTIGE, threshold, roleId),
                 event, "setup.prestige_role.success", threshold);
     }
@@ -83,7 +86,7 @@ public class RoleMappingCommand {
         Role role = getOptionalRole(event);
         String roleName = "Level " + threshold + "+";
 
-        createOrLinkRole(guild, guildId, roleName, role,
+        createOrLinkRole(guild, guildId, roleName, role, RoleCategory.LEVEL,
                 roleId -> roleMappingService.saveRankedMapping(guildId, RoleCategory.LEVEL, threshold, roleId),
                 event, "setup.level_role.success", threshold);
     }
@@ -105,7 +108,7 @@ public class RoleMappingCommand {
         String roleName = RoleConfig.skillName(reagentSkill);
         Role role = getOptionalRole(event);
 
-        createOrLinkRole(guild, guildId, roleName, role,
+        createOrLinkRole(guild, guildId, roleName, role, RoleCategory.REAGENT_RIG,
                 roleId -> roleMappingService.saveEnumMapping(guildId, RoleCategory.REAGENT_RIG, reagentSkill.getValue(), roleId),
                 event, "setup.skill_role.success", roleName);
     }
@@ -127,7 +130,7 @@ public class RoleMappingCommand {
         String roleName = RoleConfig.INVASION_RANKING_NAMES.get(invasionRanking);
         Role role = getOptionalRole(event);
 
-        createOrLinkRole(guild, guildId, roleName, role,
+        createOrLinkRole(guild, guildId, roleName, role, RoleCategory.INVASION_RANKING,
                 roleId -> roleMappingService.saveRankedMapping(guildId, RoleCategory.INVASION_RANKING, invasionRanking.ordinal(), roleId),
                 event, "setup.role_mapping.success", roleName);
     }
@@ -150,7 +153,7 @@ public class RoleMappingCommand {
         Role role = getOptionalRole(event);
         String roleName = "Invasion Matches " + threshold + "+";
 
-        createOrLinkRole(guild, guildId, roleName, role,
+        createOrLinkRole(guild, guildId, roleName, role, RoleCategory.TOTAL_INVASION_MATCHES,
                 roleId -> roleMappingService.saveRankedMapping(guildId, RoleCategory.TOTAL_INVASION_MATCHES, threshold, roleId),
                 event, "setup.total_invasion_matches_role.success", threshold);
     }
@@ -172,7 +175,7 @@ public class RoleMappingCommand {
         Role role = getOptionalRole(event);
         String roleName = "Invasion Points " + threshold + "+";
 
-        createOrLinkRole(guild, guildId, roleName, role,
+        createOrLinkRole(guild, guildId, roleName, role, RoleCategory.SEASON_INVASION_POINTS,
                 roleId -> roleMappingService.saveRankedMapping(guildId, RoleCategory.SEASON_INVASION_POINTS, threshold, roleId),
                 event, "setup.season_invasion_points_role.success", threshold);
     }
@@ -194,7 +197,7 @@ public class RoleMappingCommand {
         String roleName = RoleConfig.PLATFORM_NAMES.get(platformType);
         Role role = getOptionalRole(event);
 
-        createOrLinkRole(guild, guildId, roleName, role,
+        createOrLinkRole(guild, guildId, roleName, role, RoleCategory.PLATFORM,
                 roleId -> roleMappingService.saveEnumMapping(guildId, RoleCategory.PLATFORM, platformType.getValue(), roleId),
                 event, "setup.role_mapping.success", roleName);
     }
@@ -217,7 +220,7 @@ public class RoleMappingCommand {
         String roleName = RoleConfig.ACCOUNT_TYPE_NAMES.get(type);
         Role role = getOptionalRole(event);
 
-        createOrLinkRole(guild, guildId, roleName, role,
+        createOrLinkRole(guild, guildId, roleName, role, RoleCategory.ACCOUNT_TYPE,
                 roleId -> roleMappingService.saveEnumMapping(guildId, RoleCategory.ACCOUNT_TYPE, type.getValue(), roleId),
                 event, "setup.role_mapping.success", roleName);
     }
@@ -239,7 +242,7 @@ public class RoleMappingCommand {
         String roleName = "Account Connected";
         Role role = getOptionalRole(event);
 
-        createOrLinkRole(guild, guildId, roleName, role,
+        createOrLinkRole(guild, guildId, roleName, role, RoleCategory.CONNECTED_ACCOUNT,
                 roleId -> roleMappingService.saveEnumMapping(guildId, RoleCategory.CONNECTED_ACCOUNT,
                         RoleConfig.CONNECTED_ACCOUNT_VALUE, roleId),
                 event, "setup.connected_account_role.success", roleName);
@@ -260,28 +263,50 @@ public class RoleMappingCommand {
         return roleOption != null ? roleOption.getAsRole() : null;
     }
 
-    private void createOrLinkRole(Guild guild, String guildId, String roleName, Role role,
-                                  java.util.function.Consumer<String> saveMapping,
+    private void createOrLinkRole(Guild guild, String guildId, String roleName, Role role, RoleCategory category,
+                                  Consumer<String> saveMapping,
                                   SlashCommandInteractionEvent event, String messageKey, Object extraArg) {
-        if (role != null) {
-            saveMapping.accept(role.getId());
-            event.reply(messageService.getMessage(guildId, messageKey, role.getName(), extraArg))
-                    .setEphemeral(true).queue();
-        } else {
-            if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
-                event.reply(messageService.getMessage(guildId, "error.missing_permission.manage_roles"))
-                        .setEphemeral(true).queue();
-                return;
-            }
-            event.deferReply(true).queue();
-            guild.createRole()
-                    .setName(roleName)
-                    .setPermissions(EnumSet.noneOf(Permission.class))
-                    .queue(createdRole -> {
-                        saveMapping.accept(createdRole.getId());
-                        event.getHook().editOriginal(
-                                messageService.getMessage(guildId, messageKey, createdRole.getName(), extraArg)).queue();
-                    });
+        if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
+            replyEphemeral(event, messageService.getMessage(guildId, "error.missing_permission.manage_roles"));
+            return;
         }
+        if (role != null) {
+            linkExistingRole(guild, guildId, role, category, saveMapping, event, messageKey, extraArg);
+            return;
+        }
+        event.deferReply(true).queue();
+        guild.createRole()
+                .setName(roleName)
+                .setPermissions(EnumSet.noneOf(Permission.class))
+                .queue(createdRole -> {
+                    saveMapping.accept(createdRole.getId());
+                    event.getHook().editOriginal(
+                            messageService.getMessage(guildId, messageKey, createdRole.getName(), extraArg)).queue();
+                });
+    }
+
+    private void linkExistingRole(Guild guild, String guildId, Role role, RoleCategory category,
+                                  Consumer<String> saveMapping,
+                                  SlashCommandInteractionEvent event, String messageKey, Object extraArg) {
+        Optional<RoleSafety.Violation> violation = RoleSafety.check(role, guild.getSelfMember(), event.getMember());
+        if (violation.isPresent()) {
+            replyEphemeral(event, messageService.getMessage(guildId, violation.get().getMessageKey(), role.getName()));
+            return;
+        }
+
+        Optional<RoleCategory> conflictingCategory =
+                roleMappingService.findOtherCategoryUsingRole(guildId, role.getId(), category);
+        if (conflictingCategory.isPresent()) {
+            replyEphemeral(event, messageService.getMessage(guildId, "error.role_already_mapped",
+                    role.getName(), conflictingCategory.get().getDisplayName()));
+            return;
+        }
+
+        saveMapping.accept(role.getId());
+        replyEphemeral(event, messageService.getMessage(guildId, messageKey, role.getName(), extraArg));
+    }
+
+    private void replyEphemeral(SlashCommandInteractionEvent event, String message) {
+        event.reply(message).setEphemeral(true).queue();
     }
 }

@@ -53,7 +53,7 @@ public class CommandRegistrar {
 
                 Commands.slash("setup", "Bot setup commands")
                         .setContexts(InteractionContextType.GUILD)
-                        .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_CHANNEL))
+                        .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
                         .addSubcommands(
                                 new SubcommandData("delete", "Delete all bot-managed roles from this server"),
                                 new SubcommandData("language", "Set the bot language for this server")
@@ -65,7 +65,8 @@ public class CommandRegistrar {
                                                 .setChannelTypes(ChannelType.TEXT, ChannelType.NEWS),
                                                 new OptionData(OptionType.STRING, "category", "Statistic category", true)
                                                         .addChoices(leaderboardChoices()),
-                                                new OptionData(OptionType.INTEGER, "pages", "Number of pages to display (1-10)", true)),
+                                                new OptionData(OptionType.INTEGER, "pages", "Number of pages to display (1-10)", true)
+                                                        .setRequiredRange(1, 10)),
                                 new SubcommandData("messages-upload", "Upload custom bot messages from a properties file")
                                         .addOptions(new OptionData(OptionType.ATTACHMENT, "file", "Properties file with custom messages", true)),
                                 new SubcommandData("messages-download", "Download current bot messages as a properties file"),
@@ -131,7 +132,8 @@ public class CommandRegistrar {
     }
 
     private static OptionData thresholdOption(String description) {
-        return new OptionData(OptionType.INTEGER, "threshold", description, true);
+        return new OptionData(OptionType.INTEGER, "threshold", description, true)
+                .setMinValue(1);
     }
 
     private static OptionData stringOption(String name, String description, List<Choice> choices) {

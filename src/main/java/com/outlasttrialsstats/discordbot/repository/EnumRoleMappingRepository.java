@@ -19,4 +19,6 @@ public interface EnumRoleMappingRepository extends JpaRepository<EnumRoleMapping
     void deleteByGuildId(String guildId);
 
     void deleteByGuildIdAndRoleId(String guildId, String roleId);
+
+    List<EnumRoleMapping> findByGuildIdAndRoleIdAndCategoryNot(String guildId, String roleId, RoleCategory category);
 }

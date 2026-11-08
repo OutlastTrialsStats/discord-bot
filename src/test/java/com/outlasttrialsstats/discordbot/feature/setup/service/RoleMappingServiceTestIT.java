@@ -32,6 +32,26 @@ class RoleMappingServiceTestIT {
         rankedRoleRepo.deleteAll();
     }
 
+    @Test
+    void findOtherCategoryUsingRole_roleUsedInOtherCategory_returnsThatCategory() {
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-1");
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-2");
+
+        assertThat(roleMappingService.findOtherCategoryUsingRole(GUILD_ID, "role-1", RoleCategory.PRESTIGE))
+                .contains(RoleCategory.LEVEL);
+        assertThat(roleMappingService.findOtherCategoryUsingRole(GUILD_ID, "role-2", RoleCategory.PRESTIGE))
+                .contains(RoleCategory.PLATFORM);
+    }
+
+    @Test
+    void findOtherCategoryUsingRole_sameCategoryOrOtherGuild_returnsEmpty() {
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "role-1");
+        roleMappingService.saveRankedMapping("guild-2", RoleCategory.LEVEL, 10, "role-1");
+
+        assertThat(roleMappingService.findOtherCategoryUsingRole(GUILD_ID, "role-1", RoleCategory.PRESTIGE))
+                .isEmpty();
+    }
+
 
     @Test
     void saveEnumMapping_newMapping_persists() {

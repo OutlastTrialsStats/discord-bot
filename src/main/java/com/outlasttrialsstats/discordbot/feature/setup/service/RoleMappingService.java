@@ -6,6 +6,7 @@ import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.repository.EnumRoleMappingRepository;
 import com.outlasttrialsstats.discordbot.repository.RankedRoleMappingRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -60,7 +61,7 @@ public class RoleMappingService {
         return rankedRoleRepo.findByGuildIdAndCategory(guildId, category);
     }
 
-    public java.util.Optional<RankedRoleMapping> getBestRankedMapping(String guildId, RoleCategory category, int rank) {
+    public Optional<RankedRoleMapping> getBestRankedMapping(String guildId, RoleCategory category, int rank) {
         return rankedRoleRepo.findFirstByGuildIdAndCategoryAndMinRankLessThanEqualOrderByMinRankDesc(
                 guildId, category, rank);
     }
@@ -72,6 +73,19 @@ public class RoleMappingService {
                 enumRoleRepo.findByGuildId(guildId).stream().map(EnumRoleMapping::getRoleId),
                 rankedRoleRepo.findByGuildId(guildId).stream().map(RankedRoleMapping::getRoleId)
         ).toList();
+    }
+
+    /**
+     * Returns the other categories of this guild that already use the given role. Mapping one role in
+     * several categories makes the role sync add and remove it alternately, so such links are rejected.
+     */
+    public Optional<RoleCategory> findOtherCategoryUsingRole(String guildId, String roleId, RoleCategory category) {
+        return Stream.concat(
+                enumRoleRepo.findByGuildIdAndRoleIdAndCategoryNot(guildId, roleId, category).stream()
+                        .map(EnumRoleMapping::getCategory),
+                rankedRoleRepo.findByGuildIdAndRoleIdAndCategoryNot(guildId, roleId, category).stream()
+                        .map(RankedRoleMapping::getCategory)
+        ).findFirst();
     }
 
     @Transactional

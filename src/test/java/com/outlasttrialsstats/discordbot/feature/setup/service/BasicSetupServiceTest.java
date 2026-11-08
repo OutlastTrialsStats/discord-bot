@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.SelfMember;
 import net.dv8tion.jda.api.requests.restaction.RoleAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,9 +58,14 @@ class BasicSetupServiceTest {
 
     private static final String GUILD_ID = "guild-1";
 
+    @Mock
+    private SelfMember selfMember;
+
     @BeforeEach
     void setUp() {
         when(guild.getId()).thenReturn(GUILD_ID);
+        lenient().when(guild.getSelfMember()).thenReturn(selfMember);
+        lenient().when(selfMember.canInteract(any(Role.class))).thenReturn(true);
     }
 
     @Test
@@ -146,10 +153,51 @@ class BasicSetupServiceTest {
         verify(onComplete).accept(eq(callbacks.size()), any());
     }
 
+    @Test
+    void setupRoles_nameMatchedRoleIsPrivileged_createsNewRoleInstead() {
+        Role adminRole = mock(Role.class);
+        when(adminRole.getName()).thenReturn("Account Connected");
+        when(adminRole.getPermissions()).thenReturn(EnumSet.of(Permission.ADMINISTRATOR));
+        when(guild.getRoles()).thenReturn(List.of(adminRole));
+
+        RoleAction roleAction = mock(RoleAction.class);
+        when(guild.createRole()).thenReturn(roleAction);
+        when(roleAction.setName("Account Connected")).thenReturn(roleAction);
+        when(roleAction.setHoisted(false)).thenReturn(roleAction);
+        when(roleAction.setPermissions(EnumSet.noneOf(Permission.class))).thenReturn(roleAction);
+
+        basicSetupService.setupRoles(guild, Set.of(RoleCategory.CONNECTED_ACCOUNT), onComplete, onNoChanges);
+
+        verify(guild).createRole();
+        verify(adminRole, never()).getId();
+        verify(roleMappingService, never()).saveEnumMapping(any(), any(), any(), any());
+        verify(onNoChanges, never()).run();
+    }
+
+    @Test
+    void setupRoles_nameMatchedRoleAboveBot_createsNewRoleInstead() {
+        Role highRole = mock(Role.class);
+        when(highRole.getName()).thenReturn("Account Connected");
+        when(selfMember.canInteract(highRole)).thenReturn(false);
+        when(guild.getRoles()).thenReturn(List.of(highRole));
+
+        RoleAction roleAction = mock(RoleAction.class);
+        when(guild.createRole()).thenReturn(roleAction);
+        when(roleAction.setName("Account Connected")).thenReturn(roleAction);
+        when(roleAction.setHoisted(false)).thenReturn(roleAction);
+        when(roleAction.setPermissions(EnumSet.noneOf(Permission.class))).thenReturn(roleAction);
+
+        basicSetupService.setupRoles(guild, Set.of(RoleCategory.CONNECTED_ACCOUNT), onComplete, onNoChanges);
+
+        verify(guild).createRole();
+        verify(roleMappingService, never()).saveEnumMapping(any(), any(), any(), any());
+    }
+
     private Role mockRole(String id, String name) {
         Role role = mock(Role.class);
-        when(role.getId()).thenReturn(id);
-        when(role.getName()).thenReturn(name);
+        lenient().when(role.getId()).thenReturn(id);
+        lenient().when(role.getName()).thenReturn(name);
+        lenient().when(role.getPermissions()).thenReturn(EnumSet.noneOf(Permission.class));
         return role;
     }
 }

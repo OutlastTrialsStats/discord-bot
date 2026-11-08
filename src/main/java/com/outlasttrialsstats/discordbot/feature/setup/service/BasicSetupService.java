@@ -6,9 +6,11 @@ import com.outlasttrialsstats.backend.api.model.InvasionRanking;
 import com.outlasttrialsstats.backend.api.model.PlatformType;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleConfig;
+import com.outlasttrialsstats.discordbot.feature.setup.RoleSafety;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import org.springframework.stereotype.Service;
 
@@ -113,7 +115,7 @@ public class BasicSetupService {
     private void createOrLinkRole(Guild guild, List<Role> existingRoles, RoleDef def,
                                   AtomicInteger pendingTasks, List<String> createdRoles,
                                   BiConsumer<Integer, List<String>> onComplete) {
-        Role existing = findRoleByName(existingRoles, def.name());
+        Role existing = findLinkableRoleByName(guild, existingRoles, def.name());
         if (existing != null) {
             def.saveMapping().accept(def.name(), existing.getId());
             return;
@@ -138,9 +140,15 @@ public class BasicSetupService {
         });
     }
 
-    private Role findRoleByName(List<Role> roles, String name) {
+    /**
+     * Finds an existing role with the given name that is safe to hand out. A name-matched role that is
+     * privileged or out of the bot's reach is ignored so that a fresh, permission-less role gets created.
+     */
+    private Role findLinkableRoleByName(Guild guild, List<Role> roles, String name) {
+        Member selfMember = guild.getSelfMember();
         return roles.stream()
                 .filter(r -> r.getName().equalsIgnoreCase(name))
+                .filter(r -> RoleSafety.isSafe(r, selfMember))
                 .findFirst()
                 .orElse(null);
     }

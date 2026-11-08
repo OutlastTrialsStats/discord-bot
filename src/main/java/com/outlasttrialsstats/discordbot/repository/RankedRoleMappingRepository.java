@@ -22,4 +22,6 @@ public interface RankedRoleMappingRepository extends JpaRepository<RankedRoleMap
     void deleteByGuildId(String guildId);
 
     void deleteByGuildIdAndRoleId(String guildId, String roleId);
+
+    List<RankedRoleMapping> findByGuildIdAndRoleIdAndCategoryNot(String guildId, String roleId, RoleCategory category);
 }

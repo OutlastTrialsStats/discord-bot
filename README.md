@@ -40,6 +40,18 @@ Roles are also automatically assigned when a verified member joins the server.
 
 To remove a leaderboard, simply delete its message in Discord — the bot will automatically clean up the binding.
 
+### Community Events
+
+| Command | Description |
+|---|---|
+| `/setup community-event message <channel> [event]` | Post an auto-updating progress message (phases, progress bar, ETA, rate). Without `event` it always shows the current event and switches automatically when a new one starts |
+| `/setup community-event alerts <channel>` | Set the channel alerts are posted in |
+| `/setup community-event alert <type> [enabled] [role] [remove-role] [lead-time]` | Configure one alert type: turn it on/off, choose the role to ping, and for pre-alerts how early to warn (15 min, 1 h, 3 h) |
+| `/setup community-event status` | Show the progress message, alert channel and every alert type's settings |
+| `/setup community-event remove <message\|alerts\|all>` | Remove the progress message and/or turn off alerts |
+
+Alert types: **Phase reached** (a phase was reached) and **Pre-alert** (the next phase is expected within the lead time). Each alert is sent once per phase, also across bot restarts. When alerts are set up during a running event, already reached phases are not announced again.
+
 ## Self-Hosting with Docker
 
 The easiest way to run the bot is with Docker.

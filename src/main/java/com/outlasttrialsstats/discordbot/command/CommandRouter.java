@@ -1,5 +1,6 @@
 package com.outlasttrialsstats.discordbot.command;
 
+import com.outlasttrialsstats.discordbot.feature.communityevent.command.CommunityEventSetupCommand;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.command.LeaderboardCommand;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.command.LeaderboardSetupCommand;
 import com.outlasttrialsstats.discordbot.feature.profile.command.ProfileCommand;
@@ -15,6 +16,7 @@ import java.awt.Color;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
@@ -37,6 +39,18 @@ public class CommandRouter extends ListenerAdapter {
     private final NicknameCommand nicknameCommand;
     private final LeaderboardSetupCommand leaderboardSetupCommand;
     private final ToggleUserCommandVisibility toggleUserCommandVisibility;
+    private final CommunityEventSetupCommand communityEventSetupCommand;
+
+    @Override
+    public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
+        try {
+            if ("setup".equals(event.getName()) && CommunityEventSetupCommand.GROUP.equals(event.getSubcommandGroup())) {
+                communityEventSetupCommand.onAutoComplete(event);
+            }
+        } catch (Exception e) {
+            log.error("Autocomplete failed: {}", event.getFullCommandName(), e);
+        }
+    }
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -59,7 +73,9 @@ public class CommandRouter extends ListenerAdapter {
         String subcommand = event.getSubcommandName();
         if (subcommand == null) return;
 
-        if ("role-mapping".equals(subcommandGroup)) {
+        if (CommunityEventSetupCommand.GROUP.equals(subcommandGroup)) {
+            communityEventSetupCommand.onSubcommand(event, subcommand);
+        } else if ("role-mapping".equals(subcommandGroup)) {
             roleMappingCommand.onRoleMapping(event, subcommand);
         } else if ("remove-role-mapping".equals(subcommandGroup)) {
             roleMappingCommand.onRemoveRoleMapping(event, subcommand);

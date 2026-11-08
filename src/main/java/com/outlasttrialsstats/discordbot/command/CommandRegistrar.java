@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.command;
 
 import com.outlasttrialsstats.backend.api.model.StatisticType;
+import com.outlasttrialsstats.discordbot.entity.CommunityAlertType;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -79,7 +80,8 @@ public class CommandRegistrar {
                         )
                         .addSubcommandGroups(
                                 buildRoleMappingGroup(),
-                                buildRemoveRoleMappingGroup()
+                                buildRemoveRoleMappingGroup(),
+                                buildCommunityEventGroup()
                         )
         ).queue();
     }
@@ -128,6 +130,39 @@ public class CommandRegistrar {
                         new SubcommandData("account-type", "Remove an account type role mapping")
                                 .addOptions(stringOption("account-type", "Account type", ACCOUNT_TYPE_CHOICES)),
                         new SubcommandData("connected-account", "Remove the connected-account role mapping")
+                );
+    }
+
+    static SubcommandGroupData buildCommunityEventGroup() {
+        return new SubcommandGroupData("community-event", "Community event progress message and alerts")
+                .addSubcommands(
+                        new SubcommandData("message", "Post an auto-updating community event progress message")
+                                .addOptions(
+                                        new OptionData(OptionType.CHANNEL, "channel", "Channel to post the progress in", true)
+                                                .setChannelTypes(ChannelType.TEXT, ChannelType.NEWS),
+                                        new OptionData(OptionType.STRING, "event",
+                                                "Event to show (leave empty to always show the current event)", false)
+                                                .setAutoComplete(true)),
+                        new SubcommandData("alerts", "Set the channel community event alerts are posted in")
+                                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "Channel for the alerts", true)
+                                        .setChannelTypes(ChannelType.TEXT, ChannelType.NEWS)),
+                        new SubcommandData("alert", "Configure one alert type: on/off, ping role and lead time")
+                                .addOptions(
+                                        new OptionData(OptionType.STRING, "type", "Alert type", true)
+                                                .addChoices(
+                                                        new Choice("Phase reached", CommunityAlertType.MILESTONE_REACHED.name()),
+                                                        new Choice("Pre-alert (phase almost reached)", CommunityAlertType.PRE_ALERT.name())),
+                                        new OptionData(OptionType.BOOLEAN, "enabled", "Turn this alert on or off", false),
+                                        new OptionData(OptionType.ROLE, "role", "Role to ping with this alert", false),
+                                        new OptionData(OptionType.BOOLEAN, "remove-role", "Post this alert without a ping", false),
+                                        new OptionData(OptionType.INTEGER, "lead-time", "Pre-alert only: how early to warn", false)
+                                                .addChoices(new Choice("15 minutes", 15), new Choice("1 hour", 60),
+                                                        new Choice("3 hours", 180))),
+                        new SubcommandData("status", "Show the community event settings of this server"),
+                        new SubcommandData("remove", "Remove the progress message and/or turn off alerts")
+                                .addOptions(new OptionData(OptionType.STRING, "target", "What to remove", true)
+                                        .addChoices(new Choice("Progress message", "message"),
+                                                new Choice("Alerts", "alerts"), new Choice("Both", "all")))
                 );
     }
 

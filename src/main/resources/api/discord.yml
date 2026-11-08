@@ -117,8 +117,159 @@ paths:
         '404':
           description: Discord user not found or not linked to a profile
 
+  /discord/community-events:
+    get:
+      tags:
+        - Discord
+      summary: Community events for the Discord Bot
+      description: Every configured community event and counter with its latest global value, milestones with reachedAt, rate and ETA.
+      operationId: getDiscordCommunityEvents
+      responses:
+        '200':
+          description: Community events retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DiscordCommunityEvent'
+        '500':
+          description: Internal server error
+
 components:
   schemas:
+    CommunityEventType:
+      type: string
+      enum:
+        - EVENT
+        - COUNTER
+
+    CommunityEventArt:
+      type: object
+      description: Game asset names of the event artwork, resolved against the public game assets
+      properties:
+        background:
+          type: string
+          nullable: true
+        banner:
+          type: string
+          nullable: true
+        cover:
+          type: string
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        token:
+          type: string
+          nullable: true
+
+    CommunityEventMilestone:
+      type: object
+      required:
+        - index
+        - amount
+        - reached
+      properties:
+        index:
+          type: integer
+        amount:
+          type: integer
+          format: int64
+        reward:
+          type: string
+          nullable: true
+        label:
+          type: string
+          nullable: true
+        image:
+          type: string
+          nullable: true
+          description: Game asset name, or a site path starting with /
+        reached:
+          type: boolean
+        reachedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CommunityEventStep:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: integer
+          format: int64
+        reachedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    DiscordCommunityEvent:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - active
+        - milestones
+        - art
+      properties:
+        id:
+          type: string
+          example: extract_escape_plan
+        name:
+          type: string
+          example: Escape the Facility
+        type:
+          $ref: '#/components/schemas/CommunityEventType'
+        active:
+          type: boolean
+        startsAt:
+          type: string
+          format: date-time
+          nullable: true
+        endsAt:
+          type: string
+          format: date-time
+          nullable: true
+        currentValue:
+          type: number
+          format: double
+          nullable: true
+        sampledAt:
+          type: string
+          format: date-time
+          nullable: true
+        milestones:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityEventMilestone'
+        nextMilestone:
+          type: integer
+          format: int64
+          nullable: true
+        ratePerHour:
+          type: number
+          format: double
+          nullable: true
+        etaNextMilestone:
+          type: string
+          format: date-time
+          nullable: true
+        step:
+          type: integer
+          format: int64
+          nullable: true
+        reachedSteps:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/CommunityEventStep'
+        art:
+          $ref: '#/components/schemas/CommunityEventArt'
+
     DiscordLeaderboardResponse:
       type: object
       properties:

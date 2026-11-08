@@ -3,6 +3,7 @@ package com.outlasttrialsstats.discordbot.feature.leaderboard;
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
+import com.outlasttrialsstats.discordbot.shared.MessageCleanup;
 import jakarta.annotation.PreDestroy;
 import java.util.List;
 import java.util.Optional;
@@ -175,7 +176,7 @@ public class LeaderboardScheduler {
         if (!binding.channelId().equals(channel.getId())) {
             return;
         }
-        LeaderboardMessageCleanup.deleteMessages(channel, binding.messageIds(), Set.of(missingMessageId));
+        MessageCleanup.deleteMessages(channel, binding.messageIds(), Set.of(missingMessageId));
     }
 
     CompletableFuture<Void> delay() {

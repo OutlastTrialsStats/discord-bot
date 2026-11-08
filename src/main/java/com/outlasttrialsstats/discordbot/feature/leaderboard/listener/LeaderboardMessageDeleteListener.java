@@ -1,6 +1,6 @@
 package com.outlasttrialsstats.discordbot.feature.leaderboard.listener;
 
-import com.outlasttrialsstats.discordbot.feature.leaderboard.LeaderboardMessageCleanup;
+import com.outlasttrialsstats.discordbot.shared.MessageCleanup;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
 import java.util.Collection;
@@ -46,7 +46,7 @@ public class LeaderboardMessageDeleteListener extends ListenerAdapter {
             log.info("Leaderboard message deleted in guild {}, removing binding for category {}",
                     binding.guildId(), binding.category());
             if (binding.channelId().equals(channel.getId())) {
-                LeaderboardMessageCleanup.deleteMessages(channel, binding.messageIds(), deleted);
+                MessageCleanup.deleteMessages(channel, binding.messageIds(), deleted);
             }
         }
     }

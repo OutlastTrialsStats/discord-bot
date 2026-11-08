@@ -2,6 +2,7 @@ package com.outlasttrialsstats.discordbot.shared;
 
 import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileRequest;
 import com.outlasttrialsstats.backend.api.model.DiscordBulkProfileResponse;
+import com.outlasttrialsstats.backend.api.model.DiscordCommunityEvent;
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.DiscordProfileResponse;
 import com.outlasttrialsstats.backend.api.model.DiscordRecentVerificationsResponse;
@@ -92,6 +93,15 @@ public class TOTStatsApiClient {
                         .build())
                 .retrieve()
                 .bodyToMono(DiscordRecentVerificationsResponse.class), "recent verifications");
+    }
+
+    public Optional<List<DiscordCommunityEvent>> getCommunityEvents() {
+        return blockOrEmpty(statsWebClient
+                .get()
+                .uri("/api/discord/community-events")
+                .retrieve()
+                .bodyToFlux(DiscordCommunityEvent.class)
+                .collectList(), "community events");
     }
 
     private <T> Optional<T> blockOrEmpty(Mono<T> request, String what) {

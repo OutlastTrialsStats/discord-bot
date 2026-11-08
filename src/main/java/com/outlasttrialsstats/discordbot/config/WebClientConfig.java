@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.netty.channel.ChannelOption;
 import java.time.Duration;
-import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +29,6 @@ public class WebClientConfig {
     public static WebClient createStatsWebClient(String baseUrl, Duration connectTimeout, Duration responseTimeout) {
         // Lenient on purpose: a new field or enum value in the backend must not break every call.
         JsonMapper mapper = JsonMapper.builder()
-                .addModule(new JsonNullableModule())
                 .addModule(new JavaTimeModule())
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)

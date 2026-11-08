@@ -6,6 +6,7 @@ import com.outlasttrialsstats.backend.api.model.StatisticType;
 import com.outlasttrialsstats.discordbot.entity.LeaderboardChannel;
 import com.outlasttrialsstats.discordbot.repository.LeaderboardChannelRepository;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
+import com.outlasttrialsstats.discordbot.shared.SiteLinks;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -190,8 +191,7 @@ public class LeaderboardService {
     }
 
     private static String getDiscordUserId(DiscordLeaderboardEntry entry) {
-        return entry.getDiscordUserId() != null && entry.getDiscordUserId().isPresent()
-                ? entry.getDiscordUserId().get() : null;
+        return entry.getDiscordUserId();
     }
 
     private String formatEntry(String guildId, DiscordLeaderboardEntry entry, Set<String> guildMemberIds,
@@ -209,7 +209,7 @@ public class LeaderboardService {
         String safeName = escapeName(rawName);
 
         String displayName = entry.getProfileId() != null
-                ? "[" + safeName + "](https://outlasttrialsstats.com/profile/" + entry.getProfileId() + ")"
+                ? "[" + safeName + "](" + SiteLinks.SITE_URL + "/profile/" + entry.getProfileId() + ")"
                 : safeName;
 
         String mention = "";

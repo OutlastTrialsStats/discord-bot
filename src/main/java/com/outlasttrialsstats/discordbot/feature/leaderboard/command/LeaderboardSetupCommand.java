@@ -2,9 +2,10 @@ package com.outlasttrialsstats.discordbot.feature.leaderboard.command;
 
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.StatisticType;
-import com.outlasttrialsstats.discordbot.feature.leaderboard.LeaderboardMessageCleanup;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
+import com.outlasttrialsstats.discordbot.shared.BotChannels;
+import com.outlasttrialsstats.discordbot.shared.MessageCleanup;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import org.springframework.stereotype.Component;
@@ -26,10 +26,7 @@ import org.springframework.stereotype.Component;
 public class LeaderboardSetupCommand {
 
     /** Sending and later editing the embeds needs all of these in the target channel. */
-    static final Permission[] REQUIRED_PERMISSIONS = {
-            Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.MESSAGE_EMBED_LINKS,
-            Permission.MESSAGE_HISTORY
-    };
+    static final Permission[] REQUIRED_PERMISSIONS = BotChannels.SEND_AND_EDIT_EMBEDS;
 
     private final LeaderboardService leaderboardService;
     private final MessageService messageService;
@@ -41,12 +38,12 @@ public class LeaderboardSetupCommand {
         event.deferReply(true).queue();
         var hook = event.getHook();
 
-        var channelUnion = event.getOption("channel").getAsChannel();
-        if (channelUnion.getType() != ChannelType.TEXT && channelUnion.getType() != ChannelType.NEWS) {
+        Optional<StandardGuildMessageChannel> target = BotChannels.asTextOrNews(event.getOption("channel").getAsChannel());
+        if (target.isEmpty()) {
             hook.editOriginal(messageService.getMessage(guildId, "error.invalid_channel_type")).queue();
             return;
         }
-        StandardGuildMessageChannel channel = channelUnion.asStandardGuildMessageChannel();
+        StandardGuildMessageChannel channel = target.get();
 
         if (!guild.getSelfMember().hasPermission(channel, REQUIRED_PERMISSIONS)) {
             hook.editOriginal(messageService.getMessage(guildId, "error.missing_permission.channel_write", channel.getAsMention())).queue();
@@ -111,7 +108,7 @@ public class LeaderboardSetupCommand {
             if (targetChannel == null) {
                 return;
             }
-            LeaderboardMessageCleanup.deleteMessages(targetChannel, messageIds, Set.of());
+            MessageCleanup.deleteMessages(targetChannel, messageIds, Set.of());
         } catch (Exception e) {
             log.debug("Could not delete leaderboard messages: {}", e.getMessage());
         }

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="008-community-event" author="totstats-bot">
+        <createTable tableName="community_event_message">
+            <column name="guild_id" type="varchar(255)">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="event_id" type="varchar(255)"/>
+            <column name="shown_event_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="channel_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="community_event_message" indexName="idx_community_event_message_message_id">
+            <column name="message_id"/>
+        </createIndex>
+
+        <createTable tableName="community_event_alert_config">
+            <column name="guild_id" type="varchar(255)">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="channel_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="community_event_alert_rule">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="guild_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="alert_type" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="varchar(255)"/>
+            <column name="lead_time_minutes" type="int"/>
+        </createTable>
+        <addUniqueConstraint tableName="community_event_alert_rule" columnNames="guild_id, alert_type"
+                             constraintName="uk_community_event_alert_rule"/>
+
+        <createTable tableName="community_event_alert_state">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="guild_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="event_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_reached_index" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pre_alerted_index" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="community_event_alert_state" columnNames="guild_id, event_id"
+                             constraintName="uk_community_event_alert_state"/>
+    </changeSet>
+
+</databaseChangeLog>

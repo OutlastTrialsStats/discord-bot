@@ -22,3 +22,5 @@ paths:
     $ref: './discord.yml#/paths/~1discord~1verifications~1recent'
   /api/discord/profile/{discordUserId}:
     $ref: './discord.yml#/paths/~1discord~1profile~1{discordUserId}'
+  /api/discord/community-events:
+    $ref: './discord.yml#/paths/~1discord~1community-events'

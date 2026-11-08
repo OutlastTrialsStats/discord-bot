@@ -357,6 +357,78 @@ class LeaderboardServiceTest {
     }
 
     @Test
+    void buildLeaderboardEmbed_fiftyLongEntries_staysWithinDiscordLimits() {
+        when(messageService.getMessage(eq(GUILD_ID), eq("leaderboard.category.PRESTIGE")))
+                .thenReturn("Prestige");
+        when(messageService.getMessage(eq(GUILD_ID), eq("leaderboard.title"), any()))
+                .thenReturn("Prestige Leaderboard");
+        when(messageService.getMessage(eq(GUILD_ID), eq("leaderboard.footer"), any(), any(), any()))
+                .thenReturn("F".repeat(MessageEmbed.TEXT_MAX_LENGTH));
+        // A custom guild template can make every line long; the service must still respect the limits.
+        when(messageService.getMessage(eq(GUILD_ID), eq("leaderboard.entry"), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> "#" + invocation.getArgument(3) + " **" + invocation.getArgument(4)
+                        + "**" + "x".repeat(150));
+        when(messageService.getMessage(eq(GUILD_ID), eq("leaderboard.truncated"), any()))
+                .thenAnswer(invocation -> "\u2026 and " + invocation.getArgument(2) + " more");
+
+        List<DiscordLeaderboardEntry> entries = new ArrayList<>();
+        for (int i = 1; i <= 50; i++) {
+            entries.add(createEntry("[*_~|`\\" + "\uD83D\uDE00".repeat(60) + i, i, i));
+        }
+        DiscordLeaderboardResponse response = createResponse(entries, 1, 1, 50);
+
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
+                GUILD_ID, null, StatisticType.PRESTIGE, response, true, true, true);
+
+        String description = embed.getDescription();
+        assertThat(description.length()).isLessThanOrEqualTo(MessageEmbed.DESCRIPTION_MAX_LENGTH);
+        assertThat(embed.getLength()).isLessThanOrEqualTo(MessageEmbed.EMBED_MAX_LENGTH_BOT);
+        assertThat(description).contains("#1 **").endsWith(" more");
+        assertThat(description).doesNotContain("#50 **");
+        assertThat(embed.isSendable()).isTrue();
+    }
+
+    @Test
+    void buildLeaderboardEmbed_tooManyLinesWithoutTruncationMessage_usesEllipsisFallback() {
+        when(messageService.getMessage(eq(GUILD_ID), eq("leaderboard.entry"), any(), any(), any(), any(), any()))
+                .thenReturn("y".repeat(1000));
+
+        List<DiscordLeaderboardEntry> entries = new ArrayList<>();
+        for (int i = 1; i <= 10; i++) {
+            entries.add(createEntry("P" + i, i, i));
+        }
+        DiscordLeaderboardResponse response = createResponse(entries, 1, 1, 10);
+
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
+                GUILD_ID, null, StatisticType.PRESTIGE, response, false, false, false);
+
+        assertThat(embed.getDescription()).hasSizeLessThanOrEqualTo(MessageEmbed.DESCRIPTION_MAX_LENGTH)
+                .endsWith("\u2026");
+    }
+
+    @Test
+    void buildLeaderboardEmbed_longNameWithEmoji_truncatesByCodePoints() {
+        when(messageService.getMessage(eq(GUILD_ID), eq("leaderboard.entry"), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> invocation.getArgument(4).toString());
+
+        DiscordLeaderboardEntry entry = createEntry("\uD83D\uDE00".repeat(25), 1, 1);
+        entry.setProfileId(null);
+        DiscordLeaderboardResponse response = createResponse(List.of(entry), 1, 1, 1);
+
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
+                GUILD_ID, null, StatisticType.PRESTIGE, response, false, false, false);
+
+        assertThat(embed.getDescription().strip()).isEqualTo("\uD83D\uDE00".repeat(17) + "...");
+    }
+
+    @Test
+    void escapeName_escapesMarkdownAndLinkBrackets() {
+        assertThat(LeaderboardService.escapeName("[a](b) *c* _d_ `e` ||f|| ~~g~~"))
+                .isEqualTo("\\[a\\](b) \\*c\\* \\_d\\_ \\`e\\` \\|\\|f\\|\\| \\~\\~g\\~\\~");
+        assertThat(LeaderboardService.escapeName("name\\")).isEqualTo("name\\\\");
+    }
+
+    @Test
     void saveBinding_newBinding_savesToRepository() {
         when(leaderboardChannelRepository.findByGuildIdAndCategory(GUILD_ID, StatisticType.PRESTIGE))
                 .thenReturn(Optional.empty());

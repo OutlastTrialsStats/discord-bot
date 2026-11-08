@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,8 @@ public class LeaderboardService {
     /** Discord allows at most 100 user ids per member chunk request. */
     static final int MEMBER_CHUNK_SIZE = 100;
     private static final Duration MEMBER_RETRIEVE_TIMEOUT = Duration.ofSeconds(5);
+    private static final int MAX_NAME_CODE_POINTS = 20;
+    private static final String TRUNCATION_FALLBACK = "\u2026";
 
     private final TOTStatsApiClient apiClient;
     private final LeaderboardChannelRepository leaderboardChannelRepository;
@@ -51,23 +54,6 @@ public class LeaderboardService {
             embed.setTitle(messageService.getMessage(guildId, "leaderboard.title", categoryName));
         }
 
-        List<DiscordLeaderboardEntry> entries = response.getResults();
-        if (entries == null || entries.isEmpty()) {
-            embed.setDescription(messageService.getMessage(guildId, "leaderboard.empty"));
-        } else {
-            int maxRankWidth = entries.stream()
-                    .mapToInt(e -> e.getRanking() != null ? String.valueOf(e.getRanking()).length() : 1)
-                    .max().orElse(1);
-
-            Set<String> guildMemberIds = resolveGuildMemberIds(guild, entries);
-
-            StringBuilder description = new StringBuilder();
-            for (DiscordLeaderboardEntry entry : entries) {
-                description.append(formatEntry(guildId, entry, guildMemberIds, maxRankWidth));
-            }
-            embed.setDescription(description.toString());
-        }
-
         if (includeFooter) {
             Integer currentPage = response.getCurrentPage();
             Integer totalPages = response.getTotalPages();
@@ -84,7 +70,69 @@ public class LeaderboardService {
             }
         }
 
+        List<DiscordLeaderboardEntry> entries = response.getResults();
+        if (entries == null || entries.isEmpty()) {
+            embed.setDescription(messageService.getMessage(guildId, "leaderboard.empty"));
+        } else {
+            int maxRankWidth = entries.stream()
+                    .mapToInt(e -> e.getRanking() != null ? String.valueOf(e.getRanking()).length() : 1)
+                    .max().orElse(1);
+
+            Set<String> guildMemberIds = resolveGuildMemberIds(guild, entries);
+
+            List<String> lines = new ArrayList<>(entries.size());
+            for (DiscordLeaderboardEntry entry : entries) {
+                lines.add(formatEntry(guildId, entry, guildMemberIds, maxRankWidth));
+            }
+            // The title and footer are already set, so embed.length() is what they use of the total limit.
+            int budget = Math.min(MessageEmbed.DESCRIPTION_MAX_LENGTH,
+                    MessageEmbed.EMBED_MAX_LENGTH_BOT - embed.length());
+            embed.setDescription(buildDescription(guildId, lines, Math.max(0, budget)));
+        }
+
         return embed.build();
+    }
+
+    /**
+     * Joins the entry lines without exceeding {@code budget} characters. Lines that do not fit are dropped
+     * and replaced by a short indicator saying how many entries were left out.
+     */
+    private String buildDescription(String guildId, List<String> lines, int budget) {
+        int totalLength = lines.stream().mapToInt(String::length).sum();
+        if (totalLength <= budget) {
+            return String.join("", lines);
+        }
+
+        // The indicator for all lines is at least as long as any shorter one, so reserving it is always enough.
+        int reserve = truncationIndicator(guildId, lines.size()).length();
+        StringBuilder description = new StringBuilder();
+        int shown = 0;
+        for (String line : lines) {
+            if (description.length() + line.length() + reserve > budget) {
+                break;
+            }
+            description.append(line);
+            shown++;
+        }
+        description.append(truncationIndicator(guildId, lines.size() - shown));
+        return truncateCodePoints(description.toString(), budget);
+    }
+
+    private String truncationIndicator(String guildId, int hiddenEntries) {
+        String indicator = messageService.getMessage(guildId, "leaderboard.truncated", hiddenEntries);
+        return indicator != null && !indicator.isBlank() ? indicator : TRUNCATION_FALLBACK;
+    }
+
+    /** Cuts {@code text} to at most {@code maxChars} UTF-16 chars without splitting a surrogate pair. */
+    private static String truncateCodePoints(String text, int maxChars) {
+        if (text.length() <= maxChars) {
+            return text;
+        }
+        int end = maxChars;
+        if (end > 0 && Character.isHighSurrogate(text.charAt(end - 1))) {
+            end--;
+        }
+        return text.substring(0, end);
     }
 
     /**
@@ -156,13 +204,15 @@ public class LeaderboardService {
         if (rawName.isBlank()) {
             rawName = "Unknown";
         }
-        if (rawName.length() > 20) {
-            rawName = rawName.substring(0, 17) + "...";
+        if (rawName.codePointCount(0, rawName.length()) > MAX_NAME_CODE_POINTS) {
+            int end = rawName.offsetByCodePoints(0, MAX_NAME_CODE_POINTS - 3);
+            rawName = rawName.substring(0, end) + "...";
         }
+        String safeName = escapeName(rawName);
 
         String displayName = entry.getProfileId() != null
-                ? "[" + rawName + "](https://outlasttrialsstats.com/profile/" + entry.getProfileId() + ")"
-                : rawName;
+                ? "[" + safeName + "](https://outlasttrialsstats.com/profile/" + entry.getProfileId() + ")"
+                : safeName;
 
         String mention = "";
         String discordUserId = getDiscordUserId(entry);
@@ -177,6 +227,15 @@ public class LeaderboardService {
 
         return messageService.getMessage(guildId, "leaderboard.entry",
                 rankPadding, ranking, displayName, mention, formattedValue) + "\n";
+    }
+
+    /**
+     * Escapes markdown in a player name, including single tokens and the brackets of masked links.
+     * Backslashes are doubled first so a trailing one cannot escape the surrounding formatting.
+     */
+    static String escapeName(String name) {
+        String escaped = MarkdownSanitizer.escape(name.replace("\\", "\\\\"), true);
+        return escaped.replace("[", "\\[").replace("]", "\\]");
     }
 
     @Transactional

@@ -33,10 +33,12 @@ public class LeaderboardCommand {
         StatisticType category = StatisticType.fromValue(categoryValue);
         boolean ephemeral = !isPublic(guildId);
 
+        event.deferReply(ephemeral).queue();
+        var hook = event.getHook();
+
         Optional<DiscordLeaderboardResponse> response = leaderboardService.fetchLeaderboard(category, 1);
         if (response.isEmpty()) {
-            event.reply(messageService.getMessage(guildId, "leaderboard.error"))
-                    .setEphemeral(true).queue();
+            hook.editOriginal(messageService.getMessage(guildId, "leaderboard.error")).queue();
             return;
         }
 
@@ -44,10 +46,10 @@ public class LeaderboardCommand {
         int totalPages = data.getTotalPages() != null ? data.getTotalPages() : 1;
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), category, data, true, true, true);
 
-        var reply = event.replyEmbeds(embed).setEphemeral(ephemeral);
+        var reply = hook.editOriginalEmbeds(embed);
         List<Button> buttons = buildButtons(categoryValue, 1, totalPages);
         if (!buttons.isEmpty()) {
-            reply.addComponents(ActionRow.of(buttons));
+            reply.setComponents(ActionRow.of(buttons));
         }
         reply.queue();
     }
@@ -68,9 +70,12 @@ public class LeaderboardCommand {
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
 
+        event.deferEdit().queue();
+        var hook = event.getHook();
+
         Optional<DiscordLeaderboardResponse> response = leaderboardService.fetchLeaderboard(category, targetPage);
         if (response.isEmpty()) {
-            event.reply(messageService.getMessage(guildId, "leaderboard.error"))
+            hook.sendMessage(messageService.getMessage(guildId, "leaderboard.error"))
                     .setEphemeral(true).queue();
             return;
         }
@@ -80,7 +85,7 @@ public class LeaderboardCommand {
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, guild, category, data, true, true, true);
 
         List<Button> buttons = buildButtons(categoryValue, targetPage, totalPages);
-        var edit = event.editMessageEmbeds(embed);
+        var edit = hook.editOriginalEmbeds(embed);
         if (!buttons.isEmpty()) {
             edit.setComponents(ActionRow.of(buttons));
         } else {

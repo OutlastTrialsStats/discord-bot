@@ -30,21 +30,20 @@ public class LeaderboardSetupCommand {
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
 
+        event.deferReply(true).queue();
+        var hook = event.getHook();
+
         var channelUnion = event.getOption("channel").getAsChannel();
         if (channelUnion.getType() != ChannelType.TEXT && channelUnion.getType() != ChannelType.NEWS) {
-            event.reply(messageService.getMessage(guildId, "error.invalid_channel_type"))
-                    .setEphemeral(true).queue();
+            hook.editOriginal(messageService.getMessage(guildId, "error.invalid_channel_type")).queue();
             return;
         }
         StandardGuildMessageChannel channel = channelUnion.asStandardGuildMessageChannel();
 
         if (!guild.getSelfMember().hasPermission(channel, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND)) {
-            event.reply(messageService.getMessage(guildId, "error.missing_permission.channel_write", channel.getAsMention()))
-                    .setEphemeral(true).queue();
+            hook.editOriginal(messageService.getMessage(guildId, "error.missing_permission.channel_write", channel.getAsMention())).queue();
             return;
         }
-
-        event.deferReply(true).queue();
 
         String categoryValue = event.getOption("category").getAsString();
         StatisticType statisticType = StatisticType.fromValue(categoryValue);
@@ -54,7 +53,7 @@ public class LeaderboardSetupCommand {
         // Verify first page is available
         Optional<DiscordLeaderboardResponse> firstResponse = leaderboardService.fetchLeaderboard(statisticType, 1);
         if (firstResponse.isEmpty()) {
-            event.getHook().editOriginal(messageService.getMessage(guildId, "leaderboard.error")).queue();
+            hook.editOriginal(messageService.getMessage(guildId, "leaderboard.error")).queue();
             return;
         }
 
@@ -81,7 +80,7 @@ public class LeaderboardSetupCommand {
         }
 
         leaderboardService.saveBinding(guildId, statisticType, channel.getId(), messageIds, maxPages);
-        event.getHook().editOriginal(messageService.getMessage(guildId, "setup.leaderboard.success",
+        hook.editOriginal(messageService.getMessage(guildId, "setup.leaderboard.success",
                         categoryName, channel.getAsMention()))
                 .queue();
     }

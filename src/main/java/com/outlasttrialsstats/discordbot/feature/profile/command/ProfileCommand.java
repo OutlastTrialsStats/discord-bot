@@ -20,34 +20,32 @@ public class ProfileCommand {
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
 
+        event.deferReply(true).queue();
+        var hook = event.getHook();
+
         if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
-            event.reply(messageService.getMessage(guildId, "error.missing_permission.manage_roles"))
-                    .setEphemeral(true).queue();
+            hook.editOriginal(messageService.getMessage(guildId, "error.missing_permission.manage_roles")).queue();
             return;
         }
 
         RoleAssignmentResult result = roleAssignmentService.assignRoles(guild, event.getMember());
 
         if (result.isLookupFailed()) {
-            event.reply(messageService.getMessage(guildId, "profile.backend_unavailable"))
-                    .setEphemeral(true).queue();
+            hook.editOriginal(messageService.getMessage(guildId, "profile.backend_unavailable")).queue();
             return;
         }
 
         if (!result.verified()) {
-            event.reply(messageService.getMessage(guildId, "profile.not_verified"))
-                    .setEphemeral(true).queue();
+            hook.editOriginal(messageService.getMessage(guildId, "profile.not_verified")).queue();
             return;
         }
 
         if (result.hasChanges()) {
             String added = result.addedRoles().isEmpty() ? "-" : String.join(", ", result.addedRoles());
             String removed = result.removedRoles().isEmpty() ? "-" : String.join(", ", result.removedRoles());
-            event.reply(messageService.getMessage(guildId, "profile.updated", added, removed))
-                    .setEphemeral(true).queue();
+            hook.editOriginal(messageService.getMessage(guildId, "profile.updated", added, removed)).queue();
         } else {
-            event.reply(messageService.getMessage(guildId, "profile.no_changes"))
-                    .setEphemeral(true).queue();
+            hook.editOriginal(messageService.getMessage(guildId, "profile.no_changes")).queue();
         }
     }
 }

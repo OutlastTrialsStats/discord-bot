@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.config;
 
 import java.util.List;
+import java.util.concurrent.Executors;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -23,6 +24,8 @@ public class JdaConfiguration {
                 .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES)
                 .setStatus(OnlineStatus.ONLINE)
                 .setActivity(Activity.watching("outlasttrialsstats.com/link"))
+                // Run listeners off the gateway read thread so blocking work cannot stall the websocket
+                .setEventPool(Executors.newVirtualThreadPerTaskExecutor(), true)
                 .addEventListeners(listeners.toArray())
                 .build()
                 .awaitReady();

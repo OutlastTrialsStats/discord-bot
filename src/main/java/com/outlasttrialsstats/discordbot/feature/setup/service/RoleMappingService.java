@@ -36,8 +36,8 @@ public class RoleMappingService {
                                 boolean botCreated) {
         var existing = enumRoleRepo.findByGuildIdAndCategoryAndEnumValue(guildId, category, enumValue);
         EnumRoleMapping mapping = existing.orElseGet(() -> new EnumRoleMapping(guildId, category, enumValue, roleId));
+        mapping.setBotCreated(keepBotCreated(mapping.getRoleId(), mapping.isBotCreated(), roleId, botCreated));
         mapping.setRoleId(roleId);
-        mapping.setBotCreated(botCreated);
         if (existing.isEmpty()) {
             enumRoleRepo.save(mapping);
         }
@@ -46,6 +46,15 @@ public class RoleMappingService {
     @Transactional
     public void removeEnumMapping(String guildId, RoleCategory category, String enumValue) {
         enumRoleRepo.deleteByGuildIdAndCategoryAndEnumValue(guildId, category, enumValue);
+    }
+
+    /**
+     * Re-saving a mapping with the same role (e.g. /setup basic run again, which matches the bot's own role
+     * by name) must not forget that the bot created it, otherwise /setup delete would no longer delete it.
+     */
+    private static boolean keepBotCreated(String currentRoleId, boolean currentBotCreated,
+                                          String newRoleId, boolean newBotCreated) {
+        return newBotCreated || (currentBotCreated && newRoleId.equals(currentRoleId));
     }
 
     public List<EnumRoleMapping> getEnumMappings(String guildId, RoleCategory category) {
@@ -67,8 +76,8 @@ public class RoleMappingService {
                                   boolean botCreated) {
         var existing = rankedRoleRepo.findByGuildIdAndCategoryAndMinRank(guildId, category, minRank);
         RankedRoleMapping mapping = existing.orElseGet(() -> new RankedRoleMapping(guildId, category, minRank, roleId));
+        mapping.setBotCreated(keepBotCreated(mapping.getRoleId(), mapping.isBotCreated(), roleId, botCreated));
         mapping.setRoleId(roleId);
-        mapping.setBotCreated(botCreated);
         if (existing.isEmpty()) {
             rankedRoleRepo.save(mapping);
         }

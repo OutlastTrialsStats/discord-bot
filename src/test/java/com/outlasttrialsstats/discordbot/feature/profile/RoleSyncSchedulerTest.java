@@ -145,6 +145,25 @@ class RoleSyncSchedulerTest {
     }
 
     @Test
+    void syncGuildMembers_cleanupThrowsForOneMember_continuesWithRemainingMembers() {
+        var guild = mockGuild();
+        var failing = mockMember("user-1", false);
+        var verified = mockMember("user-2", false);
+
+        var response = new DiscordBulkProfileResponse();
+        response.setProfiles(List.of(bulkProfileEntry("user-2", 10, 50)));
+        when(statsApiClient.getBulkProfiles(anyList())).thenReturn(Optional.of(response));
+        when(roleAssignmentService.cleanupUnverifiedMember(guild, failing))
+                .thenThrow(new IllegalStateException("db down"));
+        when(roleAssignmentService.assignRolesFromProfile(eq(guild), eq(verified), any()))
+                .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
+
+        roleSyncScheduler.syncGuildMembers(guild, List.of(failing, verified));
+
+        verify(roleAssignmentService).assignRolesFromProfile(eq(guild), eq(verified), any());
+    }
+
+    @Test
     void syncGuildMembers_allBatchesSucceed_savesVerifiedCount() {
         var guild = mockGuild();
         var member = mockMember("user-1", false);

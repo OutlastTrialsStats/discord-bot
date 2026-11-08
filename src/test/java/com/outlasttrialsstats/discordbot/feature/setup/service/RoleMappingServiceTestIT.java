@@ -83,6 +83,19 @@ class RoleMappingServiceTestIT {
     }
 
     @Test
+    void saveMapping_sameBotCreatedRoleSavedAgainAsLinked_keepsBotCreated() {
+        // e.g. /setup basic run a second time matches the bot's own role by name
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-1", true);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-1", false);
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-2", true);
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-2", false);
+
+        assertThat(roleMappingService.getMappedRoles(GUILD_ID)).containsExactlyInAnyOrder(
+                new RoleMappingService.MappedRole("role-1", true),
+                new RoleMappingService.MappedRole("role-2", true));
+    }
+
+    @Test
     void getMappedRoles_sameRoleInSeveralMappings_returnsItOnceAndBotCreatedIfAnyIs() {
         roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-1", true);
         roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 20, "role-1", false);

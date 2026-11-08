@@ -1,6 +1,8 @@
 package com.outlasttrialsstats.discordbot.feature.profile;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -17,6 +19,9 @@ import java.util.Optional;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
+import net.dv8tion.jda.api.requests.restaction.CacheRestAction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +30,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class VerificationPollSchedulerTest {
+
+    private static final long USER_ID = 123456789012345678L;
+    private static final String USER_ID_STR = String.valueOf(USER_ID);
 
     @Mock
     private JDA jda;
@@ -40,7 +48,8 @@ class VerificationPollSchedulerTest {
 
     @Test
     void pollRecentVerifications_apiReturnsEmpty_doesNothing() {
-        when(statsApiClient.getRecentVerifications(10)).thenReturn(Optional.empty());
+        when(statsApiClient.getRecentVerifications(VerificationPollScheduler.POLL_WINDOW_SECONDS))
+                .thenReturn(Optional.empty());
 
         verificationPollScheduler.pollRecentVerifications();
 
@@ -52,7 +61,8 @@ class VerificationPollSchedulerTest {
     void pollRecentVerifications_noVerifications_doesNothing() {
         var response = new DiscordRecentVerificationsResponse();
         response.setVerifications(List.of());
-        when(statsApiClient.getRecentVerifications(10)).thenReturn(Optional.of(response));
+        when(statsApiClient.getRecentVerifications(VerificationPollScheduler.POLL_WINDOW_SECONDS))
+                .thenReturn(Optional.of(response));
 
         verificationPollScheduler.pollRecentVerifications();
 
@@ -61,63 +71,46 @@ class VerificationPollSchedulerTest {
     }
 
     @Test
-    void pollRecentVerifications_verifiedUser_syncsMemberInGuild() {
-        var verification = new DiscordVerificationEntry();
-        verification.setDiscordUserId("user-1");
-        verification.setDisplayName("TestUser");
-
-        var response = new DiscordRecentVerificationsResponse();
-        response.setVerifications(List.of(verification));
-        when(statsApiClient.getRecentVerifications(10)).thenReturn(Optional.of(response));
-
+    void pollRecentVerifications_verifiedUser_retrievesMemberAndSyncs() {
+        mockVerification(USER_ID_STR);
         var guild = mock(Guild.class);
         var member = mock(Member.class);
         when(jda.getGuilds()).thenReturn(List.of(guild));
-        when(guild.getMemberById("user-1")).thenReturn(member);
+        stubRetrieve(guild, member);
         when(guildSyncService.syncMember(guild, member))
                 .thenReturn(RoleAssignmentResult.of(List.of("Role1"), List.of()));
 
         verificationPollScheduler.pollRecentVerifications();
 
+        verify(guild).retrieveMemberById(USER_ID);
+        verify(guild, never()).getMemberById(anyString());
         verify(guildSyncService).syncMember(guild, member);
     }
 
     @Test
-    void pollRecentVerifications_userNotInGuild_skips() {
-        var verification = new DiscordVerificationEntry();
-        verification.setDiscordUserId("user-1");
-        verification.setDisplayName("TestUser");
-
-        var response = new DiscordRecentVerificationsResponse();
-        response.setVerifications(List.of(verification));
-        when(statsApiClient.getRecentVerifications(10)).thenReturn(Optional.of(response));
-
+    void pollRecentVerifications_userNotInAnyGuild_markedProcessed() {
+        mockVerification(USER_ID_STR);
         var guild = mock(Guild.class);
         when(jda.getGuilds()).thenReturn(List.of(guild));
-        when(guild.getMemberById("user-1")).thenReturn(null);
+        stubRetrieveFailure(guild, ErrorResponse.UNKNOWN_MEMBER);
 
         verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
 
+        verify(guild, times(1)).retrieveMemberById(USER_ID);
         verify(guildSyncService, never()).syncMember(any(), any());
     }
 
     @Test
     void pollRecentVerifications_userInMultipleGuilds_syncsAll() {
-        var verification = new DiscordVerificationEntry();
-        verification.setDiscordUserId("user-1");
-        verification.setDisplayName("TestUser");
-
-        var response = new DiscordRecentVerificationsResponse();
-        response.setVerifications(List.of(verification));
-        when(statsApiClient.getRecentVerifications(10)).thenReturn(Optional.of(response));
-
+        mockVerification(USER_ID_STR);
         var guild1 = mock(Guild.class);
         var guild2 = mock(Guild.class);
         var member1 = mock(Member.class);
         var member2 = mock(Member.class);
         when(jda.getGuilds()).thenReturn(List.of(guild1, guild2));
-        when(guild1.getMemberById("user-1")).thenReturn(member1);
-        when(guild2.getMemberById("user-1")).thenReturn(member2);
+        stubRetrieve(guild1, member1);
+        stubRetrieve(guild2, member2);
         when(guildSyncService.syncMember(any(), any()))
                 .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
 
@@ -128,19 +121,31 @@ class VerificationPollSchedulerTest {
     }
 
     @Test
+    void pollRecentVerifications_unknownMemberInOneGuild_stillSyncsOtherGuild() {
+        mockVerification(USER_ID_STR);
+        var guild1 = mock(Guild.class);
+        var guild2 = mock(Guild.class);
+        var member2 = mock(Member.class);
+        when(jda.getGuilds()).thenReturn(List.of(guild1, guild2));
+        stubRetrieveFailure(guild1, ErrorResponse.UNKNOWN_MEMBER);
+        stubRetrieve(guild2, member2);
+        when(guildSyncService.syncMember(guild2, member2))
+                .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
+
+        verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
+
+        verify(guildSyncService, times(1)).syncMember(guild2, member2);
+        verify(guildSyncService, never()).syncMember(eq(guild1), any());
+    }
+
+    @Test
     void pollRecentVerifications_sameUserTwice_onlySyncsOnce() {
-        var verification = new DiscordVerificationEntry();
-        verification.setDiscordUserId("user-1");
-        verification.setDisplayName("TestUser");
-
-        var response = new DiscordRecentVerificationsResponse();
-        response.setVerifications(List.of(verification));
-        when(statsApiClient.getRecentVerifications(10)).thenReturn(Optional.of(response));
-
+        mockVerification(USER_ID_STR);
         var guild = mock(Guild.class);
         var member = mock(Member.class);
         when(jda.getGuilds()).thenReturn(List.of(guild));
-        when(guild.getMemberById("user-1")).thenReturn(member);
+        stubRetrieve(guild, member);
         when(guildSyncService.syncMember(guild, member))
                 .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
 
@@ -152,18 +157,11 @@ class VerificationPollSchedulerTest {
 
     @Test
     void pollRecentVerifications_lookupFailed_retriesOnNextPoll() {
-        var verification = new DiscordVerificationEntry();
-        verification.setDiscordUserId("user-1");
-        verification.setDisplayName("TestUser");
-
-        var response = new DiscordRecentVerificationsResponse();
-        response.setVerifications(List.of(verification));
-        when(statsApiClient.getRecentVerifications(10)).thenReturn(Optional.of(response));
-
+        mockVerification(USER_ID_STR);
         var guild = mock(Guild.class);
         var member = mock(Member.class);
         when(jda.getGuilds()).thenReturn(List.of(guild));
-        when(guild.getMemberById("user-1")).thenReturn(member);
+        stubRetrieve(guild, member);
         when(guildSyncService.syncMember(guild, member))
                 .thenReturn(RoleAssignmentResult.lookupFailed())
                 .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
@@ -173,5 +171,108 @@ class VerificationPollSchedulerTest {
         verificationPollScheduler.pollRecentVerifications();
 
         verify(guildSyncService, times(2)).syncMember(guild, member);
+    }
+
+    @Test
+    void pollRecentVerifications_retrieveFailsWithOtherError_retriesOnNextPoll() {
+        mockVerification(USER_ID_STR);
+        var guild = mock(Guild.class);
+        var member = mock(Member.class);
+        when(jda.getGuilds()).thenReturn(List.of(guild));
+        CacheRestAction<Member> action = mockAction();
+        when(guild.retrieveMemberById(USER_ID)).thenReturn(action);
+        ErrorResponseException serverError = errorResponse(ErrorResponse.SERVER_ERROR);
+        when(action.complete())
+                .thenThrow(serverError)
+                .thenReturn(member);
+        when(guildSyncService.syncMember(guild, member))
+                .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
+
+        verificationPollScheduler.pollRecentVerifications();
+        verify(guildSyncService, never()).syncMember(any(), any());
+
+        verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
+
+        verify(guildSyncService, times(1)).syncMember(guild, member);
+    }
+
+    @Test
+    void pollRecentVerifications_retrieveThrowsRuntimeException_retriesOnNextPoll() {
+        mockVerification(USER_ID_STR);
+        var guild = mock(Guild.class);
+        when(jda.getGuilds()).thenReturn(List.of(guild));
+        CacheRestAction<Member> action = mockAction();
+        when(guild.retrieveMemberById(USER_ID)).thenReturn(action);
+        when(action.complete()).thenThrow(new RuntimeException("timeout"));
+
+        verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
+
+        verify(action, times(2)).complete();
+        verify(guildSyncService, never()).syncMember(any(), any());
+    }
+
+    @Test
+    void pollRecentVerifications_syncThrows_retriesOnNextPoll() {
+        mockVerification(USER_ID_STR);
+        var guild = mock(Guild.class);
+        var member = mock(Member.class);
+        when(jda.getGuilds()).thenReturn(List.of(guild));
+        stubRetrieve(guild, member);
+        when(guildSyncService.syncMember(guild, member))
+                .thenThrow(new RuntimeException("boom"))
+                .thenReturn(RoleAssignmentResult.of(List.of(), List.of()));
+
+        verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
+
+        verify(guildSyncService, times(2)).syncMember(guild, member);
+    }
+
+    @Test
+    void pollRecentVerifications_invalidUserId_skippedWithoutGuildLookup() {
+        mockVerification("not-a-snowflake");
+
+        verificationPollScheduler.pollRecentVerifications();
+        verificationPollScheduler.pollRecentVerifications();
+
+        verify(jda, never()).getGuilds();
+        verify(guildSyncService, never()).syncMember(any(), any());
+    }
+
+    private void mockVerification(String discordUserId) {
+        var verification = new DiscordVerificationEntry();
+        verification.setDiscordUserId(discordUserId);
+        verification.setDisplayName("TestUser");
+        var response = new DiscordRecentVerificationsResponse();
+        response.setVerifications(List.of(verification));
+        when(statsApiClient.getRecentVerifications(VerificationPollScheduler.POLL_WINDOW_SECONDS))
+                .thenReturn(Optional.of(response));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static CacheRestAction<Member> mockAction() {
+        return mock(CacheRestAction.class);
+    }
+
+    private static void stubRetrieve(Guild guild, Member member) {
+        CacheRestAction<Member> action = mockAction();
+        when(guild.retrieveMemberById(USER_ID)).thenReturn(action);
+        when(action.complete()).thenReturn(member);
+    }
+
+    private static void stubRetrieveFailure(Guild guild, ErrorResponse errorResponse) {
+        CacheRestAction<Member> action = mockAction();
+        when(guild.retrieveMemberById(USER_ID)).thenReturn(action);
+        ErrorResponseException exception = errorResponse(errorResponse);
+        when(action.complete()).thenThrow(exception);
+    }
+
+    private static ErrorResponseException errorResponse(ErrorResponse errorResponse) {
+        ErrorResponseException exception = mock(ErrorResponseException.class);
+        when(exception.getErrorResponse()).thenReturn(errorResponse);
+        return exception;
     }
 }

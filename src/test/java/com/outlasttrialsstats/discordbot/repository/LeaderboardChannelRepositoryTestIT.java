@@ -75,21 +75,21 @@ class LeaderboardChannelRepositoryTestIT {
     }
 
     @Test
-    void findByMessageId_findsBindingContainingMessage() {
+    void findByMessageIdIn_singleId_findsBindingContainingMessage() {
         repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.PRESTIGE, "channel-1", List.of("msg-1", "msg-2"), 2));
 
-        var result = repository.findByMessageId("msg-2");
+        var result = repository.findByMessageIdIn(List.of("msg-2"));
 
-        assertThat(result).isPresent();
-        assertThat(result.get().getCategory()).isEqualTo(StatisticType.PRESTIGE);
-        assertThat(result.get().getGuildId()).isEqualTo(GUILD_ID);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getCategory()).isEqualTo(StatisticType.PRESTIGE);
+        assertThat(result.get(0).getGuildId()).isEqualTo(GUILD_ID);
     }
 
     @Test
-    void findByMessageId_noMatch_returnsEmpty() {
+    void findByMessageIdIn_noMatch_returnsEmpty() {
         repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.PRESTIGE, "channel-1", List.of("msg-1"), 1));
 
-        var result = repository.findByMessageId("nonexistent");
+        var result = repository.findByMessageIdIn(List.of("nonexistent"));
 
         assertThat(result).isEmpty();
     }

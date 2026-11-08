@@ -77,7 +77,6 @@ class LeaderboardSchedulerTest {
         leaderboardScheduler.updateLeaderboards();
 
         verify(leaderboardService, never()).removeBindingIfInChannel(any(), any());
-        verify(leaderboardService, never()).removeBinding(any(), any());
     }
 
     @Test
@@ -176,7 +175,6 @@ class LeaderboardSchedulerTest {
         verify(leaderboardService).removeBindingIfContainsMessage(BINDING_ID, "msg-1");
         verify(channel).deleteMessageById("msg-2");
         verify(leaderboardService, never()).fetchLeaderboard(StatisticType.PRESTIGE, 2);
-        verify(leaderboardService, never()).removeBinding(any(), any());
     }
 
     @Test
@@ -190,7 +188,6 @@ class LeaderboardSchedulerTest {
         leaderboardScheduler.updateLeaderboards();
 
         verify(channel, never()).deleteMessageById(anyString());
-        verify(leaderboardService, never()).removeBinding(any(), any());
     }
 
     @Test
@@ -243,7 +240,6 @@ class LeaderboardSchedulerTest {
     }
 
     private void verifyNothingRemoved() {
-        verify(leaderboardService, never()).removeBinding(any(), any());
         verify(leaderboardService, never()).removeBindingIfInChannel(any(), any());
         verify(leaderboardService, never()).removeBindingIfContainsMessage(any(), any());
     }

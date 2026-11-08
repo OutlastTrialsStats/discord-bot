@@ -2,12 +2,14 @@ package com.outlasttrialsstats.discordbot.feature.leaderboard.command;
 
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.StatisticType;
+import com.outlasttrialsstats.discordbot.feature.leaderboard.LeaderboardMessageCleanup;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.Permission;
@@ -109,12 +111,7 @@ public class LeaderboardSetupCommand {
             if (targetChannel == null) {
                 return;
             }
-            for (String messageId : messageIds) {
-                targetChannel.deleteMessageById(messageId).queue(
-                        _ -> {},
-                        _ -> log.debug("Could not delete leaderboard message {}", messageId)
-                );
-            }
+            LeaderboardMessageCleanup.deleteMessages(targetChannel, messageIds, Set.of());
         } catch (Exception e) {
             log.debug("Could not delete leaderboard messages: {}", e.getMessage());
         }

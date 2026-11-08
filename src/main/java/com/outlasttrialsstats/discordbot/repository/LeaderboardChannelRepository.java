@@ -18,9 +18,6 @@ public interface LeaderboardChannelRepository extends JpaRepository<LeaderboardC
     @Query("SELECT lc FROM LeaderboardChannel lc JOIN FETCH lc.messageIds")
     List<LeaderboardChannel> findAllWithMessageIds();
 
-    @Query("SELECT lc FROM LeaderboardChannel lc JOIN lc.messageIds m WHERE m = :messageId")
-    Optional<LeaderboardChannel> findByMessageId(@Param("messageId") String messageId);
-
     @Query("SELECT DISTINCT lc FROM LeaderboardChannel lc JOIN lc.messageIds m WHERE m IN :messageIds")
     List<LeaderboardChannel> findByMessageIdIn(@Param("messageIds") Collection<String> messageIds);
 

@@ -15,6 +15,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -116,7 +117,7 @@ public class LeaderboardService {
             shown++;
         }
         description.append(truncationIndicator(guildId, lines.size() - shown));
-        return truncateCodePoints(description.toString(), budget);
+        return truncateChars(description.toString(), budget);
     }
 
     private String truncationIndicator(String guildId, int hiddenEntries) {
@@ -125,7 +126,7 @@ public class LeaderboardService {
     }
 
     /** Cuts {@code text} to at most {@code maxChars} UTF-16 chars without splitting a surrogate pair. */
-    private static String truncateCodePoints(String text, int maxChars) {
+    private static String truncateChars(String text, int maxChars) {
         if (text.length() <= maxChars) {
             return text;
         }
@@ -147,22 +148,26 @@ public class LeaderboardService {
             return Set.of();
         }
 
-        Set<String> requestedIds = new LinkedHashSet<>();
+        Set<Long> requestedIds = new LinkedHashSet<>();
         for (DiscordLeaderboardEntry entry : entries) {
             String discordUserId = getDiscordUserId(entry);
-            if (discordUserId != null && isSnowflake(discordUserId)) {
-                requestedIds.add(discordUserId);
+            if (discordUserId != null) {
+                try {
+                    requestedIds.add(Long.parseUnsignedLong(discordUserId));
+                } catch (NumberFormatException ignored) {
+                    // not a snowflake: the entry just gets no mention
+                }
             }
         }
         if (requestedIds.isEmpty()) {
             return Set.of();
         }
 
-        List<String> idList = new ArrayList<>(requestedIds);
+        List<Long> idList = new ArrayList<>(requestedIds);
         Set<String> memberIds = new HashSet<>();
         for (int start = 0; start < idList.size(); start += MEMBER_CHUNK_SIZE) {
-            List<String> batch = idList.subList(start, Math.min(start + MEMBER_CHUNK_SIZE, idList.size()));
-            long[] ids = batch.stream().mapToLong(Long::parseUnsignedLong).toArray();
+            List<Long> batch = idList.subList(start, Math.min(start + MEMBER_CHUNK_SIZE, idList.size()));
+            long[] ids = batch.stream().mapToLong(Long::longValue).toArray();
             try {
                 List<Member> members = guild.retrieveMembersByIds(false, ids)
                         .setTimeout(MEMBER_RETRIEVE_TIMEOUT)
@@ -173,9 +178,10 @@ public class LeaderboardService {
             } catch (Exception e) {
                 log.warn("Failed to retrieve leaderboard members in guild {}, falling back to cache: {}",
                         guild.getId(), e.getMessage());
-                for (String id : batch) {
-                    if (guild.getMemberById(id) != null) {
-                        memberIds.add(id);
+                for (long id : batch) {
+                    String memberId = Long.toUnsignedString(id);
+                    if (guild.getMemberById(memberId) != null) {
+                        memberIds.add(memberId);
                     }
                 }
             }
@@ -186,15 +192,6 @@ public class LeaderboardService {
     private static String getDiscordUserId(DiscordLeaderboardEntry entry) {
         return entry.getDiscordUserId() != null && entry.getDiscordUserId().isPresent()
                 ? entry.getDiscordUserId().get() : null;
-    }
-
-    private static boolean isSnowflake(String id) {
-        try {
-            Long.parseUnsignedLong(id);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
     }
 
     private String formatEntry(String guildId, DiscordLeaderboardEntry entry, Set<String> guildMemberIds,
@@ -264,34 +261,27 @@ public class LeaderboardService {
         return Optional.empty();
     }
 
-    @Transactional
-    public Optional<LeaderboardBinding> removeBinding(String guildId, StatisticType category) {
-        return leaderboardChannelRepository.findByGuildIdAndCategory(guildId, category)
-                .map(this::delete);
-    }
-
     /**
      * Removes the binding only if it still references {@code messageId}. A stale failure for a message
      * that has since been replaced by a new setup must not delete the new binding.
      */
     @Transactional
     public Optional<LeaderboardBinding> removeBindingIfContainsMessage(Long bindingId, String messageId) {
-        if (bindingId == null) {
-            return Optional.empty();
-        }
-        return leaderboardChannelRepository.findById(bindingId)
-                .filter(binding -> binding.getMessageIds().contains(messageId))
-                .map(this::delete);
+        return removeBindingIf(bindingId, binding -> binding.getMessageIds().contains(messageId));
     }
 
     /** Removes the binding only if it still points to {@code channelId}. */
     @Transactional
     public Optional<LeaderboardBinding> removeBindingIfInChannel(Long bindingId, String channelId) {
+        return removeBindingIf(bindingId, binding -> channelId.equals(binding.getChannelId()));
+    }
+
+    private Optional<LeaderboardBinding> removeBindingIf(Long bindingId, Predicate<LeaderboardChannel> condition) {
         if (bindingId == null) {
             return Optional.empty();
         }
         return leaderboardChannelRepository.findById(bindingId)
-                .filter(binding -> channelId.equals(binding.getChannelId()))
+                .filter(condition)
                 .map(this::delete);
     }
 

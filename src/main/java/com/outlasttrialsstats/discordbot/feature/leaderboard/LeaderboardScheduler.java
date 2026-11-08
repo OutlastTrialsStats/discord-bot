@@ -175,14 +175,7 @@ public class LeaderboardScheduler {
         if (!binding.channelId().equals(channel.getId())) {
             return;
         }
-        for (String messageId : binding.messageIds()) {
-            if (messageId.equals(missingMessageId)) {
-                continue;
-            }
-            channel.deleteMessageById(messageId).queue(
-                    _ -> {},
-                    e -> log.debug("Could not delete leaderboard message {}: {}", messageId, e.getMessage()));
-        }
+        LeaderboardMessageCleanup.deleteMessages(channel, binding.messageIds(), Set.of(missingMessageId));
     }
 
     CompletableFuture<Void> delay() {

@@ -142,7 +142,6 @@ class LeaderboardSetupCommandTest {
         order.verify(event).deferReply(true);
         order.verify(leaderboardService).fetchLeaderboard(CATEGORY, 1);
         order.verify(hook).editOriginal("leaderboard.error");
-        verify(leaderboardService, never()).removeBinding(any(), any());
     }
 
     @Test
@@ -164,7 +163,6 @@ class LeaderboardSetupCommandTest {
         order.verify(oldChannel).deleteMessageById("old-1");
         order.verify(oldChannel).deleteMessageById("old-2");
         order.verify(hook).editOriginal("setup.leaderboard.success");
-        verify(leaderboardService, never()).removeBinding(any(), any());
     }
 
     @Test
@@ -187,7 +185,6 @@ class LeaderboardSetupCommandTest {
 
         verify(channel).deleteMessageById("new-1");
         verify(leaderboardService, never()).saveBinding(any(), any(), any(), any(), anyInt());
-        verify(leaderboardService, never()).removeBinding(any(), any());
         verify(hook).editOriginal("setup.leaderboard.post_failed");
     }
 

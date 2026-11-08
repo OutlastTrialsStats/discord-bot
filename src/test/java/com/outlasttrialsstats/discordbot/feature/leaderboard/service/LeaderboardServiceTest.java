@@ -473,32 +473,6 @@ class LeaderboardServiceTest {
     }
 
     @Test
-    void removeBinding_exists_deletesAndReturnsDetachedSnapshot() {
-        LeaderboardChannel binding = new LeaderboardChannel(GUILD_ID, StatisticType.PRESTIGE, "channel-1", List.of("msg-1"), 1);
-        when(leaderboardChannelRepository.findByGuildIdAndCategory(GUILD_ID, StatisticType.PRESTIGE))
-                .thenReturn(Optional.of(binding));
-
-        Optional<LeaderboardBinding> result = leaderboardService.removeBinding(GUILD_ID, StatisticType.PRESTIGE);
-        binding.getMessageIds().clear();
-
-        assertThat(result).isPresent();
-        assertThat(result.get().messageIds()).containsExactly("msg-1");
-        assertThat(result.get().channelId()).isEqualTo("channel-1");
-        verify(leaderboardChannelRepository).delete(binding);
-    }
-
-    @Test
-    void removeBinding_notExists_returnsEmpty() {
-        when(leaderboardChannelRepository.findByGuildIdAndCategory(GUILD_ID, StatisticType.PRESTIGE))
-                .thenReturn(Optional.empty());
-
-        Optional<LeaderboardBinding> result = leaderboardService.removeBinding(GUILD_ID, StatisticType.PRESTIGE);
-
-        assertThat(result).isEmpty();
-        verify(leaderboardChannelRepository, never()).delete(any());
-    }
-
-    @Test
     void removeBindingIfContainsMessage_messageStillBound_deletes() {
         LeaderboardChannel binding = new LeaderboardChannel(GUILD_ID, StatisticType.PRESTIGE, "channel-1", List.of("msg-1", "msg-2"), 2);
         when(leaderboardChannelRepository.findById(7L)).thenReturn(Optional.of(binding));

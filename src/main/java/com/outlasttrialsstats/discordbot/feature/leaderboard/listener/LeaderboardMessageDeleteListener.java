@@ -1,5 +1,6 @@
 package com.outlasttrialsstats.discordbot.feature.leaderboard.listener;
 
+import com.outlasttrialsstats.discordbot.feature.leaderboard.LeaderboardMessageCleanup;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
 import java.util.Collection;
@@ -36,26 +37,16 @@ public class LeaderboardMessageDeleteListener extends ListenerAdapter {
 
     private void handleDeletedMessages(MessageChannel channel, Collection<String> deletedMessageIds) {
         List<LeaderboardBinding> removed = leaderboardService.removeBindingsByMessageIds(deletedMessageIds);
+        if (removed.isEmpty()) {
+            return;
+        }
         Set<String> deleted = Set.copyOf(deletedMessageIds);
 
         for (LeaderboardBinding binding : removed) {
             log.info("Leaderboard message deleted in guild {}, removing binding for category {}",
                     binding.guildId(), binding.category());
-            if (!binding.channelId().equals(channel.getId())) {
-                continue;
-            }
-            for (String messageId : binding.messageIds()) {
-                if (deleted.contains(messageId)) {
-                    continue;
-                }
-                try {
-                    channel.deleteMessageById(messageId).queue(
-                            _ -> {},
-                            error -> log.debug("Could not delete leaderboard message {}: {}",
-                                    messageId, error.getMessage()));
-                } catch (Exception e) {
-                    log.debug("Could not delete leaderboard message {}: {}", messageId, e.getMessage());
-                }
+            if (binding.channelId().equals(channel.getId())) {
+                LeaderboardMessageCleanup.deleteMessages(channel, binding.messageIds(), deleted);
             }
         }
     }

@@ -422,6 +422,20 @@ class LeaderboardServiceTest {
     }
 
     @Test
+    void buildLeaderboardEmbed_largeRanking_isPassedUngroupedSoPaddingStaysAligned() {
+        when(messageService.getMessage(eq(GUILD_ID), eq("leaderboard.entry"), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> invocation.getArgument(2) + "|" + invocation.getArgument(3));
+
+        DiscordLeaderboardResponse response = createResponse(
+                List.of(createEntry("A", 1234, 1), createEntry("B", 99, 1)), 1, 1, 2);
+
+        MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(
+                GUILD_ID, null, StatisticType.PRESTIGE, response, false, false, false);
+
+        assertThat(embed.getDescription()).contains("|1234\n").contains("  |99\n");
+    }
+
+    @Test
     void escapeName_escapesMarkdownAndLinkBrackets() {
         assertThat(LeaderboardService.escapeName("[a](b) *c* _d_ `e` ||f|| ~~g~~"))
                 .isEqualTo("\\[a\\](b) \\*c\\* \\_d\\_ \\`e\\` \\|\\|f\\|\\| \\~\\~g\\~\\~");

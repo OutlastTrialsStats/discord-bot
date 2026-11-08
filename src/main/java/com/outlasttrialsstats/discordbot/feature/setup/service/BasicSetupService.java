@@ -144,7 +144,14 @@ public class BasicSetupService {
                                   Runnable taskDone) {
         Role existing = findLinkableRoleByName(guild, existingRoles, def.name());
         if (existing != null) {
-            def.saveMapping().accept(existing.getId(), false);
+            try {
+                def.saveMapping().accept(existing.getId(), false);
+            } catch (Exception e) {
+                // One failing mapping must not abort the remaining categories of the setup
+                log.error("Failed to save mapping for existing role {} in guild {}",
+                        existing.getName(), guild.getId(), e);
+                failedRoles.add(def.name());
+            }
             return;
         }
 

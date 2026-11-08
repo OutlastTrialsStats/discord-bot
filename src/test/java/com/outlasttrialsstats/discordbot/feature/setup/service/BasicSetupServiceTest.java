@@ -270,6 +270,29 @@ class BasicSetupServiceTest {
     }
 
     @Test
+    void setupRoles_savingMappingForExistingRoleFails_reportsRoleAsFailedAndContinues() {
+        List<Role> existingRoles = Arrays.stream(RoleConfig.PRESTIGE_THRESHOLDS)
+                .mapToObj(t -> mockRole("role-" + t, "Prestige " + t + "+"))
+                .collect(Collectors.toList());
+        when(guild.getRoles()).thenReturn(existingRoles);
+        int failingThreshold = RoleConfig.PRESTIGE_THRESHOLDS[0];
+        // lenient: strict stubs would otherwise reject the calls for the other thresholds as stubbing problems
+        lenient().doThrow(new RuntimeException("db down")).when(roleMappingService)
+                .saveRankedMapping(eq(GUILD_ID), eq(RoleCategory.PRESTIGE), eq(failingThreshold), anyString(), eq(false));
+
+        basicSetupService.setupRoles(guild, Set.of(RoleCategory.PRESTIGE), onComplete, onNoChanges);
+
+        for (int threshold : RoleConfig.PRESTIGE_THRESHOLDS) {
+            verify(roleMappingService).saveRankedMapping(
+                    eq(GUILD_ID), eq(RoleCategory.PRESTIGE), eq(threshold), eq("role-" + threshold), eq(false));
+        }
+        verify(onComplete).accept(resultCaptor.capture());
+        assertThat(resultCaptor.getValue().failedRoles()).containsExactly("Prestige " + failingThreshold + "+");
+        assertThat(resultCaptor.getValue().createdRoles()).isEmpty();
+        verify(onNoChanges, never()).run();
+    }
+
+    @Test
     void setupRoles_createRoleThrows_reportsRoleAsFailedAndCompletes() {
         when(guild.getRoles()).thenReturn(List.of());
         when(guild.createRole()).thenThrow(new RuntimeException("missing permission"));

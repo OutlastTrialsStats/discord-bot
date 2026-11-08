@@ -223,11 +223,12 @@ public class LeaderboardService {
 
         int ranking = entry.getRanking() != null ? entry.getRanking() : 0;
         int value = entry.getValue() != null ? entry.getValue() : 0;
+        // Passed as a String: MessageFormat would group a number ("1,234"), which breaks the padding above
         String rankPadding = " ".repeat(maxRankWidth - String.valueOf(ranking).length());
         String formattedValue = String.format("%,d", value);
 
         return messageService.getMessage(guildId, "leaderboard.entry",
-                rankPadding, ranking, displayName, mention, formattedValue) + "\n";
+                rankPadding, String.valueOf(ranking), displayName, mention, formattedValue) + "\n";
     }
 
     /**

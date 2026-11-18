@@ -71,3 +71,9 @@ Every push to `main` runs [`release.yml`](../.github/workflows/release.yml), whi
 release: it bumps the version in `version.txt`, updates `CHANGELOG.md`, tags `vX.Y.Z`, creates the
 GitHub release and pushes the Docker image to `ghcr.io/outlasttrialsstats/discord-bot` under both
 `X.Y.Z` and `latest`. Nothing goes live before a maintainer merges the release PR.
+
+## Discord
+
+Every release posts its Features, Bug Fixes and Performance Improvements to Discord via
+[release-announcer](https://github.com/OutlastTrialsStats/release-announcer). To keep a change out of
+that post, give it any other type, e.g. `refactor`, `chore` or `docs`.

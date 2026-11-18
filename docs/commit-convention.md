@@ -74,6 +74,7 @@ GitHub release and pushes the Docker image to `ghcr.io/outlasttrialsstats/discor
 
 ## Discord
 
-Every release posts its Features, Bug Fixes and Performance Improvements to Discord via
-[release-announcer](https://github.com/OutlastTrialsStats/release-announcer). To keep a change out of
-that post, give it any other type, e.g. `refactor`, `chore` or `docs`.
+Every release posts the Features, Bug Fixes and Performance Improvements of its `CHANGELOG.md`
+section to Discord via [release-announcer](https://github.com/OutlastTrialsStats/release-announcer).
+To drop or reword entries, edit `CHANGELOG.md` in the release PR right before merging (a later push
+to `main` rebuilds the PR). To post again, run the Announce workflow; `dry-run` shows a preview.

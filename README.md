@@ -8,127 +8,21 @@ A Discord bot that automatically assigns roles, syncs nicknames, and displays le
 
 ## Features
 
-### Setup (`/setup`)
+- **Roles from stats:** assign roles by prestige, level, reagent rig skill, invasion ranking, invasion matches and points, platform, account type or a linked TotStats account
+- **Auto-nicknames:** verified members get their in-game name as server nickname
+- **Leaderboards:** view any stat category with `/leaderboard`, or post auto-updating leaderboards in a channel
+- **Community events:** auto-updating progress message and role pings when a phase is reached or about to be reached
+- **Languages and custom messages:** English or Deutsch, and every bot message can be overridden per server
 
-| Command | Description |
-|---|---|
-| `/setup start` | Automatically create roles for selected categories (Prestige, Level, Reagent Rig, Invasion Ranking, Total Invasion Matches, Platform, Account Type) |
-| `/setup delete` | Delete all bot-managed roles and remove mappings |
-| `/setup language` | Change the bot's response language (English, Deutsch) |
-| `/setup role-mapping <category>` | Link a role to a category (prestige, level, skill, invasion-ranking, total-invasion-matches, platform, account-type) |
-| `/setup remove-role-mapping <category>` | Remove a role mapping for any category |
-| `/setup nickname` | Toggle automatic nickname sync — verified users get their in-game display name as their server nickname |
-| `/setup messages-upload` | Upload a custom `.properties` file to override bot messages |
-| `/setup messages-download` | Download all current messages as a `.properties` file |
-| `/setup messages-reset` | Reset custom messages to defaults |
-
-### Profile
-
-| Command | Description |
-|---|---|
-| `/sync-profile` | Sync your Discord roles with your Outlast Trials stats |
-| `/sync-all` | Scan all server members and assign roles based on their stats |
-
-Roles are also automatically assigned when a verified member joins the server.
-
-### Leaderboard
-
-| Command | Description |
-|---|---|
-| `/leaderboard <category>` | View a paginated leaderboard for a stat category (ephemeral, with Previous/Next buttons) |
-| `/setup leaderboard <channel> <category> <pages>` | Set up an auto-updating leaderboard in a channel (refreshes hourly) |
-
-To remove a leaderboard, simply delete its message in Discord — the bot will automatically clean up the binding.
-
-### Community Events
-
-| Command | Description |
-|---|---|
-| `/setup event message <channel> [event]` | Post an auto-updating progress message (phases, progress bar, ETA, rate). Without `event` it always shows the current event and switches automatically when a new one starts |
-| `/setup event alerts <channel>` | Set the channel alerts are posted in |
-| `/setup event alert <type> [enabled] [role] [remove-role] [lead-time]` | Configure one alert type: turn it on/off, choose the role to ping, and for pre-alerts how early to warn (15 min, 1 h, 3 h) |
-| `/setup event status` | Show the progress message, alert channel and every alert type's settings |
-| `/setup event remove <message\|alerts\|all>` | Remove the progress message and/or turn off alerts |
-
-Alert types: **Phase reached** (a phase was reached) and **Pre-alert** (the next phase is expected within the lead time). Each alert is sent once per phase, also across bot restarts. When alerts are set up during a running event, already reached phases are not announced again.
+See [docs/commands.md](docs/commands.md) for all commands.
 
 ## Self-Hosting with Docker
 
-The easiest way to run the bot is with Docker.
+Run your own instance with Docker Compose: see [docs/self-hosting.md](docs/self-hosting.md).
 
-### 1. Set up `docker-compose.yml`
+## Documentation
 
-```yaml
-services:
-  bot:
-    container_name: totstats-discord-bot
-    image: ghcr.io/outlasttrialsstats/discord-bot:latest
-    restart: always
-    mem_limit: 1g
-    environment:
-      DISCORD_BOT_TOKEN: "your-bot-token"
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/totstats"
-      SPRING_DATASOURCE_USERNAME: "totstats"
-      SPRING_DATASOURCE_PASSWORD: "change-me"
-    depends_on:
-      - postgres
-
-  postgres:
-    container_name: totstats-discord-postgres
-    image: postgres:17
-    restart: always
-    mem_limit: 512m
-    environment:
-      POSTGRES_USER: totstats
-      POSTGRES_PASSWORD: change-me
-      POSTGRES_DB: totstats
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
-
-### 2. Start the bot
-
-```bash
-docker compose up -d
-```
-
-### 3. Invite the bot
-
-Invite the bot to your server using the OAuth2 URL from the Developer Portal with the `bot` and `applications.commands` scopes.
-
-## Development
-
-### Prerequisites
-
-- Java 25+
-- Docker (for PostgreSQL)
-- A [Discord Bot Token](https://discord.com/developers/applications) with **Server Members Intent** enabled
-
-### 1. Start the database
-
-```bash
-docker compose up -d
-```
-
-### 2. Configure environment
-
-Create a `.env` file in the project root:
-
-```properties
-DISCORD_BOT_TOKEN=your-bot-token-here
-```
-
-### 3. Run the bot
-
-```bash
-./gradlew bootRun
-```
-
-### Commits and releases
-
-Commits on `main` follow [Conventional Commits](https://www.conventionalcommits.org/) — they drive
-the version bump and the generated [`CHANGELOG.md`](CHANGELOG.md). See
-[docs/commit-convention.md](docs/commit-convention.md) for the types and the release flow.
+- [Commands](docs/commands.md)
+- [Self-hosting](docs/self-hosting.md)
+- [Development](docs/development.md)
+- [Commit convention and releases](docs/commit-convention.md)

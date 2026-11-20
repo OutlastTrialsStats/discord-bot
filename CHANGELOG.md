@@ -5,28 +5,20 @@
 
 ### Features
 
-* **community-event:** show community event progress and alerts in Discord ([93faa4c](https://github.com/OutlastTrialsStats/discord-bot/commit/93faa4cd7484acbfb51a1dca37a2aa62072ef75c))
+* **community-event:** show live community event progress (phases, progress bar, ETA) and ping roles when a phase is reached or about to be reached (`/setup community-event`)
 
 
 ### Bug Fixes
 
-* **api:** distinguish not-linked from backend failures in profile lookups ([371b9fd](https://github.com/OutlastTrialsStats/discord-bot/commit/371b9fdfa854b2494830a55b541a5275d0512c74))
-* **command:** acknowledge interactions before blocking work and run listeners off the gateway thread ([24a6acb](https://github.com/OutlastTrialsStats/discord-bot/commit/24a6acb9c931086b16fe8b55ad083c710b4cbb23))
-* **i18n:** format messages consistently and validate custom message imports ([4ca8572](https://github.com/OutlastTrialsStats/discord-bot/commit/4ca85720cae1a57c02518be12fb18c8358448cd3))
-* **leaderboard:** keep leaderboard embeds within Discord length limits ([a7b8c06](https://github.com/OutlastTrialsStats/discord-bot/commit/a7b8c0632854f8a5a411e65628424ae8b12c845e))
-* **leaderboard:** make leaderboard setup, updates and deletion robust ([c52c463](https://github.com/OutlastTrialsStats/discord-bot/commit/c52c4637723b712e8c0380c2b411d38dd8229963))
-* **role:** handle failed role creation in setup and role mappings ([fa4d05d](https://github.com/OutlastTrialsStats/discord-bot/commit/fa4d05dacc456b5aea3e828ae8e27479933e6327))
-* **role:** keep bot_created when a bot-created role is mapped again ([dde2dd5](https://github.com/OutlastTrialsStats/discord-bot/commit/dde2dd51842cfc58ec256ef0b8802bbc3a54180f))
-* **role:** keep setup going when saving a mapping fails and keep leaderboard ranks ungrouped ([a733258](https://github.com/OutlastTrialsStats/discord-bot/commit/a733258f222b6b552336700b41e4743fe2c3ad3d))
-* **role:** make member syncs and auto-nicknames safe ([4d8a992](https://github.com/OutlastTrialsStats/discord-bot/commit/4d8a992954765505937ab0375343f6a6ba477999))
-* **role:** only delete bot-created roles in /setup delete ([c2da76e](https://github.com/OutlastTrialsStats/discord-bot/commit/c2da76e0e3119d6807b0fff5466b2eb2bdec768e))
-* **role:** prevent privilege escalation through /setup role links ([b53ec57](https://github.com/OutlastTrialsStats/discord-bot/commit/b53ec5734da07a49d0b1974e5ef49d3df4bfe0f6))
-* **role:** resolve members via Discord instead of the near-empty member cache ([7f60519](https://github.com/OutlastTrialsStats/discord-bot/commit/7f6051906c6eb8febfed375e2d68fbb7d68861aa))
-
-
-### Performance Improvements
-
-* **role:** load mapped role ids once per sync and remove mappings in one call ([8d61428](https://github.com/OutlastTrialsStats/discord-bot/commit/8d61428f6494e8f8a92ea5dbc1b4c7246171fdf0))
+* **setup:** `/setup` now requires the Manage Roles permission, and linking unsafe roles (@everyone, admin/moderator roles, roles above the bot) is blocked
+* **setup:** `/setup delete` only deletes roles the bot created itself and just unlinks all others
+* **setup:** role setup reports roles it could not create and no longer stops halfway
+* **roles:** roles are no longer removed when the TOTStats backend is temporarily unavailable
+* **roles:** account verification now reliably assigns roles, and auto-nicknames skip members the bot cannot rename
+* **roles:** `/sync-all` is faster and has a 10 minute cooldown
+* **commands:** fixed "The application did not respond" on slow responses
+* **leaderboard:** large leaderboards stay within Discord limits, show missing mentions again, and old messages are cleaned up reliably
+* **messages:** custom message imports are validated, and placeholders are always filled in
 
 
 ### Code Refactoring

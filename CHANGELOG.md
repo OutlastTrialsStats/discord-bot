@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.1](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.4.0...v1.4.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **community-event:** break bean cycle on startup ([3c3af16](https://github.com/OutlastTrialsStats/discord-bot/commit/3c3af160e943a23272183f0fbfc3642c9f0bdd73))
+
+
+### Continuous Integration
+
+* link discord post title ([3a73530](https://github.com/OutlastTrialsStats/discord-bot/commit/3a73530f43bbe7897fdaad56410acd1cbc9f6e73))
+
 ## [1.4.0](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.5...v1.4.0) (2026-11-20)
 
 

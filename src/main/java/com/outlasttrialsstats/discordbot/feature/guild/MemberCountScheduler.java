@@ -18,6 +18,7 @@ public class MemberCountScheduler {
 
     private final JDA jda;
     private final GuildServerRepository guildServerRepository;
+    private final PublicInviteResolver inviteResolver;
 
     @Scheduled(fixedRate = 1, initialDelay = 1, timeUnit = TimeUnit.HOURS)
     public void updateMemberCounts() {
@@ -28,10 +29,21 @@ public class MemberCountScheduler {
                         .orElseGet(() -> new GuildServer(guild.getId()));
                 server.setGuildName(guild.getName());
                 server.setMemberCount(count);
+                server.setInviteUrl(inviteResolver.resolve(guild, server.getInviteUrl()));
+                server.setBotPresent(true);
                 guildServerRepository.save(server);
                 log.debug("Updated guild info for {} ({}): {} members", guild.getName(), guild.getId(), count);
             } catch (Exception e) {
                 log.warn("Failed to update member count for guild {}: {}", guild.getId(), e.getMessage());
+            }
+        }
+        markLeftGuilds();
+    }
+
+    private void markLeftGuilds() {
+        for (String guildId : guildServerRepository.findGuildIdsWithBotPresent()) {
+            if (jda.getGuildById(guildId) == null && !jda.isUnavailable(Long.parseLong(guildId))) {
+                guildServerRepository.markBotAbsent(guildId);
             }
         }
     }

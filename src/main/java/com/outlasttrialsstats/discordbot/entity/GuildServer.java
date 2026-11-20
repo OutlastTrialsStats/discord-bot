@@ -37,6 +37,12 @@ public class GuildServer {
     @Column(name = "user_commands_visible", nullable = false)
     private boolean userCommandsVisible = false;
 
+    @Column(name = "invite_url")
+    private String inviteUrl;
+
+    @Column(name = "bot_present", nullable = false)
+    private boolean botPresent = true;
+
     public GuildServer(String guildId) {
         this.guildId = guildId;
     }

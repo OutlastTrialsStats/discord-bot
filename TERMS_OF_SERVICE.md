@@ -16,6 +16,7 @@ The Bot collects and stores the following data:
 - Discord Server (Guild) ID
 - Language preference
 - Member count (updated hourly)
+- Public invite link, only for public servers (the server's vanity URL, or for servers listed in Server Discovery a permanent invite), updated hourly
 - Custom message configurations
 - Role mapping configurations (role IDs, category, thresholds)
 

@@ -84,4 +84,5 @@ jobs:
         with:
           webhook-url: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
           product: Discord Bot
+          url: https://outlasttrialsstats.com/projects/discord
           tag: ${{ needs.release-please.outputs.tag_name }}

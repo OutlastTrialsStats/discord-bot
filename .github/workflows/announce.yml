@@ -22,5 +22,6 @@ jobs:
         with:
           webhook-url: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
           product: Discord Bot
+          url: https://outlasttrialsstats.com/projects/discord
           tag: ${{ inputs.tag }}
           dry-run: ${{ inputs.dry-run }}

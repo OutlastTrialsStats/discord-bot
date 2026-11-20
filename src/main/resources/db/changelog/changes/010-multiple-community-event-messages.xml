@@ -16,9 +16,6 @@
                        constraintName="community_event_message_pkey"/>
         <addNotNullConstraint tableName="community_event_message" columnName="guild_id"
                               columnDataType="varchar(255)"/>
-        <createIndex tableName="community_event_message" indexName="idx_community_event_message_guild_id">
-            <column name="guild_id"/>
-        </createIndex>
         <sql>CREATE UNIQUE INDEX uq_community_event_message_target
             ON community_event_message (guild_id, COALESCE(event_id, ''))</sql>
     </changeSet>

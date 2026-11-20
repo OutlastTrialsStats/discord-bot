@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -70,7 +71,10 @@ public class CommunityEventScheduler {
             return;
         }
         Instant now = clock.instant();
-        for (CommunityEventBinding binding : service.getAllBindings()) {
+        List<CommunityEventBinding> bindings = service.getAllBindings();
+        rendered.keySet().retainAll(bindings.stream().map(CommunityEventBinding::messageId)
+                .collect(Collectors.toSet()));
+        for (CommunityEventBinding binding : bindings) {
             try {
                 updateMessage(binding, events.get(), now);
             } catch (Exception e) {
@@ -89,7 +93,6 @@ public class CommunityEventScheduler {
                 log.info("Channel {} no longer exists, removing community event message of guild {}",
                         binding.channelId(), binding.guildId());
                 service.removeBindingIfMessage(binding.messageId());
-                rendered.remove(binding.messageId());
             }
             return;
         }
@@ -98,9 +101,7 @@ public class CommunityEventScheduler {
             return;
         }
 
-        Optional<DiscordCommunityEvent> target = binding.followsCurrentEvent()
-                ? CommunityEvents.selectCurrent(events, now)
-                : CommunityEvents.find(events, binding.eventId());
+        Optional<DiscordCommunityEvent> target = CommunityEvents.resolve(events, binding.eventId(), now);
         if (target.isEmpty()) {
             log.debug("No community event to show for guild {}", binding.guildId());
             return;
@@ -113,13 +114,12 @@ public class CommunityEventScheduler {
 
         String significant = significantState(event, now);
         Rendered last = rendered.get(binding.messageId());
-        boolean sameMessage = last != null && last.messageId().equals(binding.messageId());
-        if (sameMessage && last.significant().equals(significant) && last.at().plus(MIN_EDIT_INTERVAL).isAfter(now)) {
+        if (last != null && last.significant().equals(significant) && last.at().plus(MIN_EDIT_INTERVAL).isAfter(now)) {
             return;
         }
         MessageEmbed embed = embedFactory.buildProgressEmbed(binding.guildId(), event, now);
-        Rendered next = new Rendered(binding.messageId(), significant, embed.toData().toString(), now);
-        if (sameMessage && last.content().equals(next.content())) {
+        Rendered next = new Rendered(significant, embed.toData().toString(), now);
+        if (last != null && last.content().equals(next.content())) {
             return;
         }
 
@@ -156,7 +156,6 @@ public class CommunityEventScheduler {
             message.delete().queue(_ -> {}, _ -> {});
             return;
         }
-        rendered.remove(binding.messageId());
         log.info("Community event message of guild {} switched from {} to {}", binding.guildId(),
                 binding.shownEventId(), event.getId());
     }
@@ -166,7 +165,6 @@ public class CommunityEventScheduler {
             log.info("Community event message {} no longer exists, removing it for guild {}",
                     binding.messageId(), binding.guildId());
             service.removeBindingIfMessage(binding.messageId());
-            rendered.remove(binding.messageId());
             return;
         }
         log.warn("Failed to update community event message {}: {}", binding.messageId(), error.getMessage());
@@ -175,10 +173,6 @@ public class CommunityEventScheduler {
     private static String significantState(DiscordCommunityEvent event, Instant now) {
         return event.getId() + ":" + CommunityEvents.status(event, now) + ":"
                 + CommunityEvents.highestReachedIndex(event);
-    }
-
-    public void forget(String messageId) {
-        rendered.remove(messageId);
     }
 
     private void processAllAlerts(List<DiscordCommunityEvent> events, Instant now) {
@@ -286,6 +280,6 @@ public class CommunityEventScheduler {
     private record PendingAlert(DiscordCommunityEvent event, CommunityAlert alert) {
     }
 
-    private record Rendered(String messageId, String significant, String content, Instant at) {
+    private record Rendered(String significant, String content, Instant at) {
     }
 }

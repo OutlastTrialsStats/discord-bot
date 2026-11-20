@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.feature.communityevent.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -36,10 +37,9 @@ class CommunityEventServiceBindingTest {
         CommunityEventMessage existing = new CommunityEventMessage(GUILD_ID, null, "old", "channel-1", "msg-1");
         when(messageRepository.findByGuildIdAndEventIdIsNull(GUILD_ID)).thenReturn(Optional.of(existing));
 
-        CommunityEventService.SaveResult result = service.saveBinding(GUILD_ID, null, "new", "channel-2", "msg-2");
+        Optional<CommunityEventBinding> previous = service.saveBinding(GUILD_ID, null, "new", "channel-2", "msg-2");
 
-        assertThat(result).isInstanceOfSatisfying(CommunityEventService.SaveResult.Saved.class, saved ->
-                assertThat(saved.previous()).map(CommunityEventBinding::messageId).contains("msg-1"));
+        assertThat(previous).map(CommunityEventBinding::messageId).contains("msg-1");
         assertThat(existing.getMessageId()).isEqualTo("msg-2");
         assertThat(existing.getChannelId()).isEqualTo("channel-2");
         verify(messageRepository).save(existing);
@@ -50,10 +50,7 @@ class CommunityEventServiceBindingTest {
         when(messageRepository.findByGuildIdAndEventId(GUILD_ID, "counter")).thenReturn(Optional.empty());
         when(messageRepository.countByGuildId(GUILD_ID)).thenReturn(1L);
 
-        CommunityEventService.SaveResult result = service.saveBinding(GUILD_ID, "counter", "counter", "c", "m");
-
-        assertThat(result).isInstanceOfSatisfying(CommunityEventService.SaveResult.Saved.class, saved ->
-                assertThat(saved.previous()).isEmpty());
+        assertThat(service.saveBinding(GUILD_ID, "counter", "counter", "c", "m")).isEmpty();
         verify(messageRepository).save(any(CommunityEventMessage.class));
     }
 
@@ -63,11 +60,9 @@ class CommunityEventServiceBindingTest {
         when(messageRepository.countByGuildId(GUILD_ID))
                 .thenReturn((long) CommunityEventService.MAX_MESSAGES_PER_GUILD);
 
-        CommunityEventService.SaveResult result = service.saveBinding(GUILD_ID, "counter", "counter", "c", "m");
-
-        assertThat(result).isEqualTo(
-                new CommunityEventService.SaveResult.LimitReached(CommunityEventService.MAX_MESSAGES_PER_GUILD));
         assertThat(service.hasRoomFor(GUILD_ID, "counter")).isFalse();
+        assertThatThrownBy(() -> service.saveBinding(GUILD_ID, "counter", "counter", "c", "m"))
+                .isInstanceOf(IllegalStateException.class);
         verify(messageRepository, never()).save(any());
     }
 
@@ -79,6 +74,16 @@ class CommunityEventServiceBindingTest {
                 .thenReturn((long) CommunityEventService.MAX_MESSAGES_PER_GUILD);
 
         assertThat(service.hasRoomFor(GUILD_ID, null)).isTrue();
+    }
+
+    @Test
+    void removingByTargetDeletesTheMatchingMessage() {
+        CommunityEventMessage counter = new CommunityEventMessage(GUILD_ID, "counter", "counter", "c", "m");
+        when(messageRepository.findByGuildIdAndEventId(GUILD_ID, "counter")).thenReturn(Optional.of(counter));
+
+        assertThat(service.removeBindingForTarget(GUILD_ID, "counter")).map(CommunityEventBinding::messageId)
+                .contains("m");
+        verify(messageRepository).delete(counter);
     }
 
     @Test

@@ -1,6 +1,5 @@
 package com.outlasttrialsstats.discordbot.feature.communityevent.listener;
 
-import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventScheduler;
 import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventBinding;
 import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventService;
 import java.util.Collection;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Component;
 public class CommunityEventMessageDeleteListener extends ListenerAdapter {
 
     private final CommunityEventService service;
-    private final CommunityEventScheduler scheduler;
 
     @Override
     public void onMessageDelete(MessageDeleteEvent event) {
@@ -33,7 +31,6 @@ public class CommunityEventMessageDeleteListener extends ListenerAdapter {
     private void handleDeletedMessages(Collection<String> messageIds) {
         for (CommunityEventBinding binding : service.removeBindingsByMessageIds(messageIds)) {
             log.info("Community event message deleted in guild {}, removing it", binding.guildId());
-            scheduler.forget(binding.messageId());
         }
     }
 }

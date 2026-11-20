@@ -27,6 +27,11 @@ public final class CommunityEvents {
         return events.stream().filter(event -> event.getId().equals(eventId)).findFirst();
     }
 
+    public static Optional<DiscordCommunityEvent> resolve(List<DiscordCommunityEvent> events, String eventId,
+                                                          Instant now) {
+        return eventId == null ? selectCurrent(events, now) : find(events, eventId);
+    }
+
     public static Optional<DiscordCommunityEvent> selectCurrent(List<DiscordCommunityEvent> events, Instant now) {
         List<DiscordCommunityEvent> timed = events.stream()
                 .filter(event -> event.getType() == CommunityEventType.EVENT)

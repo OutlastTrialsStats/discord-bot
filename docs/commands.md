@@ -54,7 +54,7 @@ The `category` option uses autocomplete: start typing to filter the list.
 | `/setup event alerts <channel>` | Set the channel alerts are posted in |
 | `/setup event alert <type> [enabled] [role] [remove-role] [lead-time]` | Configure one alert type: turn it on/off, choose the role to ping, and for pre-alerts how early to warn (15 min, 1 h, 3 h) |
 | `/setup event status` | Show all progress messages, the alert channel and every alert type's settings |
-| `/setup event remove <message\|alerts\|all> [event]` | Remove progress messages and/or turn off alerts. With `event` only that progress message is removed |
+| `/setup event remove <message\|alerts\|all> [event]` | Remove progress messages and/or turn off alerts. With `event` (pick one from the list, or type an event id or `current`) only that progress message is removed |
 
 A server can have up to 5 progress messages, one per target: the current event, or a specific event or counter such as [Reagent Releases](https://outlasttrialsstats.com/events/characters_released) (`event:characters_released`). Running `/setup event message` again for the same target moves that message to the new channel. Deleting a progress message in Discord also removes it.
 

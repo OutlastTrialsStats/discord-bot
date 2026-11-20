@@ -22,7 +22,6 @@ public class CommunityEventMessagePublisher {
 
     private final CommunityEventService service;
     private final CommunityEventEmbedFactory embedFactory;
-    private final CommunityEventScheduler scheduler;
 
     public sealed interface Outcome {
         record Posted(String eventName, boolean followsCurrent) implements Outcome {}
@@ -30,33 +29,31 @@ public class CommunityEventMessagePublisher {
         record UnknownEvent(String eventId) implements Outcome {}
         record FetchFailed() implements Outcome {}
         record PostFailed() implements Outcome {}
-        record LimitReached(int limit) implements Outcome {}
+        record LimitReached() implements Outcome {}
     }
 
     public Outcome publish(Guild guild, StandardGuildMessageChannel channel, String eventId) {
         String guildId = guild.getId();
-        if (!service.hasRoomFor(guildId, eventId)) {
-            return new Outcome.LimitReached(CommunityEventService.MAX_MESSAGES_PER_GUILD);
-        }
         Optional<List<DiscordCommunityEvent>> events = service.getEvents();
         if (events.isEmpty()) {
             return new Outcome.FetchFailed();
         }
 
         Instant now = Instant.now();
-        Optional<DiscordCommunityEvent> shown = eventId == null
-                ? CommunityEvents.selectCurrent(events.get(), now)
-                : CommunityEvents.find(events.get(), eventId);
+        Optional<DiscordCommunityEvent> shown = CommunityEvents.resolve(events.get(), eventId, now);
         if (shown.isEmpty()) {
             return eventId == null ? new Outcome.NoCurrentEvent() : new Outcome.UnknownEvent(eventId);
         }
+        if (!service.hasRoomFor(guildId, eventId)) {
+            return new Outcome.LimitReached();
+        }
 
         Message posted = null;
-        CommunityEventService.SaveResult saved;
+        Optional<CommunityEventBinding> previous;
         try {
             posted = channel.sendMessageEmbeds(embedFactory.buildProgressEmbed(guildId, shown.get(), now))
                     .complete();
-            saved = service.saveBinding(guildId, eventId, shown.get().getId(), channel.getId(), posted.getId());
+            previous = service.saveBinding(guildId, eventId, shown.get().getId(), channel.getId(), posted.getId());
         } catch (Exception e) {
             log.warn("Failed to set up community event message in guild {}: {}", guildId, e.getMessage());
             if (posted != null) {
@@ -64,14 +61,7 @@ public class CommunityEventMessagePublisher {
             }
             return new Outcome.PostFailed();
         }
-        if (saved instanceof CommunityEventService.SaveResult.LimitReached limitReached) {
-            posted.delete().queue(_ -> {}, _ -> {});
-            return new Outcome.LimitReached(limitReached.limit());
-        }
-        ((CommunityEventService.SaveResult.Saved) saved).previous().ifPresent(previous -> {
-            scheduler.forget(previous.messageId());
-            deleteMessage(guild, previous);
-        });
+        previous.ifPresent(binding -> deleteMessage(guild, binding));
         return new Outcome.Posted(shown.get().getName(), eventId == null);
     }
 

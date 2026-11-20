@@ -92,18 +92,14 @@ public class CommunityEventService {
                 : messageRepository.findByGuildIdAndEventId(guildId, eventId);
     }
 
-    public sealed interface SaveResult {
-        record Saved(Optional<CommunityEventBinding> previous) implements SaveResult {}
-        record LimitReached(int limit) implements SaveResult {}
-    }
-
     @Transactional
-    public SaveResult saveBinding(String guildId, String eventId, String shownEventId, String channelId,
-                                  String messageId) {
-        Optional<CommunityEventMessage> existing = findTarget(guildId, eventId);
-        if (existing.isEmpty() && messageRepository.countByGuildId(guildId) >= MAX_MESSAGES_PER_GUILD) {
-            return new SaveResult.LimitReached(MAX_MESSAGES_PER_GUILD);
+    public Optional<CommunityEventBinding> saveBinding(String guildId, String eventId, String shownEventId,
+                                                       String channelId, String messageId) {
+        if (!hasRoomFor(guildId, eventId)) {
+            throw new IllegalStateException("Guild " + guildId + " already has " + MAX_MESSAGES_PER_GUILD
+                    + " community event messages");
         }
+        Optional<CommunityEventMessage> existing = findTarget(guildId, eventId);
         Optional<CommunityEventBinding> previous = existing.map(CommunityEventBinding::of);
         CommunityEventMessage binding = existing.orElseGet(CommunityEventMessage::new);
         binding.setGuildId(guildId);
@@ -112,7 +108,7 @@ public class CommunityEventService {
         binding.setChannelId(channelId);
         binding.setMessageId(messageId);
         messageRepository.save(binding);
-        return new SaveResult.Saved(previous);
+        return previous;
     }
 
     @Transactional
@@ -128,27 +124,24 @@ public class CommunityEventService {
 
     @Transactional
     public Optional<CommunityEventBinding> removeBindingIfMessage(String messageId) {
-        return messageRepository.findByMessageId(messageId).map(binding -> {
-            messageRepository.delete(binding);
-            return CommunityEventBinding.of(binding);
-        });
+        return messageRepository.findByMessageId(messageId).map(this::delete);
     }
 
     @Transactional
     public List<CommunityEventBinding> removeBindings(String guildId) {
-        List<CommunityEventMessage> bindings = messageRepository.findByGuildIdOrderByIdAsc(guildId);
-        messageRepository.deleteAll(bindings);
-        return bindings.stream().map(CommunityEventBinding::of).toList();
+        return deleteAll(messageRepository.findByGuildIdOrderByIdAsc(guildId));
     }
 
     @Transactional
     public Optional<CommunityEventBinding> removeBinding(String guildId, long bindingId) {
         return messageRepository.findById(bindingId)
                 .filter(binding -> binding.getGuildId().equals(guildId))
-                .map(binding -> {
-                    messageRepository.delete(binding);
-                    return CommunityEventBinding.of(binding);
-                });
+                .map(this::delete);
+    }
+
+    @Transactional
+    public Optional<CommunityEventBinding> removeBindingForTarget(String guildId, String eventId) {
+        return findTarget(guildId, eventId).map(this::delete);
     }
 
     @Transactional
@@ -156,7 +149,15 @@ public class CommunityEventService {
         if (messageIds.isEmpty()) {
             return List.of();
         }
-        List<CommunityEventMessage> bindings = messageRepository.findByMessageIdIn(messageIds);
+        return deleteAll(messageRepository.findByMessageIdIn(messageIds));
+    }
+
+    private CommunityEventBinding delete(CommunityEventMessage binding) {
+        messageRepository.delete(binding);
+        return CommunityEventBinding.of(binding);
+    }
+
+    private List<CommunityEventBinding> deleteAll(List<CommunityEventMessage> bindings) {
         messageRepository.deleteAll(bindings);
         return bindings.stream().map(CommunityEventBinding::of).toList();
     }

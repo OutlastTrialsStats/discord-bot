@@ -4,7 +4,7 @@ import com.outlasttrialsstats.backend.api.model.DiscordCommunityEvent;
 import com.outlasttrialsstats.discordbot.entity.CommunityAlertType;
 import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventEmbedFactory;
 import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventMessagePublisher;
-import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventScheduler;
+import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEvents;
 import com.outlasttrialsstats.discordbot.feature.communityevent.alert.AlertRule;
 import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventBinding;
 import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventService;
@@ -29,6 +29,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.Command.Choice;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,12 +38,10 @@ import org.springframework.stereotype.Component;
 public class CommunityEventSetupCommand {
 
     public static final String GROUP = "event";
-    private static final int MAX_AUTOCOMPLETE_CHOICES = 25;
-    private static final int MAX_CHOICE_NAME_LENGTH = 100;
+    static final String CURRENT_TARGET = "current";
 
     private final CommunityEventService service;
     private final CommunityEventMessagePublisher publisher;
-    private final CommunityEventScheduler scheduler;
     private final MessageService messageService;
 
     public void onSubcommand(SlashCommandInteractionEvent event, String subcommand) {
@@ -93,8 +92,8 @@ public class CommunityEventSetupCommand {
             case CommunityEventMessagePublisher.Outcome.FetchFailed _ -> message(guildId, "community_event.error");
             case CommunityEventMessagePublisher.Outcome.PostFailed _ ->
                     message(guildId, "setup.community_event.message.post_failed", channel.getAsMention());
-            case CommunityEventMessagePublisher.Outcome.LimitReached limitReached ->
-                    message(guildId, "setup.community_event.message.limit", String.valueOf(limitReached.limit()));
+            case CommunityEventMessagePublisher.Outcome.LimitReached _ -> message(guildId,
+                    "setup.community_event.message.limit", String.valueOf(CommunityEventService.MAX_MESSAGES_PER_GUILD));
         };
     }
 
@@ -110,7 +109,7 @@ public class CommunityEventSetupCommand {
         List<Choice> choices = service.getCachedEvents().stream()
                 .filter(e -> e.getId().toLowerCase(Locale.ROOT).contains(typed)
                         || e.getName().toLowerCase(Locale.ROOT).contains(typed))
-                .limit(MAX_AUTOCOMPLETE_CHOICES)
+                .limit(OptionData.MAX_CHOICES)
                 .map(e -> new Choice(choiceName(e), e.getId()))
                 .toList();
         event.replyChoices(choices).queue();
@@ -118,29 +117,26 @@ public class CommunityEventSetupCommand {
 
     private List<Choice> messageChoices(Guild guild, String typed) {
         return service.getBindings(guild.getId()).stream()
-                .map(binding -> new Choice(truncate(bindingLabel(guild, binding)), String.valueOf(binding.id())))
+                .map(binding -> new Choice(truncate(choiceLabel(guild, binding)), String.valueOf(binding.id())))
                 .filter(choice -> choice.getName().toLowerCase(Locale.ROOT).contains(typed))
-                .limit(MAX_AUTOCOMPLETE_CHOICES)
+                .limit(OptionData.MAX_CHOICES)
                 .toList();
     }
 
-    private String bindingLabel(Guild guild, CommunityEventBinding binding) {
-        String guildId = guild.getId();
-        String eventName = eventName(binding.shownEventId());
-        String target = binding.followsCurrentEvent()
-                ? message(guildId, "setup.community_event.status.message_auto") + " · " + eventName
-                : eventName;
+    private String choiceLabel(Guild guild, CommunityEventBinding binding) {
         StandardGuildMessageChannel channel = guild.getChannelById(StandardGuildMessageChannel.class,
                 binding.channelId());
+        String target = targetLabel(guild.getId(), binding);
         return channel == null ? target : target + " · #" + channel.getName();
     }
 
-    private String eventName(String eventId) {
-        return service.getCachedEvents().stream()
-                .filter(e -> e.getId().equals(eventId))
+    private String targetLabel(String guildId, CommunityEventBinding binding) {
+        String eventName = CommunityEvents.find(service.getCachedEvents(), binding.shownEventId())
                 .map(DiscordCommunityEvent::getName)
-                .findFirst()
-                .orElse(eventId);
+                .orElse(binding.shownEventId());
+        return binding.followsCurrentEvent()
+                ? message(guildId, "setup.community_event.status.message_auto") + " · " + eventName
+                : eventName;
     }
 
     private static String choiceName(DiscordCommunityEvent event) {
@@ -148,7 +144,8 @@ public class CommunityEventSetupCommand {
     }
 
     private static String truncate(String name) {
-        return name.length() <= MAX_CHOICE_NAME_LENGTH ? name : name.substring(0, MAX_CHOICE_NAME_LENGTH - 1) + "…";
+        return name.length() <= OptionData.MAX_CHOICE_NAME_LENGTH
+                ? name : name.substring(0, OptionData.MAX_CHOICE_NAME_LENGTH - 1) + "…";
     }
 
     void onAlerts(SlashCommandInteractionEvent event) {
@@ -231,10 +228,7 @@ public class CommunityEventSetupCommand {
         }
         for (CommunityEventBinding binding : bindings) {
             lines.add(message(guildId, "setup.community_event.status.message", "<#" + binding.channelId() + ">",
-                    binding.followsCurrentEvent()
-                            ? message(guildId, "setup.community_event.status.message_auto")
-                                    + " (" + eventName(binding.shownEventId()) + ")"
-                            : eventName(binding.eventId())));
+                    targetLabel(guildId, binding)));
         }
         lines.add(service.getAlertChannelId(guildId)
                 .map(id -> message(guildId, "setup.community_event.status.alert_channel", "<#" + id + ">"))
@@ -287,7 +281,6 @@ public class CommunityEventSetupCommand {
                     event.getOption("event", null, OptionMapping::getAsString));
             for (CommunityEventBinding binding : removed) {
                 CommunityEventMessagePublisher.deleteMessage(guild, binding);
-                scheduler.forget(binding.messageId());
             }
             if (removed.size() == 1) {
                 lines.add(message(guildId, "setup.community_event.remove.message"));
@@ -304,15 +297,15 @@ public class CommunityEventSetupCommand {
         event.reply(String.join("\n", lines)).setEphemeral(true).queue();
     }
 
-    private List<CommunityEventBinding> removeMessages(String guildId, String bindingId) {
-        if (bindingId == null || bindingId.isBlank()) {
+    private List<CommunityEventBinding> removeMessages(String guildId, String selection) {
+        String value = selection == null ? "" : selection.trim();
+        if (value.isEmpty()) {
             return service.removeBindings(guildId);
         }
-        try {
-            return service.removeBinding(guildId, Long.parseLong(bindingId.trim())).stream().toList();
-        } catch (NumberFormatException e) {
-            return List.of();
-        }
+        Optional<CommunityEventBinding> removed = value.chars().allMatch(Character::isDigit)
+                ? service.removeBinding(guildId, Long.parseLong(value))
+                : service.removeBindingForTarget(guildId, CURRENT_TARGET.equalsIgnoreCase(value) ? null : value);
+        return removed.stream().toList();
     }
 
     private static String roleMention(Role role) {

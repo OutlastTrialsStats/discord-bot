@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.components.actionrow.ActionRow;
-import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.utils.TimeFormat;
 import org.springframework.stereotype.Component;
@@ -38,7 +36,6 @@ public class CommunityEventEmbedFactory {
         CommunityEventArt art = CommunityEvents.art(event);
         EmbedBuilder embed = baseEmbed(event)
                 .setThumbnail(CommunityEvents.assetUrl(art.getIcon()))
-                .setImage(CommunityEvents.assetUrl(art.getBanner()))
                 .setFooter(render.message("community_event.footer"));
         if (event.getSampledAt() != null) {
             embed.setTimestamp(event.getSampledAt());
@@ -55,18 +52,18 @@ public class CommunityEventEmbedFactory {
         } else {
             addPhases(lines, render, event);
         }
+        boolean showRate = event.getRatePerHour() != null && event.getRatePerHour() > 0;
+        if (showRate) {
+            // Discord trims trailing blank lines, so a zero-width space keeps a gap above the rate field
+            lines.add("​");
+        }
         embed.setDescription(String.join("\n", lines));
 
-        if (event.getRatePerHour() != null && event.getRatePerHour() > 0) {
+        if (showRate) {
             embed.addField(render.message("community_event.field.rate"),
                     render.message("community_event.rate", render.number(event.getRatePerHour())), true);
         }
         return embed.build();
-    }
-
-    public ActionRow buildButtons(String guildId, DiscordCommunityEvent event) {
-        return ActionRow.of(Button.link(CommunityEvents.eventUrl(event),
-                messageService.getMessage(guildId, "community_event.button.website")));
     }
 
     public MessageEmbed buildAlertEmbed(String guildId, DiscordCommunityEvent event, CommunityAlert alert) {

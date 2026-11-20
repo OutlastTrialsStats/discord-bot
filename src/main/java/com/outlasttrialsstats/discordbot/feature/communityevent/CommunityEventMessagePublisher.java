@@ -60,7 +60,6 @@ public class CommunityEventMessagePublisher {
         Optional<CommunityEventBinding> previous;
         try {
             posted = channel.sendMessageEmbeds(embedFactory.buildProgressEmbed(guildId, shown.get(), now))
-                    .setComponents(embedFactory.buildButtons(guildId, shown.get()))
                     .complete();
             previous = service.saveBinding(guildId, eventId, shown.get().getId(), channel.getId(), posted.getId());
         } catch (Exception e) {

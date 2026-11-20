@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.components.actionrow.ActionRow;
-import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -84,8 +82,6 @@ class CommunityEventSchedulerTest {
         lenient().when(guild.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
         lenient().when(selfMember.hasPermission(eq(channel), any(Permission[].class))).thenReturn(true);
         lenient().when(embedFactory.buildAlertEmbed(any(), any(), any())).thenReturn(mock(MessageEmbed.class));
-        lenient().when(embedFactory.buildButtons(any(), any()))
-                .thenReturn(ActionRow.of(Button.link("https://outlasttrialsstats.com", "x")));
         lenient().when(channel.sendMessage(any(MessageCreateData.class))).thenReturn(createAction);
     }
 
@@ -176,7 +172,7 @@ class CommunityEventSchedulerTest {
         when(channel.getGuild()).thenReturn(guild);
         when(selfMember.hasAccess(channel)).thenReturn(true);
         when(channel.editMessageEmbedsById("msg-1", embed)).thenReturn(editAction);
-        when(editAction.setComponents(any(ActionRow.class))).thenReturn(editAction);
+        when(editAction.setComponents()).thenReturn(editAction);
         org.mockito.Mockito.doAnswer(invocation -> {
             java.util.function.Consumer<Message> success = invocation.getArgument(0);
             success.accept(mock(Message.class));
@@ -203,7 +199,7 @@ class CommunityEventSchedulerTest {
         when(selfMember.hasAccess(channel)).thenReturn(true);
         when(channel.editMessageEmbedsById(eq("msg-old"), any(MessageEmbed.class))).thenReturn(editAction);
         when(channel.sendMessageEmbeds(any(MessageEmbed.class))).thenReturn(createAction);
-        when(createAction.setComponents(any(ActionRow.class))).thenReturn(createAction);
+        when(editAction.setComponents()).thenReturn(editAction);
         org.mockito.Mockito.doAnswer(invocation -> {
             java.util.function.Consumer<Message> success = invocation.getArgument(0);
             success.accept(posted);

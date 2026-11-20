@@ -74,7 +74,7 @@ class CommunityEventEmbedFactoryTest {
         String description = embed.getDescription();
         assertThat(embed.getTitle()).isEqualTo("Event e");
         assertThat(embed.getUrl()).isEqualTo("https://outlasttrialsstats.com/events/e");
-        assertThat(embed.getImage().getUrl()).isEqualTo("https://outlasttrialsstats.com/game-assets/banner.webp");
+        assertThat(embed.getImage()).isNull();
         assertThat(description)
                 .contains("community_event.status.live[]")
                 .contains("community_event.total[1,500]")

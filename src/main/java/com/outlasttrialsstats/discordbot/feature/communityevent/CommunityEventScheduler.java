@@ -124,8 +124,9 @@ public class CommunityEventScheduler {
             return;
         }
 
+        // setComponents() also drops the website button that older messages still carry
         channel.editMessageEmbedsById(binding.messageId(), embed)
-                .setComponents(embedFactory.buildButtons(binding.guildId(), event))
+                .setComponents()
                 .queue(_ -> rendered.put(binding.guildId(), next),
                         error -> handleEditFailure(binding, error));
     }
@@ -135,11 +136,11 @@ public class CommunityEventScheduler {
         CommunityEvents.find(events, binding.shownEventId()).ifPresent(previous -> channel
                 .editMessageEmbedsById(binding.messageId(),
                         embedFactory.buildProgressEmbed(binding.guildId(), previous, now))
+                .setComponents()
                 .queue(_ -> {}, error -> log.debug("Could not finalize community event message {}: {}",
                         binding.messageId(), error.getMessage())));
 
         channel.sendMessageEmbeds(embedFactory.buildProgressEmbed(binding.guildId(), event, now))
-                .setComponents(embedFactory.buildButtons(binding.guildId(), event))
                 .queue(message -> adoptSwitchedMessage(binding, event, message),
                         error -> log.warn("Failed to post community event message for {} in guild {}: {}",
                                 event.getId(), binding.guildId(), error.getMessage()));
@@ -259,8 +260,7 @@ public class CommunityEventScheduler {
 
     private void sendAlert(Guild guild, StandardGuildMessageChannel channel, PendingAlert pending, AlertRule rule) {
         MessageCreateBuilder message = new MessageCreateBuilder()
-                .setEmbeds(embedFactory.buildAlertEmbed(guild.getId(), pending.event(), pending.alert()))
-                .setComponents(embedFactory.buildButtons(guild.getId(), pending.event()));
+                .setEmbeds(embedFactory.buildAlertEmbed(guild.getId(), pending.event(), pending.alert()));
         applyPing(message, guild, rule);
         channel.sendMessage(message.build()).queue(
                 _ -> log.info("Sent {} alert for phase {} of {} in guild {}", pending.alert().type(),

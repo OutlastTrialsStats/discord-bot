@@ -1,10 +1,6 @@
 package com.outlasttrialsstats.discordbot.shared;
 
-import java.util.Optional;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.channel.ChannelType;
-import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
-import net.dv8tion.jda.api.entities.channel.unions.GuildChannelUnion;
 
 public final class BotChannels {
 
@@ -18,12 +14,5 @@ public final class BotChannels {
     };
 
     private BotChannels() {
-    }
-
-    public static Optional<StandardGuildMessageChannel> asTextOrNews(GuildChannelUnion channel) {
-        if (channel.getType() != ChannelType.TEXT && channel.getType() != ChannelType.NEWS) {
-            return Optional.empty();
-        }
-        return Optional.of(channel.asStandardGuildMessageChannel());
     }
 }

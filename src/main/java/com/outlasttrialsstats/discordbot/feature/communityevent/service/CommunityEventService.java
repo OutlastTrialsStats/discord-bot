@@ -128,20 +128,10 @@ public class CommunityEventService {
     }
 
     @Transactional
-    public List<CommunityEventBinding> removeBindings(String guildId) {
-        return deleteAll(messageRepository.findByGuildIdOrderByIdAsc(guildId));
-    }
-
-    @Transactional
     public Optional<CommunityEventBinding> removeBinding(String guildId, long bindingId) {
         return messageRepository.findById(bindingId)
                 .filter(binding -> binding.getGuildId().equals(guildId))
                 .map(this::delete);
-    }
-
-    @Transactional
-    public Optional<CommunityEventBinding> removeBindingForTarget(String guildId, String eventId) {
-        return findTarget(guildId, eventId).map(this::delete);
     }
 
     @Transactional

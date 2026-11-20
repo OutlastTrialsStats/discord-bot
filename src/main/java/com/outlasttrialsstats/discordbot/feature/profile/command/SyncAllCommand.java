@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
@@ -51,16 +52,21 @@ public class SyncAllCommand {
     }
 
     public void onSyncAll(SlashCommandInteractionEvent event) {
-        String guildId = event.getGuild().getId();
-        Guild guild = event.getJDA().getGuildById(guildId);
+        event.deferReply(true).queue();
+        InteractionHook hook = event.getHook();
+        start(event.getGuild(), message -> hook.editOriginal(message).queue());
+    }
+
+    public void start(Guild guild, Consumer<String> reply) {
+        String guildId = guild.getId();
 
         if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
-            replyEphemeral(event, messageService.getMessage(guildId, "error.missing_permission.manage_roles"));
+            reply.accept(messageService.getMessage(guildId, "error.missing_permission.manage_roles"));
             return;
         }
 
         if (!guildSyncService.tryStartGuildSync(guildId)) {
-            replyEphemeral(event, messageService.getMessage(guildId, "sync.in_progress"));
+            reply.accept(messageService.getMessage(guildId, "sync.in_progress"));
             return;
         }
 
@@ -69,37 +75,28 @@ public class SyncAllCommand {
         if (lastRun != null && now.isBefore(lastRun.plus(COOLDOWN))) {
             guildSyncService.finishGuildSync(guildId);
             String availableAt = String.valueOf(lastRun.plus(COOLDOWN).getEpochSecond());
-            replyEphemeral(event, messageService.getMessage(guildId, "sync.cooldown", availableAt));
+            reply.accept(messageService.getMessage(guildId, "sync.cooldown", availableAt));
             return;
         }
         lastRunByGuild.put(guildId, now);
 
-        InteractionHook hook;
         try {
-            event.deferReply(true).queue();
-            hook = event.getHook();
-            hook.editOriginal(messageService.getMessage(guildId, "sync.starting")).queue();
+            reply.accept(messageService.getMessage(guildId, "sync.starting"));
+            taskExecutor.execute(() -> syncAndReport(guild, reply, now));
         } catch (RuntimeException e) {
             release(guildId, now);
-            throw e;
-        }
-
-        try {
-            taskExecutor.execute(() -> syncAndReport(guild, hook, now));
-        } catch (RuntimeException e) {
-            release(guildId, now);
-            replyFailed(guild, hook, e);
+            replyFailed(guild, reply, e);
         }
     }
 
-    private void syncAndReport(Guild guild, InteractionHook hook, Instant startedAt) {
+    private void syncAndReport(Guild guild, Consumer<String> reply, Instant startedAt) {
         try {
             var result = guildSyncService.syncMembers(guild, memberLoader.load(guild));
-            hook.editOriginal(messageService.getMessage(guild.getId(), "sync.completed",
-                    result.updated(), result.unchanged(), result.unverified(), result.failed())).queue();
+            reply.accept(messageService.getMessage(guild.getId(), "sync.completed",
+                    result.updated(), result.unchanged(), result.unverified(), result.failed()));
         } catch (Exception e) {
             lastRunByGuild.remove(guild.getId(), startedAt);
-            replyFailed(guild, hook, e);
+            replyFailed(guild, reply, e);
         } finally {
             guildSyncService.finishGuildSync(guild.getId());
         }
@@ -110,12 +107,8 @@ public class SyncAllCommand {
         lastRunByGuild.remove(guildId, startedAt);
     }
 
-    private void replyEphemeral(SlashCommandInteractionEvent event, String message) {
-        event.reply(message).setEphemeral(true).queue();
-    }
-
-    private void replyFailed(Guild guild, InteractionHook hook, Exception e) {
+    private void replyFailed(Guild guild, Consumer<String> reply, Exception e) {
         log.warn("Failed to sync members for guild {}", guild.getId(), e);
-        hook.editOriginal(messageService.getMessage(guild.getId(), "sync.failed")).queue();
+        reply.accept(messageService.getMessage(guild.getId(), "sync.failed"));
     }
 }

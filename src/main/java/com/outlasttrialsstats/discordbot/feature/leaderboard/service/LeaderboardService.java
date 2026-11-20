@@ -6,6 +6,7 @@ import com.outlasttrialsstats.backend.api.model.StatisticType;
 import com.outlasttrialsstats.discordbot.entity.LeaderboardChannel;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.LeaderboardCategories;
 import com.outlasttrialsstats.discordbot.repository.LeaderboardChannelRepository;
+import com.outlasttrialsstats.discordbot.shared.BotColors;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import com.outlasttrialsstats.discordbot.shared.SiteLinks;
 import com.outlasttrialsstats.discordbot.shared.TOTStatsApiClient;
@@ -50,7 +51,7 @@ public class LeaderboardService {
                                                DiscordLeaderboardResponse response, boolean includeTitle,
                                                boolean includeFooter, boolean includeTotalEntries) {
         EmbedBuilder embed = new EmbedBuilder()
-                .setColor(0x5865F2);
+                .setColor(BotColors.BRAND);
 
         if (includeTitle) {
             String categoryName = getCategoryDisplayName(guildId, category);
@@ -270,6 +271,21 @@ public class LeaderboardService {
         LeaderboardBinding snapshot = LeaderboardBinding.of(binding);
         leaderboardChannelRepository.delete(binding);
         return snapshot;
+    }
+
+    public List<LeaderboardBinding> getBindings(String guildId) {
+        return leaderboardChannelRepository.findByGuildIdWithMessageIds(guildId).stream()
+                .map(LeaderboardBinding::of)
+                .toList();
+    }
+
+    public long countBindings(String guildId) {
+        return leaderboardChannelRepository.countByGuildId(guildId);
+    }
+
+    @Transactional
+    public Optional<LeaderboardBinding> removeBinding(String guildId, long bindingId) {
+        return removeBindingIf(bindingId, binding -> guildId.equals(binding.getGuildId()));
     }
 
     public List<LeaderboardBinding> getAllBindings() {

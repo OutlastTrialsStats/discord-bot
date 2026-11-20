@@ -1,10 +1,11 @@
 package com.outlasttrialsstats.discordbot.feature.setup.command;
 
 import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventMessagePublisher;
-import com.outlasttrialsstats.discordbot.feature.communityevent.command.CommunityEventSetupCommand;
 import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventService;
+import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventSettings;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.feature.setup.service.BasicSetupService;
+import com.outlasttrialsstats.discordbot.feature.setup.service.GuildSettingsService;
 import com.outlasttrialsstats.discordbot.shared.BotChannels;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.ArrayList;
@@ -21,11 +22,11 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.EntitySelectInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -42,12 +43,12 @@ public class StartBasicCommand {
 
     private final BasicSetupService basicSetupService;
     private final MessageService messageService;
-    private final NicknameCommand nicknameCommand;
+    private final GuildSettingsService settingsService;
     private final CommunityEventMessagePublisher eventPublisher;
     private final CommunityEventService eventService;
-    private final CommunityEventSetupCommand eventSetupCommand;
+    private final CommunityEventSettings eventSettings;
 
-    public void onStartBasic(SlashCommandInteractionEvent event) {
+    public void start(IReplyCallback event) {
         String guildId = event.getGuild().getId();
 
         StringSelectMenu menu = StringSelectMenu.create(CATEGORIES)
@@ -108,13 +109,7 @@ public class StartBasicCommand {
             case SKIP_ROLES -> event.editMessage(nicknamePrompt(guildId, null))
                     .setComponents(nicknameRow(guildId)).queue();
             case NICKNAME_ON -> {
-                String result;
-                if (event.getGuild().getSelfMember().hasPermission(Permission.NICKNAME_MANAGE)) {
-                    nicknameCommand.setAutoNickname(guildId, true);
-                    result = message(guildId, "setup.nickname.enabled");
-                } else {
-                    result = message(guildId, "error.missing_permission.manage_nicknames");
-                }
+                String result = settingsService.setAutoNickname(event.getGuild(), true);
                 event.editMessage(eventPrompt(guildId, result)).setComponents(eventRows(guildId)).queue();
             }
             case NICKNAME_SKIP -> event.editMessage(eventPrompt(guildId, null))
@@ -149,7 +144,7 @@ public class StartBasicCommand {
         List<String> lines = new ArrayList<>();
         lines.add(outcome instanceof CommunityEventMessagePublisher.Outcome.NoCurrentEvent
                 ? message(guildId, "setup.start.event_no_current")
-                : eventSetupCommand.describe(guildId, outcome, channel));
+                : eventSettings.describe(guildId, outcome, channel));
         lines.add(message(guildId, "setup.start.event_alerts", channel.getAsMention()));
         lines.add("");
         lines.add(message(guildId, "setup.start.done"));

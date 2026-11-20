@@ -34,6 +34,17 @@ class RoleMappingServiceTestIT {
     }
 
     @Test
+    void countByCategory_countsBothMappingTypesOfThatGuild() {
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-1", false);
+        roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 20, "role-2", false);
+        roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-3", false);
+        roleMappingService.saveRankedMapping("guild-2", RoleCategory.LEVEL, 30, "role-4", false);
+
+        assertThat(roleMappingService.countByCategory(GUILD_ID))
+                .containsOnly(java.util.Map.entry(RoleCategory.LEVEL, 2), java.util.Map.entry(RoleCategory.PLATFORM, 1));
+    }
+
+    @Test
     void findOtherCategoryUsingRole_roleUsedInOtherCategory_returnsThatCategory() {
         roleMappingService.saveRankedMapping(GUILD_ID, RoleCategory.LEVEL, 10, "role-1", false);
         roleMappingService.saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "role-2", false);

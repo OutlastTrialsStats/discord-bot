@@ -1,7 +1,6 @@
 package com.outlasttrialsstats.discordbot.feature.setup.command;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -15,9 +14,10 @@ import static org.mockito.Mockito.when;
 
 import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventMessagePublisher;
 import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventMessagePublisher.Outcome;
-import com.outlasttrialsstats.discordbot.feature.communityevent.command.CommunityEventSetupCommand;
 import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventService;
+import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventSettings;
 import com.outlasttrialsstats.discordbot.feature.setup.service.BasicSetupService;
+import com.outlasttrialsstats.discordbot.feature.setup.service.GuildSettingsService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.List;
 import net.dv8tion.jda.api.Permission;
@@ -37,11 +37,10 @@ class StartBasicCommandWizardTest {
     private static final String GUILD_ID = "guild-1";
     private static final String CHANNEL_ID = "channel-1";
 
-    private final NicknameCommand nicknameCommand = mock(NicknameCommand.class);
+    private final GuildSettingsService settingsService = mock(GuildSettingsService.class);
     private final CommunityEventMessagePublisher publisher = mock(CommunityEventMessagePublisher.class);
     private final CommunityEventService eventService = mock(CommunityEventService.class);
-    private final CommunityEventSetupCommand eventSetupCommand = mock(CommunityEventSetupCommand.class);
-    /** Returns the message key, so assertions can check which messages were shown. */
+    private final CommunityEventSettings eventSettings = mock(CommunityEventSettings.class);
     private final MessageService messageService = mock(MessageService.class,
             invocation -> "getMessage".equals(invocation.getMethod().getName()) ? invocation.getArgument(1) : null);
 
@@ -49,30 +48,30 @@ class StartBasicCommandWizardTest {
 
     @BeforeEach
     void setUp() {
-        command = new StartBasicCommand(mock(BasicSetupService.class), messageService, nicknameCommand, publisher,
-                eventService, eventSetupCommand);
+        command = new StartBasicCommand(mock(BasicSetupService.class), messageService, settingsService, publisher,
+                eventService, eventSettings);
     }
 
     @Test
     void enablingNicknamesStoresItAndShowsTheEventStep() {
         ButtonInteractionEvent event = button(StartBasicCommand.NICKNAME_ON);
-        when(event.getGuild().getSelfMember().hasPermission(Permission.NICKNAME_MANAGE)).thenReturn(true);
+        when(settingsService.setAutoNickname(event.getGuild(), true)).thenReturn("setup.nickname.enabled");
 
         command.onButton(event);
 
-        verify(nicknameCommand).setAutoNickname(GUILD_ID, true);
+        verify(settingsService).setAutoNickname(event.getGuild(), true);
         verify(event).editMessage(argThat((String text) -> text.startsWith("setup.nickname.enabled")
                 && text.endsWith("setup.start.event_prompt")));
     }
 
     @Test
-    void enablingNicknamesWithoutPermissionKeepsThemOff() {
+    void enablingNicknamesWithoutPermissionShowsTheError() {
         ButtonInteractionEvent event = button(StartBasicCommand.NICKNAME_ON);
-        when(event.getGuild().getSelfMember().hasPermission(Permission.NICKNAME_MANAGE)).thenReturn(false);
+        when(settingsService.setAutoNickname(event.getGuild(), true))
+                .thenReturn("error.missing_permission.manage_nicknames");
 
         command.onButton(event);
 
-        verify(nicknameCommand, never()).setAutoNickname(anyString(), anyBoolean());
         verify(event).editMessage(argThat((String text) ->
                 text.startsWith("error.missing_permission.manage_nicknames")));
     }
@@ -94,7 +93,7 @@ class StartBasicCommandWizardTest {
         EntitySelectInteractionEvent event = channelSelect(channel, true);
         Outcome posted = new Outcome.Posted("Escape", true);
         when(publisher.publish(event.getGuild(), channel, null)).thenReturn(posted);
-        when(eventSetupCommand.describe(GUILD_ID, posted, channel)).thenReturn("posted");
+        when(eventSettings.describe(GUILD_ID, posted, channel)).thenReturn("posted");
 
         command.onEventChannelSelect(event);
 
@@ -129,6 +128,15 @@ class StartBasicCommandWizardTest {
         verify(eventService, never()).setAlertChannel(anyString(), anyString());
         verify(event).editMessage(argThat((String text) -> text.startsWith("error.missing_permission.channel_write")
                 && text.endsWith("setup.start.event_prompt")));
+    }
+
+    @Test
+    void startRepliesWithTheCategorySelection() {
+        ButtonInteractionEvent event = button("setup:panel:home:wizard");
+
+        command.start(event);
+
+        verify(event).reply("setup.start.select_prompt");
     }
 
     private static ButtonInteractionEvent button(String componentId) {

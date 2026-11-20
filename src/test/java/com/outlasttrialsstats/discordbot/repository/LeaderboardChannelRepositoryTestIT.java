@@ -40,6 +40,31 @@ class LeaderboardChannelRepositoryTestIT {
     }
 
     @Test
+    void findByGuildIdWithMessageIds_loadsMessagesAndKeepsBindingsWithoutMessages() {
+        repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.PRESTIGE, "channel-1",
+                List.of("msg-1", "msg-2"), 2));
+        repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.DEATHS, "channel-1", List.of(), 1));
+        repository.save(new LeaderboardChannel(OTHER_GUILD_ID, StatisticType.PRESTIGE, "channel-2", List.of("msg-3"), 1));
+
+        var result = repository.findByGuildIdWithMessageIds(GUILD_ID);
+
+        assertThat(result)
+                .extracting(LeaderboardChannel::getCategory, channel -> List.copyOf(channel.getMessageIds()))
+                .containsExactlyInAnyOrder(
+                        tuple(StatisticType.PRESTIGE, List.of("msg-1", "msg-2")),
+                        tuple(StatisticType.DEATHS, List.of()));
+    }
+
+    @Test
+    void countByGuildId_countsOnlyThatGuild() {
+        repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.PRESTIGE, "channel-1", List.of("msg-1"), 1));
+        repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.DEATHS, "channel-1", List.of("msg-2"), 1));
+        repository.save(new LeaderboardChannel(OTHER_GUILD_ID, StatisticType.PRESTIGE, "channel-2", List.of("msg-3"), 1));
+
+        assertThat(repository.countByGuildId(GUILD_ID)).isEqualTo(2);
+    }
+
+    @Test
     void findByGuildIdAndCategory_findsExact() {
         repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.PRESTIGE, "channel-1", List.of("msg-1"), 1));
         repository.save(new LeaderboardChannel(GUILD_ID, StatisticType.DEATHS, "channel-1", List.of("msg-2"), 1));

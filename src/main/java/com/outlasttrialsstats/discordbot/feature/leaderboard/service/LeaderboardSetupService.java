@@ -1,10 +1,7 @@
-package com.outlasttrialsstats.discordbot.feature.leaderboard.command;
+package com.outlasttrialsstats.discordbot.feature.leaderboard.service;
 
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.StatisticType;
-import com.outlasttrialsstats.discordbot.feature.leaderboard.LeaderboardCategories;
-import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
-import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
 import com.outlasttrialsstats.discordbot.shared.BotChannels;
 import com.outlasttrialsstats.discordbot.shared.MessageCleanup;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
@@ -18,51 +15,30 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class LeaderboardSetupCommand {
+public class LeaderboardSetupService {
 
+    public static final int MAX_PAGES = 10;
     static final Permission[] REQUIRED_PERMISSIONS = BotChannels.SEND_AND_EDIT_EMBEDS;
 
     private final LeaderboardService leaderboardService;
     private final MessageService messageService;
 
-    public void onSetupLeaderboard(SlashCommandInteractionEvent event) {
-        String guildId = event.getGuild().getId();
-        Guild guild = event.getJDA().getGuildById(guildId);
-
-        event.deferReply(true).queue();
-        var hook = event.getHook();
-
-        Optional<StandardGuildMessageChannel> target = BotChannels.asTextOrNews(event.getOption("channel").getAsChannel());
-        if (target.isEmpty()) {
-            hook.editOriginal(messageService.getMessage(guildId, "error.invalid_channel_type")).queue();
-            return;
-        }
-        StandardGuildMessageChannel channel = target.get();
-
+    public String create(Guild guild, StandardGuildMessageChannel channel, StatisticType statisticType, int pages) {
+        String guildId = guild.getId();
         if (!guild.getSelfMember().hasPermission(channel, REQUIRED_PERMISSIONS)) {
-            hook.editOriginal(messageService.getMessage(guildId, "error.missing_permission.channel_write", channel.getAsMention())).queue();
-            return;
+            return messageService.getMessage(guildId, "error.missing_permission.channel_write", channel.getAsMention());
         }
-
-        Optional<StatisticType> parsed = LeaderboardCategories.parse(event.getOption("category").getAsString());
-        if (parsed.isEmpty()) {
-            hook.editOriginal(messageService.getMessage(guildId, "leaderboard.unknown_category")).queue();
-            return;
-        }
-        StatisticType statisticType = parsed.get();
         String categoryName = leaderboardService.getCategoryDisplayName(guildId, statisticType);
-        int maxPages = Math.max(1, Math.min(10, event.getOption("pages").getAsInt()));
+        int maxPages = Math.max(1, Math.min(MAX_PAGES, pages));
 
         Optional<DiscordLeaderboardResponse> firstResponse = leaderboardService.fetchLeaderboard(statisticType, 1);
         if (firstResponse.isEmpty()) {
-            hook.editOriginal(messageService.getMessage(guildId, "leaderboard.error")).queue();
-            return;
+            return messageService.getMessage(guildId, "leaderboard.error");
         }
 
         Integer reportedPages = firstResponse.get().getTotalPages();
@@ -88,16 +64,32 @@ public class LeaderboardSetupCommand {
         } catch (Exception e) {
             log.warn("Failed to set up leaderboard {} in guild {}: {}", statisticType, guildId, e.getMessage());
             deleteMessages(guild, channel.getId(), messageIds);
-            hook.editOriginal(messageService.getMessage(guildId, "setup.leaderboard.post_failed",
-                    channel.getAsMention())).queue();
-            return;
+            return messageService.getMessage(guildId, "setup.leaderboard.post_failed", channel.getAsMention());
         }
 
         oldBinding.ifPresent(binding -> deleteMessages(guild, binding.channelId(), binding.messageIds()));
 
-        hook.editOriginal(messageService.getMessage(guildId, "setup.leaderboard.success",
-                        categoryName, channel.getAsMention()))
-                .queue();
+        return messageService.getMessage(guildId, "setup.leaderboard.success", categoryName, channel.getAsMention());
+    }
+
+    public List<LeaderboardBinding> list(String guildId) {
+        return leaderboardService.getBindings(guildId);
+    }
+
+    public long count(String guildId) {
+        return leaderboardService.countBindings(guildId);
+    }
+
+    public String remove(Guild guild, long bindingId) {
+        String guildId = guild.getId();
+        Optional<LeaderboardBinding> removed = leaderboardService.removeBinding(guildId, bindingId);
+        if (removed.isEmpty()) {
+            return messageService.getMessage(guildId, "setup.leaderboard.remove.nothing");
+        }
+        LeaderboardBinding binding = removed.get();
+        deleteMessages(guild, binding.channelId(), binding.messageIds());
+        return messageService.getMessage(guildId, "setup.leaderboard.remove.success",
+                leaderboardService.getCategoryDisplayName(guildId, binding.category()));
     }
 
     private void deleteMessages(Guild guild, String channelId, List<String> messageIds) {

@@ -77,16 +77,6 @@ class CommunityEventServiceBindingTest {
     }
 
     @Test
-    void removingByTargetDeletesTheMatchingMessage() {
-        CommunityEventMessage counter = new CommunityEventMessage(GUILD_ID, "counter", "counter", "c", "m");
-        when(messageRepository.findByGuildIdAndEventId(GUILD_ID, "counter")).thenReturn(Optional.of(counter));
-
-        assertThat(service.removeBindingForTarget(GUILD_ID, "counter")).map(CommunityEventBinding::messageId)
-                .contains("m");
-        verify(messageRepository).delete(counter);
-    }
-
-    @Test
     void removingAMessageOfAnotherGuildDoesNothing() {
         CommunityEventMessage other = new CommunityEventMessage("guild-2", null, "e", "c", "m");
         when(messageRepository.findById(7L)).thenReturn(Optional.of(other));

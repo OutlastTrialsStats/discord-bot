@@ -1,13 +1,12 @@
-package com.outlasttrialsstats.discordbot.feature.setup.command;
+package com.outlasttrialsstats.discordbot.feature.setup.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.outlasttrialsstats.discordbot.feature.setup.service.GuildMessageService;
 import com.outlasttrialsstats.discordbot.feature.setup.service.GuildMessageService.ImportResult;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.io.ByteArrayInputStream;
@@ -16,16 +15,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
+import java.util.function.Consumer;
 import net.dv8tion.jda.api.entities.Message.Attachment;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.InteractionHook;
-import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction;
-import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
+import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.NamedAttachmentProxy;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,7 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MessagesCommandTest {
+class MessageFileServiceTest {
 
     private static final String GUILD_ID = "guild-1";
 
@@ -44,10 +37,7 @@ class MessagesCommandTest {
     private MessageService messageService;
 
     @InjectMocks
-    private MessagesCommand messagesCommand;
-
-    @Mock
-    private SlashCommandInteractionEvent event;
+    private MessageFileService messageFileService;
 
     @Mock
     private Attachment attachment;
@@ -56,51 +46,36 @@ class MessagesCommandTest {
     private NamedAttachmentProxy proxy;
 
     @Mock
-    private InteractionHook hook;
-
-    @Mock
-    private WebhookMessageEditAction<Message> editAction;
-
-    @BeforeEach
-    void setUp() {
-        Guild guild = mock(Guild.class);
-        when(guild.getId()).thenReturn(GUILD_ID);
-        when(event.getGuild()).thenReturn(guild);
-        OptionMapping fileOption = mock(OptionMapping.class);
-        when(fileOption.getAsAttachment()).thenReturn(attachment);
-        when(event.getOption("file")).thenReturn(fileOption);
-        when(event.deferReply(true)).thenReturn(mock(ReplyCallbackAction.class));
-        when(event.getHook()).thenReturn(hook);
-        when(attachment.getFileName()).thenReturn("messages.properties");
-        lenient().when(attachment.getProxy()).thenReturn(proxy);
-        when(hook.editOriginal(any(String.class))).thenReturn(editAction);
-    }
+    private Consumer<String> reply;
 
     @Test
-    void onUpload_downloadFails_repliesWithLocalizedError() {
+    void importFile_downloadFails_repliesWithLocalizedError() {
+        givenPropertiesFile();
         when(proxy.download()).thenReturn(CompletableFuture.failedFuture(new IOException("connection reset")));
         when(messageService.getMessage(GUILD_ID, "setup.messages.download_error")).thenReturn("download failed");
 
-        messagesCommand.onUpload(event);
+        messageFileService.importFile(GUILD_ID, attachment, reply);
 
-        verify(hook).editOriginal("download failed");
+        verify(reply).accept("download failed");
         verify(guildMessageService, never()).importMessages(any(), any());
     }
 
     @Test
-    void onUpload_downloadSucceeds_importsMessages() {
+    void importFile_downloadSucceeds_importsMessages() {
+        givenPropertiesFile();
         InputStream content = new ByteArrayInputStream("a.b=c".getBytes(StandardCharsets.UTF_8));
         when(proxy.download()).thenReturn(CompletableFuture.completedFuture(content));
         when(guildMessageService.importMessages(any(), any())).thenReturn(new ImportResult(1, List.of()));
         when(messageService.getMessage(GUILD_ID, "setup.messages.uploaded", 1)).thenReturn("uploaded");
 
-        messagesCommand.onUpload(event);
+        messageFileService.importFile(GUILD_ID, attachment, reply);
 
-        verify(hook).editOriginal("uploaded");
+        verify(reply).accept("uploaded");
     }
 
     @Test
-    void onUpload_rejectedKeys_areReported() {
+    void importFile_rejectedKeys_areReported() {
+        givenPropertiesFile();
         InputStream content = new ByteArrayInputStream("a.b=c".getBytes(StandardCharsets.UTF_8));
         when(proxy.download()).thenReturn(CompletableFuture.completedFuture(content));
         when(guildMessageService.importMessages(any(), any()))
@@ -108,20 +83,55 @@ class MessagesCommandTest {
         when(messageService.getMessage(GUILD_ID, "setup.messages.uploaded", 0)).thenReturn("uploaded");
         when(messageService.getMessage(GUILD_ID, "setup.messages.rejected", 2, "`a.b`, `c.d`")).thenReturn("rejected");
 
-        messagesCommand.onUpload(event);
+        messageFileService.importFile(GUILD_ID, attachment, reply);
 
-        verify(hook).editOriginal("uploaded\nrejected");
+        verify(reply).accept("uploaded\nrejected");
     }
 
     @Test
-    void onUpload_fileTooLarge_isRejectedWithoutDownload() {
-        when(attachment.getSize()).thenReturn(MessagesCommand.MAX_FILE_SIZE + 1);
+    void importFile_fileTooLarge_isRejectedWithoutDownload() {
+        givenPropertiesFile();
+        when(attachment.getSize()).thenReturn(MessageFileService.MAX_FILE_SIZE + 1);
         when(messageService.getMessage(GUILD_ID, "setup.messages.file_too_large", 64)).thenReturn("too large");
 
-        messagesCommand.onUpload(event);
+        messageFileService.importFile(GUILD_ID, attachment, reply);
 
-        verify(hook).editOriginal("too large");
+        verify(reply).accept("too large");
         verify(proxy, never()).download();
         verify(guildMessageService, never()).importMessages(any(), any());
+    }
+
+    @Test
+    void importFile_wrongExtension_isRejected() {
+        when(attachment.getFileName()).thenReturn("messages.txt");
+        when(messageService.getMessage(GUILD_ID, "setup.messages.invalid_file")).thenReturn("invalid");
+
+        messageFileService.importFile(GUILD_ID, attachment, reply);
+
+        verify(reply).accept("invalid");
+        verify(guildMessageService, never()).importMessages(any(), any());
+    }
+
+    @Test
+    void exportFile_containsCurrentMessages() throws IOException {
+        when(guildMessageService.exportMessages(GUILD_ID)).thenReturn("a.b=c");
+
+        try (FileUpload file = messageFileService.exportFile(GUILD_ID)) {
+            assertThat(file.getName()).isEqualTo("messages.properties");
+            assertThat(new String(file.getData().readAllBytes(), StandardCharsets.UTF_8)).isEqualTo("a.b=c");
+        }
+    }
+
+    @Test
+    void reset_deletesCustomMessages() {
+        when(messageService.getMessage(GUILD_ID, "setup.messages.reset")).thenReturn("reset");
+
+        assertThat(messageFileService.reset(GUILD_ID)).isEqualTo("reset");
+        verify(guildMessageService).deleteAllMessages(GUILD_ID);
+    }
+
+    private void givenPropertiesFile() {
+        when(attachment.getFileName()).thenReturn("messages.properties");
+        lenient().when(attachment.getProxy()).thenReturn(proxy);
     }
 }

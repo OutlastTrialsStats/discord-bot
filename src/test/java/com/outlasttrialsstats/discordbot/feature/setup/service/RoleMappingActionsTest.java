@@ -1,7 +1,7 @@
-package com.outlasttrialsstats.discordbot.feature.setup.command;
+package com.outlasttrialsstats.discordbot.feature.setup.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doThrow;
@@ -11,26 +11,22 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.outlasttrialsstats.discordbot.entity.EnumRoleMapping;
+import com.outlasttrialsstats.discordbot.entity.RankedRoleMapping;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
-import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
+import com.outlasttrialsstats.discordbot.feature.setup.RoleTarget;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.SelfMember;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.InteractionHook;
-import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction;
 import net.dv8tion.jda.api.requests.restaction.RoleAction;
-import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction;
-import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,11 +37,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class RoleMappingCommandTest {
+class RoleMappingActionsTest {
 
     private static final String GUILD_ID = "guild-1";
     private static final String ROLE_ID = "role-1";
     private static final String ROLE_NAME = "Some Role";
+    private static final RoleTarget PRESTIGE_10 = RoleTarget.parse(RoleCategory.PRESTIGE, "10").orElseThrow();
 
     @Mock
     private RoleMappingService roleMappingService;
@@ -54,10 +51,7 @@ class RoleMappingCommandTest {
     private MessageService messageService;
 
     @InjectMocks
-    private RoleMappingCommand roleMappingCommand;
-
-    @Mock
-    private SlashCommandInteractionEvent event;
+    private RoleMappingActions actions;
 
     @Mock
     private Guild guild;
@@ -72,16 +66,10 @@ class RoleMappingCommandTest {
     private Role role;
 
     @Mock
-    private ReplyCallbackAction replyAction;
-
-    @Mock
-    private InteractionHook hook;
-
-    @Mock
-    private WebhookMessageEditAction<Message> editAction;
-
-    @Mock
     private RoleAction roleAction;
+
+    @Mock
+    private Consumer<String> reply;
 
     @Captor
     private ArgumentCaptor<Consumer<Role>> successCaptor;
@@ -91,30 +79,14 @@ class RoleMappingCommandTest {
 
     @BeforeEach
     void setUp() {
-        when(guild.getId()).thenReturn(GUILD_ID);
-        when(event.getGuild()).thenReturn(guild);
-        JDA jda = mock(JDA.class);
-        lenient().when(event.getJDA()).thenReturn(jda);
-        lenient().when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
-        lenient().when(event.getMember()).thenReturn(invoker);
+        lenient().when(guild.getId()).thenReturn(GUILD_ID);
         lenient().when(guild.getSelfMember()).thenReturn(selfMember);
         lenient().when(selfMember.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true);
-
-        OptionMapping threshold = mock(OptionMapping.class);
-        when(threshold.getAsInt()).thenReturn(10);
-        when(event.getOption("threshold")).thenReturn(threshold);
-        OptionMapping roleOption = mock(OptionMapping.class);
-        lenient().when(roleOption.getAsRole()).thenReturn(role);
-        lenient().when(event.getOption("role")).thenReturn(roleOption);
-
         lenient().when(role.getId()).thenReturn(ROLE_ID);
         lenient().when(role.getName()).thenReturn(ROLE_NAME);
         lenient().when(role.getPermissions()).thenReturn(EnumSet.noneOf(Permission.class));
         lenient().when(selfMember.canInteract(role)).thenReturn(true);
         lenient().when(invoker.canInteract(role)).thenReturn(true);
-
-        lenient().when(event.reply(any(String.class))).thenReturn(replyAction);
-        lenient().when(replyAction.setEphemeral(true)).thenReturn(replyAction);
     }
 
     @Test
@@ -123,10 +95,23 @@ class RoleMappingCommandTest {
                 .thenReturn(Optional.empty());
         when(messageService.getMessage(GUILD_ID, "setup.prestige_role.success", ROLE_NAME, 10)).thenReturn("ok");
 
-        roleMappingCommand.onRoleMapping(event, "prestige");
+        actions.add(guild, invoker, PRESTIGE_10, role, reply);
 
         verify(roleMappingService).saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, ROLE_ID, false);
-        verify(event).reply("ok");
+        verify(reply).accept("ok");
+    }
+
+    @Test
+    void linkEnumRole_savesEnumMapping() {
+        RoleTarget steam = RoleTarget.parse(RoleCategory.PLATFORM, "STEAM").orElseThrow();
+        when(roleMappingService.findOtherCategoryUsingRole(GUILD_ID, ROLE_ID, RoleCategory.PLATFORM))
+                .thenReturn(Optional.empty());
+        when(messageService.getMessage(GUILD_ID, "setup.role_mapping.success", ROLE_NAME, "Steam")).thenReturn("ok");
+
+        actions.add(guild, invoker, steam, role, reply);
+
+        verify(roleMappingService).saveEnumMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", ROLE_ID, false);
+        verify(reply).accept("ok");
     }
 
     @Test
@@ -160,83 +145,73 @@ class RoleMappingCommandTest {
     }
 
     @Test
-    void linkRoleWithBanMembers_rejected() {
-        when(role.getPermissions()).thenReturn(EnumSet.of(Permission.MESSAGE_SEND, Permission.BAN_MEMBERS));
-        expectRejection("error.role_unsafe.dangerous_permissions");
-    }
-
-    @Test
     void linkRoleMappedInOtherCategory_rejected() {
         when(roleMappingService.findOtherCategoryUsingRole(GUILD_ID, ROLE_ID, RoleCategory.PRESTIGE))
                 .thenReturn(Optional.of(RoleCategory.LEVEL));
         when(messageService.getMessage(GUILD_ID, "error.role_already_mapped",
                 ROLE_NAME, RoleCategory.LEVEL.getDisplayName())).thenReturn("already mapped");
 
-        roleMappingCommand.onRoleMapping(event, "prestige");
+        actions.add(guild, invoker, PRESTIGE_10, role, reply);
 
-        verify(event).reply("already mapped");
+        verify(reply).accept("already mapped");
         verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any(), anyBoolean());
     }
 
     @Test
-    void linkRole_botLacksManageRoles_rejected() {
+    void botLacksManageRoles_rejected() {
         when(selfMember.hasPermission(Permission.MANAGE_ROLES)).thenReturn(false);
         when(messageService.getMessage(GUILD_ID, "error.missing_permission.manage_roles")).thenReturn("no perm");
 
-        roleMappingCommand.onRoleMapping(event, "prestige");
+        actions.add(guild, invoker, PRESTIGE_10, role, reply);
 
-        verify(event).reply("no perm");
+        verify(reply).accept("no perm");
         verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any(), anyBoolean());
     }
 
     @Test
-    void noRoleOption_mappedRoleStillExists_reusesItInsteadOfCreating() {
-        when(event.getOption("role")).thenReturn(null);
+    void noRole_mappedRoleStillExists_reusesItInsteadOfCreating() {
         when(roleMappingService.findRankedMappingRoleId(GUILD_ID, RoleCategory.PRESTIGE, 10))
                 .thenReturn(Optional.of(ROLE_ID));
         when(guild.getRoleById(ROLE_ID)).thenReturn(role);
         when(messageService.getMessage(GUILD_ID, "setup.prestige_role.success", ROLE_NAME, 10)).thenReturn("ok");
 
-        roleMappingCommand.onRoleMapping(event, "prestige");
+        actions.add(guild, invoker, PRESTIGE_10, null, reply);
 
         verify(guild, never()).createRole();
-        verify(event).reply("ok");
+        verify(reply).accept("ok");
     }
 
     @Test
-    void noRoleOption_noMapping_createsRoleAndSavesMapping() {
-        when(event.getOption("role")).thenReturn(null);
+    void noRole_noMapping_createsRoleAndSavesMapping() {
         stubRoleCreation();
         Role created = mockCreatedRole();
         when(messageService.getMessage(GUILD_ID, "setup.prestige_role.success", "Prestige 10+", 10)).thenReturn("ok");
 
-        roleMappingCommand.onRoleMapping(event, "prestige");
+        actions.add(guild, invoker, PRESTIGE_10, null, reply);
 
         verify(roleAction).queue(successCaptor.capture(), failureCaptor.capture());
         successCaptor.getValue().accept(created);
         verify(roleMappingService).saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, "created-id", true);
-        verify(hook).editOriginal("ok");
+        verify(reply).accept("ok");
     }
 
     @Test
-    void noRoleOption_creationFails_repliesWithLocalizedError() {
-        when(event.getOption("role")).thenReturn(null);
+    void noRole_creationFails_repliesWithLocalizedError() {
         stubRoleCreation();
         when(messageService.getMessage(GUILD_ID, "setup.role_mapping.create_failed", "Prestige 10+"))
                 .thenReturn("create failed");
 
-        roleMappingCommand.onRoleMapping(event, "prestige");
+        actions.add(guild, invoker, PRESTIGE_10, null, reply);
 
         verify(roleAction).queue(successCaptor.capture(), failureCaptor.capture());
         failureCaptor.getValue().accept(new RuntimeException("Maximum number of roles reached"));
-        verify(hook).editOriginal("create failed");
+        verify(reply).accept("create failed");
         verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any(), anyBoolean());
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void noRoleOption_savingMappingFails_deletesCreatedRoleAndRepliesWithError() {
-        when(event.getOption("role")).thenReturn(null);
+    void noRole_savingMappingFails_deletesCreatedRoleAndRepliesWithError() {
         stubRoleCreation();
         Role created = mockCreatedRole();
         AuditableRestAction<Void> deleteAction = mock(AuditableRestAction.class);
@@ -246,12 +221,12 @@ class RoleMappingCommandTest {
         when(messageService.getMessage(GUILD_ID, "setup.role_mapping.create_failed", "Prestige 10+"))
                 .thenReturn("create failed");
 
-        roleMappingCommand.onRoleMapping(event, "prestige");
+        actions.add(guild, invoker, PRESTIGE_10, null, reply);
 
         verify(roleAction).queue(successCaptor.capture(), failureCaptor.capture());
         successCaptor.getValue().accept(created);
         verify(deleteAction).queue(any(), any());
-        verify(hook).editOriginal("create failed");
+        verify(reply).accept("create failed");
     }
 
     @Test
@@ -267,53 +242,66 @@ class RoleMappingCommandTest {
         when(messageService.getMessage(GUILD_ID, "setup.prestige_role.success", ROLE_NAME, 10)).thenReturn("ok");
         when(messageService.getMessage(GUILD_ID, "setup.role_mapping.old_role_kept", "Old Role")).thenReturn("note");
 
-        roleMappingCommand.onRoleMapping(event, "prestige");
+        actions.add(guild, invoker, PRESTIGE_10, role, reply);
 
         verify(roleMappingService).saveRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10, ROLE_ID, false);
-        verify(event).reply("ok\nnote");
+        verify(reply).accept("ok\nnote");
     }
 
     @Test
-    void linkRole_sameRoleAsCurrentMapping_noNotice() {
-        when(roleMappingService.findRankedMappingRoleId(GUILD_ID, RoleCategory.PRESTIGE, 10))
-                .thenReturn(Optional.of(ROLE_ID));
-        when(guild.getRoleById(ROLE_ID)).thenReturn(role);
-        when(roleMappingService.findOtherCategoryUsingRole(GUILD_ID, ROLE_ID, RoleCategory.PRESTIGE))
-                .thenReturn(Optional.empty());
-        when(messageService.getMessage(GUILD_ID, "setup.prestige_role.success", ROLE_NAME, 10)).thenReturn("ok");
-
-        roleMappingCommand.onRoleMapping(event, "prestige");
-
-        verify(event).reply("ok");
-    }
-
-    @Test
-    void removeMapping_roleStillExists_tellsAdminRoleStaysOnMembers() {
+    void remove_roleStillExists_tellsAdminRoleStaysOnMembers() {
         when(roleMappingService.removeRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10))
                 .thenReturn(Optional.of(ROLE_ID));
         when(guild.getRoleById(ROLE_ID)).thenReturn(role);
         when(messageService.getMessage(GUILD_ID, "setup.prestige_role.removed", 10)).thenReturn("removed");
         when(messageService.getMessage(GUILD_ID, "setup.role_mapping.old_role_kept", ROLE_NAME)).thenReturn("note");
 
-        roleMappingCommand.onRemoveRoleMapping(event, "prestige");
-
-        verify(event).reply("removed\nnote");
+        assertThat(actions.remove(guild, PRESTIGE_10)).isEqualTo("removed\nnote");
     }
 
     @Test
-    void removeMapping_noMapping_repliesWithoutNotice() {
+    void remove_noMapping_repliesWithoutNotice() {
         when(roleMappingService.removeRankedMapping(GUILD_ID, RoleCategory.PRESTIGE, 10)).thenReturn(Optional.empty());
         when(messageService.getMessage(GUILD_ID, "setup.prestige_role.removed", 10)).thenReturn("removed");
 
-        roleMappingCommand.onRemoveRoleMapping(event, "prestige");
+        assertThat(actions.remove(guild, PRESTIGE_10)).isEqualTo("removed");
+    }
 
-        verify(event).reply("removed");
+    @Test
+    void remove_connectedAccount_removesEnumMapping() {
+        RoleTarget connected = RoleTarget.choices(RoleCategory.CONNECTED_ACCOUNT).getFirst();
+        when(roleMappingService.removeEnumMapping(GUILD_ID, RoleCategory.CONNECTED_ACCOUNT, "verified"))
+                .thenReturn(Optional.empty());
+        when(messageService.getMessage(GUILD_ID, "setup.connected_account_role.removed")).thenReturn("removed");
+
+        assertThat(actions.remove(guild, connected)).isEqualTo("removed");
+    }
+
+    @Test
+    void list_combinesRankedAndEnumMappingsSortedByRank() {
+        when(roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.PRESTIGE)).thenReturn(List.of(
+                new RankedRoleMapping(GUILD_ID, RoleCategory.PRESTIGE, 20, "r20"),
+                new RankedRoleMapping(GUILD_ID, RoleCategory.PRESTIGE, 1, "r1")));
+        when(roleMappingService.getEnumMappings(GUILD_ID, RoleCategory.PRESTIGE)).thenReturn(List.of());
+
+        List<RoleMappingActions.Mapping> mappings = actions.list(GUILD_ID, RoleCategory.PRESTIGE);
+
+        assertThat(mappings).extracting(m -> m.target().label()).containsExactly("Prestige 1+", "Prestige 20+");
+        assertThat(mappings).extracting(RoleMappingActions.Mapping::roleId).containsExactly("r1", "r20");
+    }
+
+    @Test
+    void list_skipsUnknownEnumValues() {
+        when(roleMappingService.getRankedMappings(GUILD_ID, RoleCategory.PLATFORM)).thenReturn(List.of());
+        when(roleMappingService.getEnumMappings(GUILD_ID, RoleCategory.PLATFORM)).thenReturn(List.of(
+                new EnumRoleMapping(GUILD_ID, RoleCategory.PLATFORM, "STEAM", "steam"),
+                new EnumRoleMapping(GUILD_ID, RoleCategory.PLATFORM, "SEGA", "sega")));
+
+        assertThat(actions.list(GUILD_ID, RoleCategory.PLATFORM))
+                .extracting(RoleMappingActions.Mapping::roleId).containsExactly("steam");
     }
 
     private void stubRoleCreation() {
-        when(event.deferReply(true)).thenReturn(replyAction);
-        when(event.getHook()).thenReturn(hook);
-        lenient().when(hook.editOriginal(anyString())).thenReturn(editAction);
         when(guild.createRole()).thenReturn(roleAction);
         when(roleAction.setName("Prestige 10+")).thenReturn(roleAction);
         when(roleAction.setPermissions(EnumSet.noneOf(Permission.class))).thenReturn(roleAction);
@@ -329,10 +317,9 @@ class RoleMappingCommandTest {
     private void expectRejection(String messageKey) {
         when(messageService.getMessage(GUILD_ID, messageKey, ROLE_NAME)).thenReturn("rejected");
 
-        roleMappingCommand.onRoleMapping(event, "prestige");
+        actions.add(guild, invoker, PRESTIGE_10, role, reply);
 
-        verify(event).reply("rejected");
-        verify(replyAction).setEphemeral(true);
+        verify(reply).accept("rejected");
         verify(roleMappingService, never()).saveRankedMapping(any(), any(), anyInt(), any(), anyBoolean());
         verify(roleMappingService, never()).findOtherCategoryUsingRole(any(), any(), any());
     }

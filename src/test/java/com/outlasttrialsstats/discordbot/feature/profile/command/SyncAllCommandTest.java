@@ -20,7 +20,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -73,13 +72,10 @@ class SyncAllCommandTest {
     void setUp() {
         command = new SyncAllCommand(guildSyncService, memberLoader, messageService, submitted::add, clock);
 
-        var jda = mock(JDA.class);
         var selfMember = mock(SelfMember.class);
         replyAction = mock(ReplyCallbackAction.class);
-        when(event.getGuild()).thenReturn(guild);
+        lenient().when(event.getGuild()).thenReturn(guild);
         when(guild.getId()).thenReturn(GUILD_ID);
-        when(event.getJDA()).thenReturn(jda);
-        when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
         when(guild.getSelfMember()).thenReturn(selfMember);
         when(selfMember.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true);
         lenient().when(clock.instant()).thenReturn(NOW);
@@ -117,8 +113,7 @@ class SyncAllCommandTest {
 
         command.onSyncAll(event);
 
-        verify(event).reply("sync.in_progress");
-        verify(event, never()).deferReply(anyBoolean());
+        verify(hook).editOriginal("sync.in_progress");
         verify(guildSyncService, never()).finishGuildSync(any());
         assertThat(submitted).isEmpty();
     }
@@ -132,7 +127,7 @@ class SyncAllCommandTest {
 
         String availableAt = String.valueOf(NOW.plus(SyncAllCommand.COOLDOWN).getEpochSecond());
         verify(messageService).getMessage(GUILD_ID, "sync.cooldown", availableAt);
-        verify(event).reply("sync.cooldown");
+        verify(hook).editOriginal("sync.cooldown");
         verify(guildSyncService, times(2)).finishGuildSync(GUILD_ID);
         assertThat(submitted).hasSize(1);
     }
@@ -156,7 +151,7 @@ class SyncAllCommandTest {
         command.onSyncAll(event);
 
         assertThat(submitted).hasSize(2);
-        verify(event, never()).reply("sync.cooldown");
+        verify(hook, never()).editOriginal("sync.cooldown");
     }
 
     @Test
@@ -195,6 +190,19 @@ class SyncAllCommandTest {
         verify(hook).editOriginal("sync.failed");
         verify(memberLoader, never()).load(any());
         verify(guildSyncService).finishGuildSync(GUILD_ID);
+    }
+
+    @Test
+    void start_reportsStartAndResultThroughCallback() {
+        var members = List.of(mock(Member.class));
+        when(memberLoader.load(guild)).thenReturn(members);
+        when(guildSyncService.syncMembers(guild, members)).thenReturn(new GuildSyncResult(1, 0, 0, 0));
+        List<String> replies = new ArrayList<>();
+
+        command.start(guild, replies::add);
+        submitted.getFirst().run();
+
+        assertThat(replies).containsExactly("sync.starting", "sync.completed");
     }
 
     private void runSuccessfulSync() {

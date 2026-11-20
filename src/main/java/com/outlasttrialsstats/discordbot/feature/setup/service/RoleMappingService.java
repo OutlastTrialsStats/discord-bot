@@ -6,6 +6,7 @@ import com.outlasttrialsstats.discordbot.feature.setup.RoleCategory;
 import com.outlasttrialsstats.discordbot.repository.EnumRoleMappingRepository;
 import com.outlasttrialsstats.discordbot.repository.RankedRoleMappingRepository;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +101,13 @@ public class RoleMappingService {
         return merged.entrySet().stream()
                 .map(e -> new MappedRole(e.getKey(), e.getValue()))
                 .toList();
+    }
+
+    public Map<RoleCategory, Integer> countByCategory(String guildId) {
+        Map<RoleCategory, Integer> counts = new EnumMap<>(RoleCategory.class);
+        enumRoleRepo.findByGuildId(guildId).forEach(m -> counts.merge(m.getCategory(), 1, Integer::sum));
+        rankedRoleRepo.findByGuildId(guildId).forEach(m -> counts.merge(m.getCategory(), 1, Integer::sum));
+        return counts;
     }
 
     public record MappedRole(String roleId, boolean botCreated) {

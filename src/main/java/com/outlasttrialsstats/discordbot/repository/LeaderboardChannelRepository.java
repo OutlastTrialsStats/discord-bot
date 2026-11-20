@@ -13,6 +13,11 @@ public interface LeaderboardChannelRepository extends JpaRepository<LeaderboardC
 
     List<LeaderboardChannel> findByGuildId(String guildId);
 
+    long countByGuildId(String guildId);
+
+    @Query("SELECT DISTINCT lc FROM LeaderboardChannel lc LEFT JOIN FETCH lc.messageIds WHERE lc.guildId = :guildId")
+    List<LeaderboardChannel> findByGuildIdWithMessageIds(@Param("guildId") String guildId);
+
     Optional<LeaderboardChannel> findByGuildIdAndCategory(String guildId, StatisticType category);
 
     @Query("SELECT lc FROM LeaderboardChannel lc JOIN FETCH lc.messageIds")

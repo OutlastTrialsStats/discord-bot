@@ -11,7 +11,8 @@ A Discord bot that automatically assigns roles, syncs nicknames, and displays le
 - **Roles from stats:** assign roles by prestige, level, reagent rig skill, invasion ranking, invasion matches and points, platform, account type or a linked Outlast Trials Stats account
 - **Auto-nicknames:** verified members get their in-game name as server nickname
 - **Leaderboards:** view any stat category with `/leaderboard`, or post auto-updating leaderboards in a channel
-- **Community events:** auto-updating progress message and role pings when a phase is reached or about to be reached
+- **Community events:** check the progress with `/event`, post an auto-updating progress message and ping roles when a phase is reached or about to be reached
+- **One setup panel:** admins configure everything with `/setup`, using buttons and menus instead of long commands
 - **Languages and custom messages:** English or Deutsch, and every bot message can be overridden per server
 
 See [docs/commands.md](docs/commands.md) for all commands.

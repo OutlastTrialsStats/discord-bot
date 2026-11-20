@@ -1,21 +1,17 @@
 package com.outlasttrialsstats.discordbot.command;
 
-import com.outlasttrialsstats.discordbot.feature.communityevent.command.CommunityEventSetupCommand;
+import com.outlasttrialsstats.discordbot.feature.communityevent.command.CommunityEventCommand;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.command.LeaderboardCommand;
-import com.outlasttrialsstats.discordbot.feature.leaderboard.command.LeaderboardSetupCommand;
 import com.outlasttrialsstats.discordbot.feature.profile.command.ProfileCommand;
 import com.outlasttrialsstats.discordbot.feature.profile.command.SyncAllCommand;
-import com.outlasttrialsstats.discordbot.feature.setup.command.DeleteCommand;
-import com.outlasttrialsstats.discordbot.feature.setup.command.LanguageCommand;
-import com.outlasttrialsstats.discordbot.feature.setup.command.MessagesCommand;
-import com.outlasttrialsstats.discordbot.feature.setup.command.NicknameCommand;
-import com.outlasttrialsstats.discordbot.feature.setup.command.ToggleUserCommandVisibility;
-import com.outlasttrialsstats.discordbot.feature.setup.command.RoleMappingCommand;
 import com.outlasttrialsstats.discordbot.feature.setup.command.StartBasicCommand;
+import com.outlasttrialsstats.discordbot.feature.setup.panel.PanelAction;
+import com.outlasttrialsstats.discordbot.feature.setup.panel.SetupPanel;
 import java.awt.Color;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -31,24 +27,18 @@ public class CommandRouter extends ListenerAdapter {
 
     private final ProfileCommand profileCommand;
     private final SyncAllCommand syncAllCommand;
-    private final DeleteCommand deleteCommand;
-    private final LanguageCommand languageCommand;
-    private final MessagesCommand messagesCommand;
-    private final RoleMappingCommand roleMappingCommand;
     private final StartBasicCommand startBasicCommand;
     private final LeaderboardCommand leaderboardCommand;
-    private final NicknameCommand nicknameCommand;
-    private final LeaderboardSetupCommand leaderboardSetupCommand;
-    private final ToggleUserCommandVisibility toggleUserCommandVisibility;
-    private final CommunityEventSetupCommand communityEventSetupCommand;
+    private final CommunityEventCommand communityEventCommand;
+    private final SetupPanel setupPanel;
 
     @Override
     public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
         try {
-            if ("setup".equals(event.getName()) && CommunityEventSetupCommand.GROUP.equals(event.getSubcommandGroup())) {
-                communityEventSetupCommand.onAutoComplete(event);
-            } else if ("category".equals(event.getFocusedOption().getName())
-                    && ("leaderboard".equals(event.getName()) || "leaderboard".equals(event.getSubcommandName()))) {
+            if (CommunityEventCommand.NAME.equals(event.getName())) {
+                communityEventCommand.onAutoComplete(event);
+            } else if ("leaderboard".equals(event.getName())
+                    && "category".equals(event.getFocusedOption().getName())) {
                 leaderboardCommand.onCategoryAutoComplete(event);
             }
         } catch (Exception e) {
@@ -63,39 +53,13 @@ public class CommandRouter extends ListenerAdapter {
                 case "sync-profile" -> profileCommand.onProfileUpdate(event);
                 case "sync-all" -> syncAllCommand.onSyncAll(event);
                 case "leaderboard" -> leaderboardCommand.onLeaderboard(event);
-                case "setup" -> routeSetup(event);
+                case CommunityEventCommand.NAME -> communityEventCommand.onEvent(event);
+                case "setup" -> setupPanel.open(event);
                 default -> {}
             }
         } catch (Exception e) {
             log.error("Command execution failed: {}", event.getFullCommandName(), e);
             replyError(event);
-        }
-    }
-
-    private void routeSetup(SlashCommandInteractionEvent event) {
-        String subcommandGroup = event.getSubcommandGroup();
-        String subcommand = event.getSubcommandName();
-        if (subcommand == null) return;
-
-        if (CommunityEventSetupCommand.GROUP.equals(subcommandGroup)) {
-            communityEventSetupCommand.onSubcommand(event, subcommand);
-        } else if ("role-mapping".equals(subcommandGroup)) {
-            roleMappingCommand.onRoleMapping(event, subcommand);
-        } else if ("remove-role-mapping".equals(subcommandGroup)) {
-            roleMappingCommand.onRemoveRoleMapping(event, subcommand);
-        } else {
-            switch (subcommand) {
-                case "delete" -> deleteCommand.onDelete(event);
-                case "language" -> languageCommand.onLanguage(event);
-                case "leaderboard" -> leaderboardSetupCommand.onSetupLeaderboard(event);
-                case "messages-upload" -> messagesCommand.onUpload(event);
-                case "messages-download" -> messagesCommand.onDownload(event);
-                case "messages-reset" -> messagesCommand.onReset(event);
-                case "nickname" -> nicknameCommand.onNickname(event);
-                case "toggle-user-command-visibility" -> toggleUserCommandVisibility.onToggleUserCommandVisibility(event);
-                case "start" -> startBasicCommand.onStartBasic(event);
-                default -> {}
-            }
         }
     }
 
@@ -107,6 +71,8 @@ public class CommandRouter extends ListenerAdapter {
                 leaderboardCommand.onButton(event);
             } else if (componentId.startsWith(StartBasicCommand.COMPONENT_PREFIX)) {
                 startBasicCommand.onButton(event);
+            } else if (PanelAction.matches(componentId)) {
+                setupPanel.onButton(event);
             }
         } catch (Exception e) {
             log.error("Button interaction failed: {}", componentId, e);
@@ -119,6 +85,8 @@ public class CommandRouter extends ListenerAdapter {
         try {
             if (StartBasicCommand.CATEGORIES.equals(componentId)) {
                 startBasicCommand.onCategorySelect(event);
+            } else if (PanelAction.matches(componentId)) {
+                setupPanel.onStringSelect(event);
             }
         } catch (Exception e) {
             log.error("Select menu interaction failed: {}", componentId, e);
@@ -131,9 +99,23 @@ public class CommandRouter extends ListenerAdapter {
         try {
             if (StartBasicCommand.EVENT_CHANNEL.equals(componentId)) {
                 startBasicCommand.onEventChannelSelect(event);
+            } else if (PanelAction.matches(componentId)) {
+                setupPanel.onEntitySelect(event);
             }
         } catch (Exception e) {
             log.error("Select menu interaction failed: {}", componentId, e);
+        }
+    }
+
+    @Override
+    public void onModalInteraction(ModalInteractionEvent event) {
+        String modalId = event.getModalId();
+        try {
+            if (PanelAction.matches(modalId)) {
+                setupPanel.onModal(event);
+            }
+        } catch (Exception e) {
+            log.error("Modal interaction failed: {}", modalId, e);
         }
     }
 

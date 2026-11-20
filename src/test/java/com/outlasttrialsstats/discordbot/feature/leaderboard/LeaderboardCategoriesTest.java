@@ -58,6 +58,29 @@ class LeaderboardCategoriesTest {
     }
 
     @Test
+    void groupsCoverEveryCategoryAndFitIntoASelectMenu() {
+        java.util.Set<StatisticType> grouped = new java.util.HashSet<>();
+        for (LeaderboardCategories.Group group : LeaderboardCategories.Group.values()) {
+            java.util.List<StatisticType> types = LeaderboardCategories.inGroup(group);
+            assertThat(types).isNotEmpty().hasSizeLessThanOrEqualTo(25);
+            grouped.addAll(types);
+        }
+        assertThat(grouped).containsExactlyInAnyOrder(StatisticType.values());
+    }
+
+    @Test
+    void groupsByCategoryPrefix() {
+        assertThat(LeaderboardCategories.groupOf(StatisticType.ESCALATION_RUNS_COMPLETED))
+                .isEqualTo(LeaderboardCategories.Group.ESCALATION);
+        assertThat(LeaderboardCategories.groupOf(StatisticType.INVASION_POINTS))
+                .isEqualTo(LeaderboardCategories.Group.INVASION);
+        assertThat(LeaderboardCategories.groupOf(StatisticType.TENNIS_RATING))
+                .isEqualTo(LeaderboardCategories.Group.MINIGAMES);
+        assertThat(LeaderboardCategories.groupOf(StatisticType.DEATHS))
+                .isEqualTo(LeaderboardCategories.Group.TRIALS);
+    }
+
+    @Test
     void decodesTheEscalationRunScore() {
         long score = 3400L * 4_194_304 + (1_048_576 - 754);
 

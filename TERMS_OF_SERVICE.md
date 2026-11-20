@@ -42,7 +42,7 @@ No Discord data is sent to external services other than the Discord User ID used
 
 - Server data is stored as long as the Bot remains in your server.
 - When the Bot is removed from a server, all associated server data (role mappings, custom messages, language settings) is automatically deleted.
-- Role mappings and custom messages can also be manually deleted at any time using `/setup delete` and `/setup messages-reset`.
+- Role mappings and custom messages can also be manually deleted at any time in the `/setup` panel (**General** → **Delete bot roles**, **Messages** → **Reset to defaults**).
 
 ## 5. Required Permissions
 

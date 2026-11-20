@@ -1,4 +1,4 @@
-package com.outlasttrialsstats.discordbot.feature.leaderboard.command;
+package com.outlasttrialsstats.discordbot.feature.leaderboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,27 +16,17 @@ import static org.mockito.Mockito.when;
 
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.StatisticType;
-import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
-import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.List;
 import java.util.Optional;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.SelfMember;
-import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
-import net.dv8tion.jda.api.entities.channel.unions.GuildChannelUnion;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.InteractionHook;
-import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
-import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction;
-import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class LeaderboardSetupCommandTest {
+class LeaderboardSetupServiceTest {
 
     private static final String GUILD_ID = "guild-1";
     private static final StatisticType CATEGORY = StatisticType.COMPLETED_TRIALS;
@@ -57,96 +47,49 @@ class LeaderboardSetupCommandTest {
     private MessageService messageService;
 
     @Mock
-    private SlashCommandInteractionEvent event;
-
-    @Mock
     private Guild guild;
 
     @Mock
     private SelfMember selfMember;
 
     @Mock
-    private GuildChannelUnion channelUnion;
-
-    @Mock
     private StandardGuildMessageChannel channel;
 
-    @Mock
-    private InteractionHook hook;
-
-    private LeaderboardSetupCommand command;
+    private LeaderboardSetupService setupService;
 
     @BeforeEach
     void setUp() {
-        command = new LeaderboardSetupCommand(leaderboardService, messageService);
-
-        var jda = mock(JDA.class);
-        var channelOption = mock(OptionMapping.class);
-        when(event.getGuild()).thenReturn(guild);
+        setupService = new LeaderboardSetupService(leaderboardService, messageService);
         when(guild.getId()).thenReturn(GUILD_ID);
-        when(event.getJDA()).thenReturn(jda);
-        when(jda.getGuildById(GUILD_ID)).thenReturn(guild);
-        when(event.deferReply(true)).thenReturn(mock(ReplyCallbackAction.class));
-        when(event.getHook()).thenReturn(hook);
-        when(hook.editOriginal(anyString())).thenReturn(mock(WebhookMessageEditAction.class));
-        when(event.getOption("channel")).thenReturn(channelOption);
-        when(channelOption.getAsChannel()).thenReturn(channelUnion);
-        lenient().when(channelUnion.asStandardGuildMessageChannel()).thenReturn(channel);
         lenient().when(guild.getSelfMember()).thenReturn(selfMember);
+        lenient().when(channel.getId()).thenReturn(CHANNEL_ID);
         lenient().when(messageService.getMessage(eq(GUILD_ID), anyString(), any(Object[].class)))
                 .thenAnswer(inv -> inv.getArgument(1));
     }
 
     @Test
-    void onSetupLeaderboard_invalidChannelType_editsDeferredReply() {
-        when(channelUnion.getType()).thenReturn(ChannelType.VOICE);
+    void create_missingChannelPermission_rejectedWithoutFetching() {
+        when(selfMember.hasPermission(channel, LeaderboardSetupService.REQUIRED_PERMISSIONS)).thenReturn(false);
 
-        command.onSetupLeaderboard(event);
+        assertThat(setupService.create(guild, channel, CATEGORY, 3)).isEqualTo("error.missing_permission.channel_write");
 
-        var order = inOrder(event, hook);
-        order.verify(event).deferReply(true);
-        order.verify(hook).editOriginal("error.invalid_channel_type");
-        verify(event, never()).reply(anyString());
-    }
-
-    @Test
-    void onSetupLeaderboard_missingChannelPermission_editsDeferredReply() {
-        when(channelUnion.getType()).thenReturn(ChannelType.TEXT);
-        when(selfMember.hasPermission(channel, LeaderboardSetupCommand.REQUIRED_PERMISSIONS)).thenReturn(false);
-
-        command.onSetupLeaderboard(event);
-
-        verify(event).deferReply(true);
-        verify(hook).editOriginal("error.missing_permission.channel_write");
-        assertThat(LeaderboardSetupCommand.REQUIRED_PERMISSIONS).contains(
+        assertThat(LeaderboardSetupService.REQUIRED_PERMISSIONS).contains(
                 Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND,
                 Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_HISTORY);
         verify(leaderboardService, never()).fetchLeaderboard(any(), anyInt());
     }
 
     @Test
-    void onSetupLeaderboard_fetchFails_editsDeferredReplyWithError() {
-        when(channelUnion.getType()).thenReturn(ChannelType.TEXT);
-        when(selfMember.hasPermission(channel, LeaderboardSetupCommand.REQUIRED_PERMISSIONS)).thenReturn(true);
-        var categoryOption = mock(OptionMapping.class);
-        var pagesOption = mock(OptionMapping.class);
-        when(event.getOption("category")).thenReturn(categoryOption);
-        when(categoryOption.getAsString()).thenReturn(CATEGORY.getValue());
-        when(event.getOption("pages")).thenReturn(pagesOption);
-        when(pagesOption.getAsInt()).thenReturn(3);
+    void create_fetchFails_repliesWithError() {
+        allowChannel();
         when(leaderboardService.fetchLeaderboard(CATEGORY, 1)).thenReturn(Optional.empty());
 
-        command.onSetupLeaderboard(event);
-
-        var order = inOrder(event, leaderboardService, hook);
-        order.verify(event).deferReply(true);
-        order.verify(leaderboardService).fetchLeaderboard(CATEGORY, 1);
-        order.verify(hook).editOriginal("leaderboard.error");
+        assertThat(setupService.create(guild, channel, CATEGORY, 3)).isEqualTo("leaderboard.error");
     }
 
     @Test
-    void onSetupLeaderboard_existingBinding_postsAndSavesBeforeDeletingOldMessages() {
-        stubValidRequest(2);
+    void create_existingBinding_postsAndSavesBeforeDeletingOldMessages() {
+        allowChannel();
         stubPages(2);
         when(leaderboardService.saveBinding(GUILD_ID, CATEGORY, CHANNEL_ID, List.of("new-1", "new-2"), 2))
                 .thenReturn(Optional.of(new LeaderboardBinding(
@@ -155,19 +98,19 @@ class LeaderboardSetupCommandTest {
         when(guild.getChannelById(StandardGuildMessageChannel.class, "old-channel")).thenReturn(oldChannel);
         when(oldChannel.deleteMessageById(anyString())).thenReturn(deleteAction());
 
-        command.onSetupLeaderboard(event);
+        String reply = setupService.create(guild, channel, CATEGORY, 2);
 
-        var order = inOrder(channel, leaderboardService, oldChannel, hook);
+        var order = inOrder(channel, leaderboardService, oldChannel);
         order.verify(channel, times(2)).sendMessageEmbeds(any(MessageEmbed.class));
         order.verify(leaderboardService).saveBinding(GUILD_ID, CATEGORY, CHANNEL_ID, List.of("new-1", "new-2"), 2);
         order.verify(oldChannel).deleteMessageById("old-1");
         order.verify(oldChannel).deleteMessageById("old-2");
-        order.verify(hook).editOriginal("setup.leaderboard.success");
+        assertThat(reply).isEqualTo("setup.leaderboard.success");
     }
 
     @Test
-    void onSetupLeaderboard_postFails_deletesPartialPostsAndKeepsOldBinding() {
-        stubValidRequest(2);
+    void create_postFails_deletesPartialPostsAndKeepsOldBinding() {
+        allowChannel();
         MessageEmbed embed = mock(MessageEmbed.class);
         DiscordLeaderboardResponse response = responseWithPages(2);
         when(leaderboardService.fetchLeaderboard(CATEGORY, 1)).thenReturn(Optional.of(response));
@@ -181,31 +124,29 @@ class LeaderboardSetupCommandTest {
         when(guild.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
         when(channel.deleteMessageById(anyString())).thenReturn(deleteAction());
 
-        command.onSetupLeaderboard(event);
+        assertThat(setupService.create(guild, channel, CATEGORY, 2)).isEqualTo("setup.leaderboard.post_failed");
 
         verify(channel).deleteMessageById("new-1");
         verify(leaderboardService, never()).saveBinding(any(), any(), any(), any(), anyInt());
-        verify(hook).editOriginal("setup.leaderboard.post_failed");
     }
 
     @Test
-    void onSetupLeaderboard_saveFails_deletesPostedMessages() {
-        stubValidRequest(1);
+    void create_saveFails_deletesPostedMessages() {
+        allowChannel();
         stubPages(1);
         when(leaderboardService.saveBinding(any(), any(), any(), any(), anyInt()))
                 .thenThrow(new IllegalStateException("db down"));
         when(guild.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
         when(channel.deleteMessageById(anyString())).thenReturn(deleteAction());
 
-        command.onSetupLeaderboard(event);
+        assertThat(setupService.create(guild, channel, CATEGORY, 1)).isEqualTo("setup.leaderboard.post_failed");
 
         verify(channel).deleteMessageById("new-1");
-        verify(hook).editOriginal("setup.leaderboard.post_failed");
     }
 
     @Test
-    void onSetupLeaderboard_zeroTotalPages_stillPostsOnePage() {
-        stubValidRequest(3);
+    void create_zeroTotalPages_stillPostsOnePage() {
+        allowChannel();
         DiscordLeaderboardResponse response = responseWithPages(0);
         when(leaderboardService.fetchLeaderboard(CATEGORY, 1)).thenReturn(Optional.of(response));
         MessageEmbed embed = mock(MessageEmbed.class);
@@ -216,26 +157,38 @@ class LeaderboardSetupCommandTest {
         when(leaderboardService.saveBinding(GUILD_ID, CATEGORY, CHANNEL_ID, List.of("new-1"), 1))
                 .thenReturn(Optional.empty());
 
-        command.onSetupLeaderboard(event);
+        assertThat(setupService.create(guild, channel, CATEGORY, 3)).isEqualTo("setup.leaderboard.success");
 
         verify(channel).sendMessageEmbeds(embed);
         verify(leaderboardService).saveBinding(GUILD_ID, CATEGORY, CHANNEL_ID, List.of("new-1"), 1);
-        verify(hook).editOriginal("setup.leaderboard.success");
     }
 
-    private void stubValidRequest(int pages) {
-        when(channelUnion.getType()).thenReturn(ChannelType.TEXT);
-        when(selfMember.hasPermission(channel, LeaderboardSetupCommand.REQUIRED_PERMISSIONS)).thenReturn(true);
-        lenient().when(channel.getId()).thenReturn(CHANNEL_ID);
-        var categoryOption = mock(OptionMapping.class);
-        var pagesOption = mock(OptionMapping.class);
-        when(event.getOption("category")).thenReturn(categoryOption);
-        when(categoryOption.getAsString()).thenReturn(CATEGORY.getValue());
-        when(event.getOption("pages")).thenReturn(pagesOption);
-        when(pagesOption.getAsInt()).thenReturn(pages);
+    @Test
+    void remove_existingBinding_deletesMessages() {
+        when(leaderboardService.removeBinding(GUILD_ID, 7L)).thenReturn(Optional.of(new LeaderboardBinding(
+                7L, GUILD_ID, CATEGORY, CHANNEL_ID, List.of("m-1", "m-2"), 2)));
+        when(guild.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
+        when(channel.deleteMessageById(anyString())).thenReturn(deleteAction());
+
+        assertThat(setupService.remove(guild, 7L)).isEqualTo("setup.leaderboard.remove.success");
+
+        verify(channel).deleteMessageById("m-1");
+        verify(channel).deleteMessageById("m-2");
     }
 
-    /** Stubs {@code count} pages; page n is posted as message "new-n". */
+    @Test
+    void remove_unknownBinding_repliesNothing() {
+        when(leaderboardService.removeBinding(GUILD_ID, 7L)).thenReturn(Optional.empty());
+
+        assertThat(setupService.remove(guild, 7L)).isEqualTo("setup.leaderboard.remove.nothing");
+
+        verify(guild, never()).getChannelById(eq(StandardGuildMessageChannel.class), anyString());
+    }
+
+    private void allowChannel() {
+        when(selfMember.hasPermission(channel, LeaderboardSetupService.REQUIRED_PERMISSIONS)).thenReturn(true);
+    }
+
     private void stubPages(int count) {
         DiscordLeaderboardResponse response = responseWithPages(count);
         for (int page = 1; page <= count; page++) {

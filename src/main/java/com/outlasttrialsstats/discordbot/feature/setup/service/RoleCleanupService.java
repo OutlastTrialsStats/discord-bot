@@ -1,48 +1,41 @@
-package com.outlasttrialsstats.discordbot.feature.setup.command;
+package com.outlasttrialsstats.discordbot.feature.setup.service;
 
 import com.outlasttrialsstats.discordbot.feature.setup.RoleSafety;
-import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService;
 import com.outlasttrialsstats.discordbot.feature.setup.service.RoleMappingService.MappedRole;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.InteractionHook;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class DeleteCommand {
+public class RoleCleanupService {
 
     private final RoleMappingService roleMappingService;
     private final MessageService messageService;
 
-    public void onDelete(SlashCommandInteractionEvent event) {
-        String guildId = event.getGuild().getId();
-        Guild guild = event.getJDA().getGuildById(guildId);
+    public void deleteAll(Guild guild, Consumer<String> reply) {
+        String guildId = guild.getId();
 
         if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
-            event.reply(messageService.getMessage(guildId, "error.missing_permission.manage_roles"))
-                    .setEphemeral(true).queue();
+            reply.accept(messageService.getMessage(guildId, "error.missing_permission.manage_roles"));
             return;
         }
-
-        event.deferReply(true).queue();
-        InteractionHook hook = event.getHook();
 
         List<MappedRole> mappedRoles = roleMappingService.getMappedRoles(guildId);
 
         if (mappedRoles.isEmpty()) {
-            hook.editOriginal(messageService.getMessage(guildId, "setup.delete.no_roles")).queue();
+            reply.accept(messageService.getMessage(guildId, "setup.delete.no_roles"));
             return;
         }
 
@@ -56,8 +49,8 @@ public class DeleteCommand {
         Runnable taskDone = () -> {
             if (pending.decrementAndGet() == 0) {
                 removeMappings(guildId, removableRoleIds);
-                hook.editOriginal(messageService.getMessage(guildId, "setup.delete.completed",
-                        deleted.get(), unlinked.get(), failed.get())).queue();
+                reply.accept(messageService.getMessage(guildId, "setup.delete.completed",
+                        deleted.get(), unlinked.get(), failed.get()));
             }
         };
 

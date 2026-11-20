@@ -1,24 +1,22 @@
-package com.outlasttrialsstats.discordbot.feature.setup.command;
+package com.outlasttrialsstats.discordbot.feature.setup.service;
 
-import com.outlasttrialsstats.discordbot.feature.setup.service.GuildMessageService;
 import com.outlasttrialsstats.discordbot.feature.setup.service.GuildMessageService.ImportResult;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.Message.Attachment;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.utils.FileUpload;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class MessagesCommand {
+public class MessageFileService {
 
     static final int MAX_FILE_SIZE = 64 * 1024;
     private static final int MAX_REJECTED_KEYS_LENGTH = 1500;
@@ -26,21 +24,14 @@ public class MessagesCommand {
     private final GuildMessageService guildMessageService;
     private final MessageService messageService;
 
-    public void onUpload(SlashCommandInteractionEvent event) {
-        String guildId = event.getGuild().getId();
-        Attachment file = event.getOption("file").getAsAttachment();
-
-        event.deferReply(true).queue();
-        InteractionHook hook = event.getHook();
-
+    public void importFile(String guildId, Attachment file, Consumer<String> reply) {
         if (!file.getFileName().endsWith(".properties")) {
-            hook.editOriginal(messageService.getMessage(guildId, "setup.messages.invalid_file")).queue();
+            reply.accept(messageService.getMessage(guildId, "setup.messages.invalid_file"));
             return;
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            hook.editOriginal(messageService.getMessage(guildId, "setup.messages.file_too_large", MAX_FILE_SIZE / 1024))
-                    .queue();
+            reply.accept(messageService.getMessage(guildId, "setup.messages.file_too_large", MAX_FILE_SIZE / 1024));
             return;
         }
 
@@ -53,14 +44,14 @@ public class MessagesCommand {
 
                 log.info("Guild {} imported {} custom messages, rejected {}", guildId, result.updated(),
                         result.rejectedKeys().size());
-                hook.editOriginal(buildUploadReply(guildId, result)).queue();
+                reply.accept(buildUploadReply(guildId, result));
             } catch (Exception e) {
                 log.error("Failed to import messages for guild {}: {}", guildId, e.getMessage());
-                hook.editOriginal(messageService.getMessage(guildId, "setup.messages.upload_error")).queue();
+                reply.accept(messageService.getMessage(guildId, "setup.messages.upload_error"));
             }
         }).exceptionally(error -> {
             log.warn("Failed to download messages file for guild {}: {}", guildId, error.getMessage());
-            hook.editOriginal(messageService.getMessage(guildId, "setup.messages.download_error")).queue();
+            reply.accept(messageService.getMessage(guildId, "setup.messages.download_error"));
             return null;
         });
     }
@@ -90,27 +81,14 @@ public class MessagesCommand {
         return sb.toString();
     }
 
-    public void onDownload(SlashCommandInteractionEvent event) {
-        String guildId = event.getGuild().getId();
-
-        event.deferReply(true).queue();
-        InteractionHook hook = event.getHook();
-
-        String content = guildMessageService.exportMessages(guildId);
-        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-
-        hook.editOriginal("").setAttachments(
-                FileUpload.fromData(bytes, "messages.properties")
-        ).queue();
+    public FileUpload exportFile(String guildId) {
+        byte[] bytes = guildMessageService.exportMessages(guildId).getBytes(StandardCharsets.UTF_8);
+        return FileUpload.fromData(bytes, "messages.properties");
     }
 
-    public void onReset(SlashCommandInteractionEvent event) {
-        String guildId = event.getGuild().getId();
-
+    public String reset(String guildId) {
         guildMessageService.deleteAllMessages(guildId);
-
         log.info("Guild {} reset custom messages", guildId);
-        event.reply(messageService.getMessage(guildId, "setup.messages.reset"))
-                .setEphemeral(true).queue();
+        return messageService.getMessage(guildId, "setup.messages.reset");
     }
 }

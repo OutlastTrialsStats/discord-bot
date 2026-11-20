@@ -13,6 +13,8 @@ public final class LeaderboardCategories {
 
     static final int MAX_CHOICES = 25;
 
+    public enum Group { TRIALS, ESCALATION, INVASION, MINIGAMES }
+
     private static final Map<String, StatisticType> RENAMED = Map.of(
             "ESCALATION_PEAK", StatisticType.ESCALATION_HIGHEST_TRIAL_REACHED);
 
@@ -42,6 +44,28 @@ public final class LeaderboardCategories {
                 .map(type -> new Choice(displayName.apply(type), type.getValue()))
                 .filter(choice -> choice.getName().toLowerCase(Locale.ROOT).contains(needle)
                         || choice.getAsString().toLowerCase(Locale.ROOT).contains(needle))
+                .limit(MAX_CHOICES)
+                .toList();
+    }
+
+    public static Group groupOf(StatisticType type) {
+        String value = type.getValue();
+        if (value.startsWith("ESCALATION_")) {
+            return Group.ESCALATION;
+        }
+        if (value.startsWith("INVASION_")) {
+            return Group.INVASION;
+        }
+        if (value.startsWith("CHESS_") || value.startsWith("ARMWRESTLING_") || value.startsWith("TENNIS_")
+                || value.startsWith("STROOP_")) {
+            return Group.MINIGAMES;
+        }
+        return Group.TRIALS;
+    }
+
+    public static List<StatisticType> inGroup(Group group) {
+        return Arrays.stream(StatisticType.values())
+                .filter(type -> groupOf(type) == group)
                 .limit(MAX_CHOICES)
                 .toList();
     }

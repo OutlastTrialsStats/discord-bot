@@ -2,10 +2,16 @@ package com.outlasttrialsstats.discordbot.feature.profile.command;
 
 import com.outlasttrialsstats.discordbot.feature.profile.dto.RoleAssignmentResult;
 import com.outlasttrialsstats.discordbot.feature.profile.service.RoleAssignmentService;
+import com.outlasttrialsstats.discordbot.shared.BotColors;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
+import com.outlasttrialsstats.discordbot.shared.SiteLinks;
 import lombok.RequiredArgsConstructor;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +42,10 @@ public class ProfileCommand {
         }
 
         if (!result.verified()) {
-            hook.editOriginal(messageService.getMessage(guildId, "profile.not_verified")).queue();
+            hook.editOriginalEmbeds(onboardingEmbed(guildId))
+                    .setComponents(ActionRow.of(Button.link(SiteLinks.LINK_URL,
+                            messageService.getMessage(guildId, "profile.onboarding.button"))))
+                    .queue();
             return;
         }
 
@@ -47,5 +56,13 @@ public class ProfileCommand {
         } else {
             hook.editOriginal(messageService.getMessage(guildId, "profile.no_changes")).queue();
         }
+    }
+
+    MessageEmbed onboardingEmbed(String guildId) {
+        return new EmbedBuilder()
+                .setColor(BotColors.BRAND)
+                .setTitle(messageService.getMessage(guildId, "profile.onboarding.title"))
+                .setDescription(messageService.getMessage(guildId, "profile.onboarding.description"))
+                .build();
     }
 }

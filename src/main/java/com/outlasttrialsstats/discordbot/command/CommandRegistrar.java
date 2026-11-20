@@ -1,6 +1,7 @@
 package com.outlasttrialsstats.discordbot.command;
 
 import com.outlasttrialsstats.backend.api.model.StatisticType;
+import com.outlasttrialsstats.discordbot.feature.communityevent.command.CommunityEventSetupCommand;
 import com.outlasttrialsstats.discordbot.entity.CommunityAlertType;
 import java.util.Arrays;
 import java.util.List;
@@ -134,7 +135,7 @@ public class CommandRegistrar {
     }
 
     static SubcommandGroupData buildCommunityEventGroup() {
-        return new SubcommandGroupData("community-event", "Community event progress message and alerts")
+        return new SubcommandGroupData(CommunityEventSetupCommand.GROUP, "Community event progress message and alerts")
                 .addSubcommands(
                         new SubcommandData("message", "Post an auto-updating community event progress message")
                                 .addOptions(

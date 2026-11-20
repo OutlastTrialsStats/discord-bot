@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class CommunityEventSetupCommand {
 
-    public static final String GROUP = "community-event";
+    public static final String GROUP = "event";
     private static final int MAX_AUTOCOMPLETE_CHOICES = 25;
     private static final int MAX_CHOICE_NAME_LENGTH = 100;
 

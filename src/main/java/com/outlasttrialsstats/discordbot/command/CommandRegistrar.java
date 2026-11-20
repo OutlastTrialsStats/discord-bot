@@ -162,7 +162,10 @@ public class CommandRegistrar {
                         new SubcommandData("remove", "Remove the progress message and/or turn off alerts")
                                 .addOptions(new OptionData(OptionType.STRING, "target", "What to remove", true)
                                         .addChoices(new Choice("Progress message", "message"),
-                                                new Choice("Alerts", "alerts"), new Choice("Both", "all")))
+                                                new Choice("Alerts", "alerts"), new Choice("Both", "all")),
+                                        new OptionData(OptionType.STRING, "event",
+                                                "Only this progress message (leave empty for all)", false)
+                                                .setAutoComplete(true))
                 );
     }
 

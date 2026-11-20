@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="010-multiple-community-event-messages" author="totstats-bot">
+        <dropPrimaryKey tableName="community_event_message" constraintName="community_event_message_pkey"/>
+        <addColumn tableName="community_event_message">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addPrimaryKey tableName="community_event_message" columnNames="id"
+                       constraintName="community_event_message_pkey"/>
+        <addNotNullConstraint tableName="community_event_message" columnName="guild_id"
+                              columnDataType="varchar(255)"/>
+        <createIndex tableName="community_event_message" indexName="idx_community_event_message_guild_id">
+            <column name="guild_id"/>
+        </createIndex>
+        <sql>CREATE UNIQUE INDEX uq_community_event_message_target
+            ON community_event_message (guild_id, COALESCE(event_id, ''))</sql>
+    </changeSet>
+
+</databaseChangeLog>

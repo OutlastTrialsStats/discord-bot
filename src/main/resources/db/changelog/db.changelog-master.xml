@@ -14,5 +14,6 @@
     <include file="db/changelog/changes/007-add-bot-created.xml"/>
     <include file="db/changelog/changes/008-community-event.xml"/>
     <include file="db/changelog/changes/009-rename-escalation-peak.xml"/>
+    <include file="db/changelog/changes/010-multiple-community-event-messages.xml"/>
 
 </databaseChangeLog>

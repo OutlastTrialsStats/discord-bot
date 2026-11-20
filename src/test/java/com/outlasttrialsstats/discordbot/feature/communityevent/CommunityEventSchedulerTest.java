@@ -164,7 +164,7 @@ class CommunityEventSchedulerTest {
     @Test
     void updateMessage_skipsEditWhenNothingChanged() {
         DiscordCommunityEvent event = liveEvent("e", 1_500, null);
-        CommunityEventBinding binding = new CommunityEventBinding(GUILD_ID, null, "e", CHANNEL_ID, "msg-1");
+        CommunityEventBinding binding = new CommunityEventBinding(1L, GUILD_ID, null, "e", CHANNEL_ID, "msg-1");
         MessageEmbed embed = mock(MessageEmbed.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
         when(embed.toData().toString()).thenReturn("same");
         when(embedFactory.buildProgressEmbed(GUILD_ID, event, NOW)).thenReturn(embed);
@@ -191,7 +191,7 @@ class CommunityEventSchedulerTest {
                 .startsAt(Instant.parse("2026-11-05T00:00:00Z").atOffset(ZoneOffset.UTC));
         DiscordCommunityEvent oldEvent = liveEvent("old", 4_100, null).active(false)
                 .endsAt(Instant.parse("2026-11-04T00:00:00Z").atOffset(ZoneOffset.UTC));
-        CommunityEventBinding binding = new CommunityEventBinding(GUILD_ID, null, "old", CHANNEL_ID, "msg-old");
+        CommunityEventBinding binding = new CommunityEventBinding(1L, GUILD_ID, null, "old", CHANNEL_ID, "msg-old");
         Message posted = mock(Message.class);
         when(posted.getId()).thenReturn("msg-new");
         when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(channel);
@@ -206,23 +206,23 @@ class CommunityEventSchedulerTest {
             return null;
         }).when(createAction).queue(any(), any());
         when(embedFactory.buildProgressEmbed(any(), any(), any())).thenReturn(mock(MessageEmbed.class));
-        when(service.switchShownEvent(GUILD_ID, "msg-old", "new", "msg-new")).thenReturn(true);
+        when(service.switchShownEvent("msg-old", "new", "msg-new")).thenReturn(true);
 
         scheduler.updateMessage(binding, List.of(oldEvent, newEvent), NOW);
 
         verify(embedFactory).buildProgressEmbed(GUILD_ID, oldEvent, NOW);
-        verify(service).switchShownEvent(GUILD_ID, "msg-old", "new", "msg-new");
+        verify(service).switchShownEvent("msg-old", "new", "msg-new");
     }
 
     @Test
     void updateMessage_deletedChannelRemovesBinding() {
-        CommunityEventBinding binding = new CommunityEventBinding(GUILD_ID, null, "e", CHANNEL_ID, "msg-1");
+        CommunityEventBinding binding = new CommunityEventBinding(1L, GUILD_ID, null, "e", CHANNEL_ID, "msg-1");
         when(jda.getChannelById(StandardGuildMessageChannel.class, CHANNEL_ID)).thenReturn(null);
         when(jda.getUnavailableGuilds()).thenReturn(Set.of());
 
         scheduler.updateMessage(binding, List.of(liveEvent("e", 1_500, null)), NOW);
 
-        verify(service).removeBindingIfMessage(GUILD_ID, "msg-1");
+        verify(service).removeBindingIfMessage("msg-1");
     }
 
     @Test

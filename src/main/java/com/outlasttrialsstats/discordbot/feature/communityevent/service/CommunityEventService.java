@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommunityEventService {
 
     static final Duration EVENTS_MAX_AGE = Duration.ofSeconds(60);
+    public static final int MAX_MESSAGES_PER_GUILD = 5;
 
     private final TOTStatsApiClient apiClient;
     private final CommunityEventMessageRepository messageRepository;
@@ -72,18 +73,37 @@ public class CommunityEventService {
         return cached == null ? List.of() : cached.events();
     }
 
-    public Optional<CommunityEventBinding> getBinding(String guildId) {
-        return messageRepository.findById(guildId).map(CommunityEventBinding::of);
+    public List<CommunityEventBinding> getBindings(String guildId) {
+        return messageRepository.findByGuildIdOrderByIdAsc(guildId).stream().map(CommunityEventBinding::of).toList();
     }
 
     public List<CommunityEventBinding> getAllBindings() {
         return messageRepository.findAll().stream().map(CommunityEventBinding::of).toList();
     }
 
+    public boolean hasRoomFor(String guildId, String eventId) {
+        return findTarget(guildId, eventId).isPresent()
+                || messageRepository.countByGuildId(guildId) < MAX_MESSAGES_PER_GUILD;
+    }
+
+    private Optional<CommunityEventMessage> findTarget(String guildId, String eventId) {
+        return eventId == null
+                ? messageRepository.findByGuildIdAndEventIdIsNull(guildId)
+                : messageRepository.findByGuildIdAndEventId(guildId, eventId);
+    }
+
+    public sealed interface SaveResult {
+        record Saved(Optional<CommunityEventBinding> previous) implements SaveResult {}
+        record LimitReached(int limit) implements SaveResult {}
+    }
+
     @Transactional
-    public Optional<CommunityEventBinding> saveBinding(String guildId, String eventId, String shownEventId,
-                                                       String channelId, String messageId) {
-        Optional<CommunityEventMessage> existing = messageRepository.findById(guildId);
+    public SaveResult saveBinding(String guildId, String eventId, String shownEventId, String channelId,
+                                  String messageId) {
+        Optional<CommunityEventMessage> existing = findTarget(guildId, eventId);
+        if (existing.isEmpty() && messageRepository.countByGuildId(guildId) >= MAX_MESSAGES_PER_GUILD) {
+            return new SaveResult.LimitReached(MAX_MESSAGES_PER_GUILD);
+        }
         Optional<CommunityEventBinding> previous = existing.map(CommunityEventBinding::of);
         CommunityEventMessage binding = existing.orElseGet(CommunityEventMessage::new);
         binding.setGuildId(guildId);
@@ -92,13 +112,12 @@ public class CommunityEventService {
         binding.setChannelId(channelId);
         binding.setMessageId(messageId);
         messageRepository.save(binding);
-        return previous;
+        return new SaveResult.Saved(previous);
     }
 
     @Transactional
-    public boolean switchShownEvent(String guildId, String oldMessageId, String shownEventId, String messageId) {
-        return messageRepository.findById(guildId)
-                .filter(binding -> binding.getMessageId().equals(oldMessageId))
+    public boolean switchShownEvent(String oldMessageId, String shownEventId, String messageId) {
+        return messageRepository.findByMessageId(oldMessageId)
                 .map(binding -> {
                     binding.setShownEventId(shownEventId);
                     binding.setMessageId(messageId);
@@ -108,21 +127,28 @@ public class CommunityEventService {
     }
 
     @Transactional
-    public Optional<CommunityEventBinding> removeBindingIfMessage(String guildId, String messageId) {
-        return messageRepository.findById(guildId)
-                .filter(binding -> binding.getMessageId().equals(messageId))
+    public Optional<CommunityEventBinding> removeBindingIfMessage(String messageId) {
+        return messageRepository.findByMessageId(messageId).map(binding -> {
+            messageRepository.delete(binding);
+            return CommunityEventBinding.of(binding);
+        });
+    }
+
+    @Transactional
+    public List<CommunityEventBinding> removeBindings(String guildId) {
+        List<CommunityEventMessage> bindings = messageRepository.findByGuildIdOrderByIdAsc(guildId);
+        messageRepository.deleteAll(bindings);
+        return bindings.stream().map(CommunityEventBinding::of).toList();
+    }
+
+    @Transactional
+    public Optional<CommunityEventBinding> removeBinding(String guildId, long bindingId) {
+        return messageRepository.findById(bindingId)
+                .filter(binding -> binding.getGuildId().equals(guildId))
                 .map(binding -> {
                     messageRepository.delete(binding);
                     return CommunityEventBinding.of(binding);
                 });
-    }
-
-    @Transactional
-    public Optional<CommunityEventBinding> removeBinding(String guildId) {
-        return messageRepository.findById(guildId).map(binding -> {
-            messageRepository.delete(binding);
-            return CommunityEventBinding.of(binding);
-        });
     }
 
     @Transactional

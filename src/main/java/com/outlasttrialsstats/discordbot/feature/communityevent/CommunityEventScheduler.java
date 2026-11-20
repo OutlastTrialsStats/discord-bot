@@ -88,8 +88,8 @@ public class CommunityEventScheduler {
             if (!jda.getUnavailableGuilds().contains(binding.guildId())) {
                 log.info("Channel {} no longer exists, removing community event message of guild {}",
                         binding.channelId(), binding.guildId());
-                service.removeBindingIfMessage(binding.guildId(), binding.messageId());
-                rendered.remove(binding.guildId());
+                service.removeBindingIfMessage(binding.messageId());
+                rendered.remove(binding.messageId());
             }
             return;
         }
@@ -112,7 +112,7 @@ public class CommunityEventScheduler {
         }
 
         String significant = significantState(event, now);
-        Rendered last = rendered.get(binding.guildId());
+        Rendered last = rendered.get(binding.messageId());
         boolean sameMessage = last != null && last.messageId().equals(binding.messageId());
         if (sameMessage && last.significant().equals(significant) && last.at().plus(MIN_EDIT_INTERVAL).isAfter(now)) {
             return;
@@ -125,7 +125,7 @@ public class CommunityEventScheduler {
 
         channel.editMessageEmbedsById(binding.messageId(), embed)
                 .setComponents()
-                .queue(_ -> rendered.put(binding.guildId(), next),
+                .queue(_ -> rendered.put(binding.messageId(), next),
                         error -> handleEditFailure(binding, error));
     }
 
@@ -147,7 +147,7 @@ public class CommunityEventScheduler {
     private void adoptSwitchedMessage(CommunityEventBinding binding, DiscordCommunityEvent event, Message message) {
         boolean adopted = false;
         try {
-            adopted = service.switchShownEvent(binding.guildId(), binding.messageId(), event.getId(),
+            adopted = service.switchShownEvent(binding.messageId(), event.getId(),
                     message.getId());
         } catch (Exception e) {
             log.warn("Failed to save community event message of guild {}: {}", binding.guildId(), e.getMessage());
@@ -156,7 +156,7 @@ public class CommunityEventScheduler {
             message.delete().queue(_ -> {}, _ -> {});
             return;
         }
-        rendered.remove(binding.guildId());
+        rendered.remove(binding.messageId());
         log.info("Community event message of guild {} switched from {} to {}", binding.guildId(),
                 binding.shownEventId(), event.getId());
     }
@@ -165,8 +165,8 @@ public class CommunityEventScheduler {
         if (error instanceof ErrorResponseException ere && ere.getErrorResponse() == ErrorResponse.UNKNOWN_MESSAGE) {
             log.info("Community event message {} no longer exists, removing it for guild {}",
                     binding.messageId(), binding.guildId());
-            service.removeBindingIfMessage(binding.guildId(), binding.messageId());
-            rendered.remove(binding.guildId());
+            service.removeBindingIfMessage(binding.messageId());
+            rendered.remove(binding.messageId());
             return;
         }
         log.warn("Failed to update community event message {}: {}", binding.messageId(), error.getMessage());
@@ -177,8 +177,8 @@ public class CommunityEventScheduler {
                 + CommunityEvents.highestReachedIndex(event);
     }
 
-    public void forget(String guildId) {
-        rendered.remove(guildId);
+    public void forget(String messageId) {
+        rendered.remove(messageId);
     }
 
     private void processAllAlerts(List<DiscordCommunityEvent> events, Instant now) {

@@ -33,7 +33,7 @@ public class CommunityEventMessageDeleteListener extends ListenerAdapter {
     private void handleDeletedMessages(Collection<String> messageIds) {
         for (CommunityEventBinding binding : service.removeBindingsByMessageIds(messageIds)) {
             log.info("Community event message deleted in guild {}, removing it", binding.guildId());
-            scheduler.forget(binding.guildId());
+            scheduler.forget(binding.messageId());
         }
     }
 }

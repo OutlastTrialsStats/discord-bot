@@ -45,6 +45,31 @@ class CommunityEventRepositoriesTestIT {
     }
 
     @Test
+    void message_severalTargetsPerGuild() {
+        messageRepository.save(new CommunityEventMessage(GUILD_ID, null, "e", "channel-1", "msg-1"));
+        messageRepository.save(new CommunityEventMessage(GUILD_ID, "counter", "counter", "channel-2", "msg-2"));
+
+        assertThat(messageRepository.findByGuildIdOrderByIdAsc(GUILD_ID))
+                .extracting(CommunityEventMessage::getMessageId)
+                .containsExactly("msg-1", "msg-2");
+        assertThat(messageRepository.findByGuildIdAndEventIdIsNull(GUILD_ID))
+                .map(CommunityEventMessage::getMessageId).contains("msg-1");
+        assertThat(messageRepository.findByGuildIdAndEventId(GUILD_ID, "counter"))
+                .map(CommunityEventMessage::getMessageId).contains("msg-2");
+        assertThat(messageRepository.countByGuildId(GUILD_ID)).isEqualTo(2);
+    }
+
+    @Test
+    void message_uniquePerGuildAndTarget() {
+        messageRepository.saveAndFlush(new CommunityEventMessage(GUILD_ID, null, "e", "channel-1", "msg-1"));
+        messageRepository.saveAndFlush(new CommunityEventMessage(OTHER_GUILD_ID, null, "e", "channel-1", "msg-2"));
+
+        assertThatThrownBy(() -> messageRepository.saveAndFlush(
+                new CommunityEventMessage(GUILD_ID, null, "e", "channel-3", "msg-3")))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     void rule_newRuleUsesTypeDefaults() {
         CommunityEventAlertRule saved = ruleRepository.save(
                 new CommunityEventAlertRule(GUILD_ID, CommunityAlertType.PRE_ALERT));

@@ -30,10 +30,14 @@ public class CommunityEventMessagePublisher {
         record UnknownEvent(String eventId) implements Outcome {}
         record FetchFailed() implements Outcome {}
         record PostFailed() implements Outcome {}
+        record LimitReached(int limit) implements Outcome {}
     }
 
     public Outcome publish(Guild guild, StandardGuildMessageChannel channel, String eventId) {
         String guildId = guild.getId();
+        if (!service.hasRoomFor(guildId, eventId)) {
+            return new Outcome.LimitReached(CommunityEventService.MAX_MESSAGES_PER_GUILD);
+        }
         Optional<List<DiscordCommunityEvent>> events = service.getEvents();
         if (events.isEmpty()) {
             return new Outcome.FetchFailed();
@@ -48,11 +52,11 @@ public class CommunityEventMessagePublisher {
         }
 
         Message posted = null;
-        Optional<CommunityEventBinding> previous;
+        CommunityEventService.SaveResult saved;
         try {
             posted = channel.sendMessageEmbeds(embedFactory.buildProgressEmbed(guildId, shown.get(), now))
                     .complete();
-            previous = service.saveBinding(guildId, eventId, shown.get().getId(), channel.getId(), posted.getId());
+            saved = service.saveBinding(guildId, eventId, shown.get().getId(), channel.getId(), posted.getId());
         } catch (Exception e) {
             log.warn("Failed to set up community event message in guild {}: {}", guildId, e.getMessage());
             if (posted != null) {
@@ -60,8 +64,14 @@ public class CommunityEventMessagePublisher {
             }
             return new Outcome.PostFailed();
         }
-        scheduler.forget(guildId);
-        previous.ifPresent(binding -> deleteMessage(guild, binding));
+        if (saved instanceof CommunityEventService.SaveResult.LimitReached limitReached) {
+            posted.delete().queue(_ -> {}, _ -> {});
+            return new Outcome.LimitReached(limitReached.limit());
+        }
+        ((CommunityEventService.SaveResult.Saved) saved).previous().ifPresent(previous -> {
+            scheduler.forget(previous.messageId());
+            deleteMessage(guild, previous);
+        });
         return new Outcome.Posted(shown.get().getName(), eventId == null);
     }
 

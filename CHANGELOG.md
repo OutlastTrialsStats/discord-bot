@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.4.0](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.5...v1.4.0) (2026-11-20)
+
+
+### Features
+
+* **community-event:** show community event progress and alerts in Discord ([93faa4c](https://github.com/OutlastTrialsStats/discord-bot/commit/93faa4cd7484acbfb51a1dca37a2aa62072ef75c))
+
+
+### Bug Fixes
+
+* **api:** distinguish not-linked from backend failures in profile lookups ([371b9fd](https://github.com/OutlastTrialsStats/discord-bot/commit/371b9fdfa854b2494830a55b541a5275d0512c74))
+* **command:** acknowledge interactions before blocking work and run listeners off the gateway thread ([24a6acb](https://github.com/OutlastTrialsStats/discord-bot/commit/24a6acb9c931086b16fe8b55ad083c710b4cbb23))
+* **i18n:** format messages consistently and validate custom message imports ([4ca8572](https://github.com/OutlastTrialsStats/discord-bot/commit/4ca85720cae1a57c02518be12fb18c8358448cd3))
+* **leaderboard:** keep leaderboard embeds within Discord length limits ([a7b8c06](https://github.com/OutlastTrialsStats/discord-bot/commit/a7b8c0632854f8a5a411e65628424ae8b12c845e))
+* **leaderboard:** make leaderboard setup, updates and deletion robust ([c52c463](https://github.com/OutlastTrialsStats/discord-bot/commit/c52c4637723b712e8c0380c2b411d38dd8229963))
+* **role:** handle failed role creation in setup and role mappings ([fa4d05d](https://github.com/OutlastTrialsStats/discord-bot/commit/fa4d05dacc456b5aea3e828ae8e27479933e6327))
+* **role:** keep bot_created when a bot-created role is mapped again ([dde2dd5](https://github.com/OutlastTrialsStats/discord-bot/commit/dde2dd51842cfc58ec256ef0b8802bbc3a54180f))
+* **role:** keep setup going when saving a mapping fails and keep leaderboard ranks ungrouped ([a733258](https://github.com/OutlastTrialsStats/discord-bot/commit/a733258f222b6b552336700b41e4743fe2c3ad3d))
+* **role:** make member syncs and auto-nicknames safe ([4d8a992](https://github.com/OutlastTrialsStats/discord-bot/commit/4d8a992954765505937ab0375343f6a6ba477999))
+* **role:** only delete bot-created roles in /setup delete ([c2da76e](https://github.com/OutlastTrialsStats/discord-bot/commit/c2da76e0e3119d6807b0fff5466b2eb2bdec768e))
+* **role:** prevent privilege escalation through /setup role links ([b53ec57](https://github.com/OutlastTrialsStats/discord-bot/commit/b53ec5734da07a49d0b1974e5ef49d3df4bfe0f6))
+* **role:** resolve members via Discord instead of the near-empty member cache ([7f60519](https://github.com/OutlastTrialsStats/discord-bot/commit/7f6051906c6eb8febfed375e2d68fbb7d68861aa))
+
+
+### Performance Improvements
+
+* **role:** load mapped role ids once per sync and remove mappings in one call ([8d61428](https://github.com/OutlastTrialsStats/discord-bot/commit/8d61428f6494e8f8a92ea5dbc1b4c7246171fdf0))
+
+
+### Code Refactoring
+
+* **api:** simplify verification poll, API client error handling and message locale caching ([27e79a2](https://github.com/OutlastTrialsStats/discord-bot/commit/27e79a288c1b8e33b03bb7bf77d3fe01c6b943e6))
+* **leaderboard:** share message deletion helper and drop unused binding code ([b4e3c35](https://github.com/OutlastTrialsStats/discord-bot/commit/b4e3c35614d0ed9a3c7ed97047a8ad489217bdcf))
+
+
+### Dependencies
+
+* **deps:** bump gradle-wrapper from 9.8.1 to 9.8.2 ([9b9d4f8](https://github.com/OutlastTrialsStats/discord-bot/commit/9b9d4f821ddb828ad9e32d3095211a38d21acf91))
+* **deps:** bump gradle-wrapper from 9.8.2 to 9.9.1 ([2503430](https://github.com/OutlastTrialsStats/discord-bot/commit/2503430209a15f2f3b0b14aca8be28f8b3ee0ed3))
+* **deps:** bump org.openapi.generator from 7.26.0 to 7.27.0 ([e11c378](https://github.com/OutlastTrialsStats/discord-bot/commit/e11c37816d60630925674237ca1ae4815a57efe3))
+* **deps:** bump org.springdoc:springdoc-openapi-starter-webflux-ui ([c06039e](https://github.com/OutlastTrialsStats/discord-bot/commit/c06039ec3b639e9bb3ede2d48087892850cfc3bf))
+* **deps:** bump org.springframework.boot from 4.1.1 to 4.1.2 ([20fc12b](https://github.com/OutlastTrialsStats/discord-bot/commit/20fc12b5e546f84d1b6bd1d0f6907a0b8a815c90))
+
+
+### Documentation
+
+* describe editing the discord changelog ([ee94571](https://github.com/OutlastTrialsStats/discord-bot/commit/ee94571a9284a7e2119902637895de0baa7d4c66))
+* note how to keep changes out of the discord post ([b4bf0a4](https://github.com/OutlastTrialsStats/discord-bot/commit/b4bf0a481d8b40a402f9b13d2dbd5513439dc25f))
+
+
+### Continuous Integration
+
+* add announce workflow ([421f55e](https://github.com/OutlastTrialsStats/discord-bot/commit/421f55e41f48fa26c0578d65b8aac61322e77baa))
+* announce releases on discord ([0c526bf](https://github.com/OutlastTrialsStats/discord-bot/commit/0c526bf2be945244e3561aa3d7af2494de72ca98))
+
 ## [1.3.5](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.3.4...v1.3.5) (2026-10-18)
 
 

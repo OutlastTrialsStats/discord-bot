@@ -2,6 +2,7 @@ package com.outlasttrialsstats.discordbot.feature.leaderboard.command;
 
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.StatisticType;
+import com.outlasttrialsstats.discordbot.feature.leaderboard.LeaderboardCategories;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardBinding;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
 import com.outlasttrialsstats.discordbot.shared.BotChannels;
@@ -50,8 +51,12 @@ public class LeaderboardSetupCommand {
             return;
         }
 
-        String categoryValue = event.getOption("category").getAsString();
-        StatisticType statisticType = StatisticType.fromValue(categoryValue);
+        Optional<StatisticType> parsed = LeaderboardCategories.parse(event.getOption("category").getAsString());
+        if (parsed.isEmpty()) {
+            hook.editOriginal(messageService.getMessage(guildId, "leaderboard.unknown_category")).queue();
+            return;
+        }
+        StatisticType statisticType = parsed.get();
         String categoryName = leaderboardService.getCategoryDisplayName(guildId, statisticType);
         int maxPages = Math.max(1, Math.min(10, event.getOption("pages").getAsInt()));
 

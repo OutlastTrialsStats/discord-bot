@@ -4,6 +4,7 @@ import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardEntry;
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.StatisticType;
 import com.outlasttrialsstats.discordbot.entity.LeaderboardChannel;
+import com.outlasttrialsstats.discordbot.feature.leaderboard.LeaderboardCategories;
 import com.outlasttrialsstats.discordbot.repository.LeaderboardChannelRepository;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
 import com.outlasttrialsstats.discordbot.shared.SiteLinks;
@@ -85,7 +86,7 @@ public class LeaderboardService {
 
             List<String> lines = new ArrayList<>(entries.size());
             for (DiscordLeaderboardEntry entry : entries) {
-                lines.add(formatEntry(guildId, entry, guildMemberIds, maxRankWidth));
+                lines.add(formatEntry(guildId, category, entry, guildMemberIds, maxRankWidth));
             }
             // The title and footer are already set, so embed.length() is what they use of the total limit.
             int budget = Math.min(MessageEmbed.DESCRIPTION_MAX_LENGTH,
@@ -194,8 +195,8 @@ public class LeaderboardService {
         return entry.getDiscordUserId();
     }
 
-    private String formatEntry(String guildId, DiscordLeaderboardEntry entry, Set<String> guildMemberIds,
-                               int maxRankWidth) {
+    private String formatEntry(String guildId, StatisticType category, DiscordLeaderboardEntry entry,
+                               Set<String> guildMemberIds, int maxRankWidth) {
         String rawName = entry.getDisplayName() != null
                 ? entry.getDisplayName().replaceAll("[\\p{C}]", "").strip()
                 : "Unknown";
@@ -219,10 +220,10 @@ public class LeaderboardService {
         }
 
         int ranking = entry.getRanking() != null ? entry.getRanking() : 0;
-        int value = entry.getValue() != null ? entry.getValue() : 0;
+        long value = entry.getValue() != null ? entry.getValue() : 0L;
         // Passed as a String: MessageFormat would group a number ("1,234"), which breaks the padding above
         String rankPadding = " ".repeat(maxRankWidth - String.valueOf(ranking).length());
-        String formattedValue = String.format("%,d", value);
+        String formattedValue = LeaderboardCategories.formatValue(category, value);
 
         return messageService.getMessage(guildId, "leaderboard.entry",
                 rankPadding, String.valueOf(ranking), displayName, mention, formattedValue) + "\n";

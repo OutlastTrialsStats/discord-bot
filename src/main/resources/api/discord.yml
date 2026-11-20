@@ -302,6 +302,7 @@ components:
           type: integer
         value:
           type: integer
+          format: int64
         seasonTotalInvasionPoints:
           type: integer
         discordUserId:

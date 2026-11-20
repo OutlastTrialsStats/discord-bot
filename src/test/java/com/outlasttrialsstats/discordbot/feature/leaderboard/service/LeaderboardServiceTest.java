@@ -345,7 +345,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardEntry entry = new DiscordLeaderboardEntry();
         entry.setDisplayName("Player");
         entry.setRanking(1);
-        entry.setValue(50);
+        entry.setValue(50L);
         // profileId is null — no link should be generated
         DiscordLeaderboardResponse response = createResponse(List.of(entry), 1, 1, 1);
 
@@ -553,7 +553,7 @@ class LeaderboardServiceTest {
         DiscordLeaderboardEntry entry = new DiscordLeaderboardEntry();
         entry.setDisplayName(displayName);
         entry.setRanking(ranking);
-        entry.setValue(value);
+        entry.setValue((long) value);
         entry.setProfileId(UUID.randomUUID());
         return entry;
     }

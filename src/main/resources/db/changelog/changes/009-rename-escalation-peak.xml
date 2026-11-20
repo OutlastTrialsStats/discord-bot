@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- The backend renamed the ESCALATION_PEAK statistic to ESCALATION_HIGHEST_TRIAL_REACHED -->
+    <changeSet id="009-rename-escalation-peak" author="totstats-bot">
+        <update tableName="leaderboard_channel">
+            <column name="category" value="ESCALATION_HIGHEST_TRIAL_REACHED"/>
+            <where>category = 'ESCALATION_PEAK'</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

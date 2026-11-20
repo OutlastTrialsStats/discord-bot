@@ -1,6 +1,5 @@
 package com.outlasttrialsstats.discordbot.command;
 
-import com.outlasttrialsstats.backend.api.model.StatisticType;
 import com.outlasttrialsstats.discordbot.feature.communityevent.command.CommunityEventSetupCommand;
 import com.outlasttrialsstats.discordbot.entity.CommunityAlertType;
 import java.util.Arrays;
@@ -44,7 +43,7 @@ public class CommandRegistrar {
         jda.updateCommands().addCommands(
                 Commands.slash("leaderboard", "View the leaderboard for a stat category")
                         .addOptions(new OptionData(OptionType.STRING, "category", "Statistic category", true)
-                                .addChoices(leaderboardChoices())),
+                                .setAutoComplete(true)),
 
                 Commands.slash("sync-profile", "Sync your roles based on your Outlast Trials stats")
                         .setContexts(InteractionContextType.GUILD),
@@ -66,7 +65,7 @@ public class CommandRegistrar {
                                                 new OptionData(OptionType.CHANNEL, "channel", "Channel to post the leaderboard in", true)
                                                 .setChannelTypes(ChannelType.TEXT, ChannelType.NEWS),
                                                 new OptionData(OptionType.STRING, "category", "Statistic category", true)
-                                                        .addChoices(leaderboardChoices()),
+                                                        .setAutoComplete(true),
                                                 new OptionData(OptionType.INTEGER, "pages", "Number of pages to display (1-10)", true)
                                                         .setRequiredRange(1, 10)),
                                 new SubcommandData("messages-upload", "Upload custom bot messages from a properties file")
@@ -176,22 +175,9 @@ public class CommandRegistrar {
         return new OptionData(OptionType.STRING, name, description, true).addChoices(choices);
     }
 
-    static List<Choice> leaderboardChoices() {
-        return Arrays.stream(StatisticType.values())
-                .map(t -> new Choice(formatCategoryName(t), t.getValue()))
-                .toList();
-    }
-
     private static List<Choice> choices(String... values) {
         return Arrays.stream(values)
                 .map(v -> new Choice(v, v))
                 .toList();
-    }
-
-    private static String formatCategoryName(StatisticType type) {
-        return Arrays.stream(type.getValue().toLowerCase().split("_"))
-                .map(w -> Character.toUpperCase(w.charAt(0)) + w.substring(1))
-                .reduce((a, b) -> a + " " + b)
-                .orElse(type.getValue());
     }
 }

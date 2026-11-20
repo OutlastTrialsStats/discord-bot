@@ -3,6 +3,7 @@ package com.outlasttrialsstats.discordbot.feature.leaderboard.command;
 import com.outlasttrialsstats.backend.api.model.DiscordLeaderboardResponse;
 import com.outlasttrialsstats.backend.api.model.StatisticType;
 import com.outlasttrialsstats.discordbot.entity.GuildServer;
+import com.outlasttrialsstats.discordbot.feature.leaderboard.LeaderboardCategories;
 import com.outlasttrialsstats.discordbot.feature.leaderboard.service.LeaderboardService;
 import com.outlasttrialsstats.discordbot.repository.GuildServerRepository;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
@@ -29,8 +31,12 @@ public class LeaderboardCommand {
 
     public void onLeaderboard(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
-        String categoryValue = event.getOption("category").getAsString();
-        StatisticType category = StatisticType.fromValue(categoryValue);
+        Optional<StatisticType> parsed = LeaderboardCategories.parse(event.getOption("category").getAsString());
+        if (parsed.isEmpty()) {
+            event.reply(messageService.getMessage(guildId, "leaderboard.unknown_category")).setEphemeral(true).queue();
+            return;
+        }
+        StatisticType category = parsed.get();
         boolean ephemeral = !isPublic(guildId);
 
         event.deferReply(ephemeral).queue();
@@ -47,11 +53,19 @@ public class LeaderboardCommand {
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, event.getGuild(), category, data, true, true, true);
 
         var reply = hook.editOriginalEmbeds(embed);
-        List<Button> buttons = buildButtons(categoryValue, 1, totalPages);
+        List<Button> buttons = buildButtons(category.getValue(), 1, totalPages);
         if (!buttons.isEmpty()) {
             reply.setComponents(ActionRow.of(buttons));
         }
         reply.queue();
+    }
+
+    /** Suggests categories for the "category" option of /leaderboard and /setup leaderboard. */
+    public void onCategoryAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        Guild guild = event.getGuild();
+        event.replyChoices(LeaderboardCategories.suggest(event.getFocusedOption().getValue(),
+                type -> guild != null ? leaderboardService.getCategoryDisplayName(guild.getId(), type) : type.getValue()))
+                .queue();
     }
 
     private boolean isPublic(String guildId) {
@@ -64,9 +78,10 @@ public class LeaderboardCommand {
         String[] parts = event.getComponentId().split(":");
         if (parts.length != 4) return;
 
-        String categoryValue = parts[2];
+        Optional<StatisticType> parsed = LeaderboardCategories.parse(parts[2]);
+        if (parsed.isEmpty()) return;
+        StatisticType category = parsed.get();
         int targetPage = Integer.parseInt(parts[3]);
-        StatisticType category = StatisticType.fromValue(categoryValue);
         String guildId = event.getGuild().getId();
         Guild guild = event.getJDA().getGuildById(guildId);
 
@@ -84,7 +99,7 @@ public class LeaderboardCommand {
         int totalPages = data.getTotalPages() != null ? data.getTotalPages() : 1;
         MessageEmbed embed = leaderboardService.buildLeaderboardEmbed(guildId, guild, category, data, true, true, true);
 
-        List<Button> buttons = buildButtons(categoryValue, targetPage, totalPages);
+        List<Button> buttons = buildButtons(category.getValue(), targetPage, totalPages);
         var edit = hook.editOriginalEmbeds(embed);
         if (!buttons.isEmpty()) {
             edit.setComponents(ActionRow.of(buttons));

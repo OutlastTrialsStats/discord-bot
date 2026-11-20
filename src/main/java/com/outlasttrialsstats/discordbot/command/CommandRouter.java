@@ -46,6 +46,9 @@ public class CommandRouter extends ListenerAdapter {
         try {
             if ("setup".equals(event.getName()) && CommunityEventSetupCommand.GROUP.equals(event.getSubcommandGroup())) {
                 communityEventSetupCommand.onAutoComplete(event);
+            } else if ("category".equals(event.getFocusedOption().getName())
+                    && ("leaderboard".equals(event.getName()) || "leaderboard".equals(event.getSubcommandName()))) {
+                leaderboardCommand.onCategoryAutoComplete(event);
             }
         } catch (Exception e) {
             log.error("Autocomplete failed: {}", event.getFullCommandName(), e);

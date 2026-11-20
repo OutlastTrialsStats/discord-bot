@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.5.0](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.4.1...v1.5.0) (2026-11-20)
+
+
+### Features
+
+* **command:** replace /setup subcommands with an interactive setup panel ([9c4887e](https://github.com/OutlastTrialsStats/discord-bot/commit/9c4887ed76fce03b4a46c9dc157accf8babb0a66))
+* **command:** shorten setup panel texts and show the wizard first ([ae562b5](https://github.com/OutlastTrialsStats/discord-bot/commit/ae562b5e6e915a9c8e34f57cd408ed5b075049ad))
+* **community-event:** allow several progress messages per server ([8c1da77](https://github.com/OutlastTrialsStats/discord-bot/commit/8c1da77deb3ddba22c0fd9e5decc381b492bac80))
+* **community-event:** rename setup subcommand group to event ([d9c47f3](https://github.com/OutlastTrialsStats/discord-bot/commit/d9c47f36988be23f3b1a64329e61e7c9f69f89fa))
+* **community-event:** show last update next to the rate ([c897f5c](https://github.com/OutlastTrialsStats/discord-bot/commit/c897f5c81ce5c0183fd84fe1b363dd3d596ecbeb))
+* **community-event:** simplify the progress message layout ([c06f953](https://github.com/OutlastTrialsStats/discord-bot/commit/c06f953d1b3b0574dad0188e0b7f8c9b2891580e))
+* **guild:** store public invite links and track bot presence ([7384387](https://github.com/OutlastTrialsStats/discord-bot/commit/73843877fa1d8b2833ee59b63fa0a51c7386f682))
+* **leaderboard:** add escalation and intel categories with autocomplete ([9bf34da](https://github.com/OutlastTrialsStats/discord-bot/commit/9bf34da19f2d357e32cb6f31553659f0b1a5fa1f))
+* **setup:** ask for auto-nickname and community event in /setup start ([e85716e](https://github.com/OutlastTrialsStats/discord-bot/commit/e85716eeda74e3229dd710a8d458ee9dbd96713d))
+
+
+### Code Refactoring
+
+* **community-event:** simplify multi-message handling ([2f422fe](https://github.com/OutlastTrialsStats/discord-bot/commit/2f422fe44f36dd8512e22ffbab1afd87c84d7fbe))
+* remove all code comments ([505d2a4](https://github.com/OutlastTrialsStats/discord-bot/commit/505d2a44559868ac5217831802fc0a61674e2865))
+
+
+### Documentation
+
+* split readme into docs pages ([ab3cf4a](https://github.com/OutlastTrialsStats/discord-bot/commit/ab3cf4acd3f5ad1da29bd3df7b7ad05b784e65fd))
+* use the Outlast Trials Stats name ([5c226f7](https://github.com/OutlastTrialsStats/discord-bot/commit/5c226f7a97cd0cf4c56a939b5359a72a650c80ea))
+
 ## [1.4.1](https://github.com/OutlastTrialsStats/discord-bot/compare/v1.4.0...v1.4.1) (2026-11-20)
 
 

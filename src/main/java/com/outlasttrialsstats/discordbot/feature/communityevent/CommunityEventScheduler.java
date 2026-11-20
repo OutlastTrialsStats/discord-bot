@@ -32,6 +32,7 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +50,8 @@ public class CommunityEventScheduler {
     private final Map<String, Rendered> rendered = new ConcurrentHashMap<>();
 
     @Autowired
-    public CommunityEventScheduler(JDA jda, CommunityEventService service, CommunityEventEmbedFactory embedFactory) {
+    // @Lazy breaks the cycle jda -> commandRouter -> communityEventSetupCommand -> scheduler -> jda
+    public CommunityEventScheduler(@Lazy JDA jda, CommunityEventService service, CommunityEventEmbedFactory embedFactory) {
         this(jda, service, embedFactory, Clock.systemUTC());
     }
 

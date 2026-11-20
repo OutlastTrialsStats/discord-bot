@@ -28,6 +28,7 @@ public class CommunityEventEmbedFactory {
     public static final int COLOR = 0xB3261E;
     static final int BAR_LENGTH = 12;
     static final int FORECAST_PHASES = 2;
+    private static final String ZERO_WIDTH_SPACE = Character.toString(0x200B);
 
     private final MessageService messageService;
 
@@ -35,11 +36,7 @@ public class CommunityEventEmbedFactory {
         Render render = new Render(guildId);
         CommunityEventArt art = CommunityEvents.art(event);
         EmbedBuilder embed = baseEmbed(event)
-                .setThumbnail(CommunityEvents.assetUrl(art.getIcon()))
-                .setFooter(render.message("community_event.footer"));
-        if (event.getSampledAt() != null) {
-            embed.setTimestamp(event.getSampledAt());
-        }
+                .setThumbnail(CommunityEvents.assetUrl(art.getIcon()));
 
         List<String> lines = new ArrayList<>();
         lines.add(statusLine(render, event, now));
@@ -52,17 +49,20 @@ public class CommunityEventEmbedFactory {
         } else {
             addPhases(lines, render, event);
         }
-        boolean showRate = event.getRatePerHour() != null && event.getRatePerHour() > 0;
-        if (showRate) {
-            // Discord trims trailing blank lines, so a zero-width space keeps a gap above the rate field
-            lines.add("​");
-        }
-        embed.setDescription(String.join("\n", lines));
-
-        if (showRate) {
+        if (event.getRatePerHour() != null && event.getRatePerHour() > 0) {
             embed.addField(render.message("community_event.field.rate"),
                     render.message("community_event.rate", render.number(event.getRatePerHour())), true);
         }
+        if (event.getSampledAt() != null) {
+            // A field (unlike the footer) renders the timestamp in every viewer's own time zone
+            embed.addField(render.message("community_event.field.updated"),
+                    TimeFormat.TIME_SHORT.format(event.getSampledAt()), true);
+        }
+        if (!embed.getFields().isEmpty()) {
+            // Discord trims trailing blank lines, so a zero-width space keeps a gap above the fields
+            lines.add(ZERO_WIDTH_SPACE);
+        }
+        embed.setDescription(String.join("\n", lines));
         return embed.build();
     }
 

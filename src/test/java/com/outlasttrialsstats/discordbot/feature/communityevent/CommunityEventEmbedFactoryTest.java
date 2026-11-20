@@ -75,6 +75,14 @@ class CommunityEventEmbedFactoryTest {
         assertThat(embed.getTitle()).isEqualTo("Event e");
         assertThat(embed.getUrl()).isEqualTo("https://outlasttrialsstats.com/events/e");
         assertThat(embed.getImage()).isNull();
+        assertThat(embed.getFooter()).isNull();
+        assertThat(embed.getTimestamp()).isNull();
+        assertThat(embed.getFields())
+                .extracting(MessageEmbed.Field::getName, MessageEmbed.Field::getValue)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("community_event.field.rate[]", "community_event.rate[100]"),
+                        org.assertj.core.groups.Tuple.tuple("community_event.field.updated[]",
+                                "<t:" + Instant.parse("2026-11-08T12:00:00Z").getEpochSecond() + ":t>"));
         assertThat(description)
                 .contains("community_event.status.live[]")
                 .contains("community_event.total[1,500]")

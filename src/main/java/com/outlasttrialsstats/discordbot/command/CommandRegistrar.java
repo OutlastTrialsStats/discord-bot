@@ -105,7 +105,7 @@ public class CommandRegistrar {
                                 .addOptions(stringOption("platform", "Gaming platform", PLATFORM_CHOICES), OPTIONAL_ROLE),
                         new SubcommandData("account-type", "Map a role to an account type")
                                 .addOptions(stringOption("account-type", "Account type", ACCOUNT_TYPE_CHOICES), OPTIONAL_ROLE),
-                        new SubcommandData("connected-account", "Map a role granted to members with a linked TotStats account")
+                        new SubcommandData("connected-account", "Map a role granted to members with a linked Outlast Trials Stats account")
                                 .addOptions(OPTIONAL_ROLE)
                 );
     }

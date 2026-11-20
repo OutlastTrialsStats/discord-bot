@@ -2,11 +2,11 @@
 
 **Last updated: March 16, 2026**
 
-By adding the TOTStats Discord Bot ("the Bot") to your Discord server or using its commands, you agree to these Terms of Service.
+By adding the Outlast Trials Stats Discord Bot ("the Bot") to your Discord server or using its commands, you agree to these Terms of Service.
 
 ## 1. Description
 
-The Bot automatically assigns Discord roles to server members based on their player statistics from [The Outlast Trials](https://outlasttrialsstats.com). It connects Discord accounts to player profiles through the TOTStats platform.
+The Bot automatically assigns Discord roles to server members based on their player statistics in The Outlast Trials. It connects Discord accounts to player profiles on [outlasttrialsstats.com](https://outlasttrialsstats.com).
 
 ## 2. Data Collection and Storage
 
@@ -20,17 +20,17 @@ The Bot collects and stores the following data:
 - Role mapping configurations (role IDs, category, thresholds)
 
 ### User Data
-- Discord User ID (used to fetch player profiles from the TOTStats API)
+- Discord User ID (used to fetch player profiles from the Outlast Trials Stats API)
 
 The Bot does **not** store:
 - Usernames, avatars, or other Discord profile information
 - Message content
 - Voice data
-- Player statistics (these are fetched on demand from the TOTStats API and not persisted)
+- Player statistics (these are fetched on demand from the Outlast Trials Stats API and not persisted)
 
 ## 3. External Services
 
-The Bot communicates with the TOTStats API (`outlasttrialsstats.com`) to retrieve player profiles linked to Discord accounts. This includes:
+The Bot communicates with the Outlast Trials Stats API (`outlasttrialsstats.com`) to retrieve player profiles linked to Discord accounts. This includes:
 - Prestige level, player level
 - Active reagent skill
 - Invasion ranking and total matches played

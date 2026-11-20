@@ -12,7 +12,7 @@ import net.dv8tion.jda.api.entities.Role;
 
 /**
  * Decides whether an existing Discord role may be handed out automatically by the bot.
- * Linking a privileged role would let anyone who links a TotStats account escalate their
+ * Linking a privileged role would let anyone who links an Outlast Trials Stats account escalate their
  * permissions, so roles that are public, managed, out of reach in the hierarchy or carry
  * moderation/administration permissions are rejected.
  */

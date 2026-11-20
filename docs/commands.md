@@ -15,7 +15,7 @@
 | `/setup messages-download` | Download all current messages as a `.properties` file |
 | `/setup messages-reset` | Reset custom messages to defaults |
 
-`connected-account` maps a role that every member with a linked TotStats account gets.
+`connected-account` maps a role that every member with a linked Outlast Trials Stats account gets.
 
 ## Profile
 

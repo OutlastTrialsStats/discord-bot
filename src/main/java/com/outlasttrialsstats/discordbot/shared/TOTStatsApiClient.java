@@ -18,7 +18,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 /**
- * Blocking facade over the TOTStats backend.
+ * Blocking facade over the Outlast Trials Stats backend.
  * <p>
  * Non-2xx responses are never decoded as a body: they surface as errors and are mapped to
  * {@link Optional#empty()} (or {@link ProfileLookup.Failed} for profile lookups).

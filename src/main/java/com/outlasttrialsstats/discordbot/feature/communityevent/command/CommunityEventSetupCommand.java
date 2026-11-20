@@ -3,28 +3,23 @@ package com.outlasttrialsstats.discordbot.feature.communityevent.command;
 import com.outlasttrialsstats.backend.api.model.DiscordCommunityEvent;
 import com.outlasttrialsstats.discordbot.entity.CommunityAlertType;
 import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventEmbedFactory;
+import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventMessagePublisher;
 import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEventScheduler;
-import com.outlasttrialsstats.discordbot.feature.communityevent.CommunityEvents;
 import com.outlasttrialsstats.discordbot.feature.communityevent.alert.AlertRule;
-import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventBinding;
 import com.outlasttrialsstats.discordbot.feature.communityevent.service.CommunityEventService;
 import com.outlasttrialsstats.discordbot.feature.setup.RoleSafety;
 import com.outlasttrialsstats.discordbot.shared.BotChannels;
-import com.outlasttrialsstats.discordbot.shared.MessageCleanup;
 import com.outlasttrialsstats.discordbot.shared.MessageService;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
@@ -45,7 +40,7 @@ public class CommunityEventSetupCommand {
     private static final int MAX_CHOICE_NAME_LENGTH = 100;
 
     private final CommunityEventService service;
-    private final CommunityEventEmbedFactory embedFactory;
+    private final CommunityEventMessagePublisher publisher;
     private final CommunityEventScheduler scheduler;
     private final MessageService messageService;
 
@@ -78,48 +73,27 @@ public class CommunityEventSetupCommand {
             return;
         }
 
-        Optional<List<DiscordCommunityEvent>> events = service.getEvents();
-        if (events.isEmpty()) {
-            hook.editOriginal(message(guildId, "community_event.error")).queue();
-            return;
-        }
-
-        Instant now = Instant.now();
         String eventId = Optional.ofNullable(event.getOption("event", null, OptionMapping::getAsString))
                 .map(String::trim).filter(id -> !id.isEmpty()).orElse(null);
-        Optional<DiscordCommunityEvent> shown = eventId == null
-                ? CommunityEvents.selectCurrent(events.get(), now)
-                : CommunityEvents.find(events.get(), eventId);
-        if (shown.isEmpty()) {
-            hook.editOriginal(eventId == null
-                    ? message(guildId, "setup.community_event.no_event")
-                    : message(guildId, "setup.community_event.unknown_event", eventId)).queue();
-            return;
-        }
+        hook.editOriginal(describe(guildId, publisher.publish(guild, channel, eventId), channel)).queue();
+    }
 
-        Message posted = null;
-        Optional<CommunityEventBinding> previous;
-        try {
-            posted = channel.sendMessageEmbeds(embedFactory.buildProgressEmbed(guildId, shown.get(), now))
-                    .setComponents(embedFactory.buildButtons(guildId, shown.get()))
-                    .complete();
-            previous = service.saveBinding(guildId, eventId, shown.get().getId(), channel.getId(), posted.getId());
-        } catch (Exception e) {
-            log.warn("Failed to set up community event message in guild {}: {}", guildId, e.getMessage());
-            if (posted != null) {
-                posted.delete().queue(_ -> {}, _ -> {});
-            }
-            hook.editOriginal(message(guildId, "setup.community_event.message.post_failed", channel.getAsMention()))
-                    .queue();
-            return;
-        }
-        scheduler.forget(guildId);
-        previous.ifPresent(binding -> deleteMessage(guild, binding));
-
-        hook.editOriginal(message(guildId, eventId == null
-                        ? "setup.community_event.message.success_auto"
-                        : "setup.community_event.message.success",
-                shown.get().getName(), channel.getAsMention())).queue();
+    /** The reply for a {@link CommunityEventMessagePublisher#publish} outcome, also used by the setup wizard. */
+    public String describe(String guildId, CommunityEventMessagePublisher.Outcome outcome,
+                           StandardGuildMessageChannel channel) {
+        return switch (outcome) {
+            case CommunityEventMessagePublisher.Outcome.Posted posted -> message(guildId, posted.followsCurrent()
+                            ? "setup.community_event.message.success_auto"
+                            : "setup.community_event.message.success",
+                    posted.eventName(), channel.getAsMention());
+            case CommunityEventMessagePublisher.Outcome.NoCurrentEvent _ ->
+                    message(guildId, "setup.community_event.no_event");
+            case CommunityEventMessagePublisher.Outcome.UnknownEvent unknown ->
+                    message(guildId, "setup.community_event.unknown_event", unknown.eventId());
+            case CommunityEventMessagePublisher.Outcome.FetchFailed _ -> message(guildId, "community_event.error");
+            case CommunityEventMessagePublisher.Outcome.PostFailed _ ->
+                    message(guildId, "setup.community_event.message.post_failed", channel.getAsMention());
+        };
     }
 
     public void onAutoComplete(CommandAutoCompleteInteractionEvent event) {
@@ -269,7 +243,7 @@ public class CommunityEventSetupCommand {
 
         if ("message".equals(target) || "all".equals(target)) {
             service.removeBinding(guildId).ifPresent(binding -> {
-                deleteMessage(guild, binding);
+                CommunityEventMessagePublisher.deleteMessage(guild, binding);
                 scheduler.forget(guildId);
                 lines.add(message(guildId, "setup.community_event.remove.message"));
             });
@@ -281,14 +255,6 @@ public class CommunityEventSetupCommand {
             lines.add(message(guildId, "setup.community_event.remove.nothing"));
         }
         event.reply(String.join("\n", lines)).setEphemeral(true).queue();
-    }
-
-    private static void deleteMessage(Guild guild, CommunityEventBinding binding) {
-        StandardGuildMessageChannel channel = guild.getChannelById(StandardGuildMessageChannel.class,
-                binding.channelId());
-        if (channel != null) {
-            MessageCleanup.deleteMessages(channel, List.of(binding.messageId()), Set.of());
-        }
     }
 
     private static String roleMention(Role role) {

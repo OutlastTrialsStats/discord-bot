@@ -27,13 +27,18 @@ public class NicknameCommand {
             return;
         }
 
-        GuildServer server = guildServerRepository.findById(guildId)
-                .orElseGet(() -> new GuildServer(guildId));
-        server.setAutoNickname(enabled);
-        guildServerRepository.save(server);
+        setAutoNickname(guildId, enabled);
 
         String messageKey = enabled ? "setup.nickname.enabled" : "setup.nickname.disabled";
         event.reply(messageService.getMessage(guildId, messageKey))
                 .setEphemeral(true).queue();
+    }
+
+    /** Stores the auto-nickname switch of a guild; also used by the {@code /setup start} wizard. */
+    public void setAutoNickname(String guildId, boolean enabled) {
+        GuildServer server = guildServerRepository.findById(guildId)
+                .orElseGet(() -> new GuildServer(guildId));
+        server.setAutoNickname(enabled);
+        guildServerRepository.save(server);
     }
 }

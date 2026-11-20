@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.EntitySelectInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.springframework.stereotype.Component;
@@ -104,6 +105,8 @@ public class CommandRouter extends ListenerAdapter {
         try {
             if (componentId.startsWith("leaderboard:")) {
                 leaderboardCommand.onButton(event);
+            } else if (componentId.startsWith(StartBasicCommand.COMPONENT_PREFIX)) {
+                startBasicCommand.onButton(event);
             }
         } catch (Exception e) {
             log.error("Button interaction failed: {}", componentId, e);
@@ -114,8 +117,20 @@ public class CommandRouter extends ListenerAdapter {
     public void onStringSelectInteraction(StringSelectInteractionEvent event) {
         String componentId = event.getComponentId();
         try {
-            if ("setup:start:categories".equals(componentId)) {
+            if (StartBasicCommand.CATEGORIES.equals(componentId)) {
                 startBasicCommand.onCategorySelect(event);
+            }
+        } catch (Exception e) {
+            log.error("Select menu interaction failed: {}", componentId, e);
+        }
+    }
+
+    @Override
+    public void onEntitySelectInteraction(EntitySelectInteractionEvent event) {
+        String componentId = event.getComponentId();
+        try {
+            if (StartBasicCommand.EVENT_CHANNEL.equals(componentId)) {
+                startBasicCommand.onEventChannelSelect(event);
             }
         } catch (Exception e) {
             log.error("Select menu interaction failed: {}", componentId, e);

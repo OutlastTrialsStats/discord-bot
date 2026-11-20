@@ -4,7 +4,7 @@
 
 | Command | Description |
 |---|---|
-| `/setup start` | Automatically create roles for selected categories (Prestige, Level, Reagent Rig, Invasion Ranking, Total Invasion Matches, Platform, Account Type) |
+| `/setup start` | Setup wizard: create roles for the selected categories (Prestige, Level, Reagent Rig, Invasion Ranking, Total Invasion Matches, Season Invasion Points, Platform, Account Type, Connected Account), then optionally turn on auto-nicknames and pick a channel for the community event progress message and alerts. Every step can be skipped |
 | `/setup delete` | Delete all bot-managed roles and remove mappings |
 | `/setup language` | Change the bot's response language (English, Deutsch) |
 | `/setup role-mapping <category>` | Link a role to a category (prestige, level, skill, invasion-ranking, total-invasion-matches, season-invasion-points, platform, account-type, connected-account) |

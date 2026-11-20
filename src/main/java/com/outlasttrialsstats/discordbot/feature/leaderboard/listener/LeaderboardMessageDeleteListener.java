@@ -14,10 +14,6 @@ import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.springframework.stereotype.Component;
 
-/**
- * Removes a leaderboard binding when one of its messages is deleted, and deletes the binding's remaining
- * pages so no orphaned, never-updated leaderboard messages stay behind.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j

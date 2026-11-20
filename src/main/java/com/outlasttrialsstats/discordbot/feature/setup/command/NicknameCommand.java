@@ -34,7 +34,6 @@ public class NicknameCommand {
                 .setEphemeral(true).queue();
     }
 
-    /** Stores the auto-nickname switch of a guild; also used by the {@code /setup start} wizard. */
     public void setAutoNickname(String guildId, boolean enabled) {
         GuildServer server = guildServerRepository.findById(guildId)
                 .orElseGet(() -> new GuildServer(guildId));

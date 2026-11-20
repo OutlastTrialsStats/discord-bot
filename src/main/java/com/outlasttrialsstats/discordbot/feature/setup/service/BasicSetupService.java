@@ -36,24 +36,13 @@ public class BasicSetupService {
     private record RoleDef(String name, Color color, boolean hoisted, BiConsumer<String, Boolean> saveMapping) {
     }
 
-    /**
-     * Outcome of a basic setup run: the names of the roles that were created and of those that could not be
-     * created (or whose mapping could not be saved).
-     */
     public record SetupResult(List<String> createdRoles, List<String> failedRoles) {
     }
 
-    /**
-     * Creates or links the roles of the given categories. Exactly one of the callbacks is invoked once all
-     * role creations have finished: {@code onComplete} if any role was created or failed, otherwise
-     * {@code onNoChanges}.
-     */
     public void setupRoles(Guild guild, Set<RoleCategory> categories,
                            Consumer<SetupResult> onComplete, Runnable onNoChanges) {
         String guildId = guild.getId();
         List<Role> existingRoles = guild.getRoles();
-        // Starts at 1 as a sentinel for the loop itself, so that creations completing while the loop is still
-        // queueing further ones cannot drop the counter to 0 and finish early.
         AtomicInteger pendingTasks = new AtomicInteger(1);
         List<String> createdRoles = new CopyOnWriteArrayList<>();
         List<String> failedRoles = new CopyOnWriteArrayList<>();
@@ -147,7 +136,6 @@ public class BasicSetupService {
             try {
                 def.saveMapping().accept(existing.getId(), false);
             } catch (Exception e) {
-                // One failing mapping must not abort the remaining categories of the setup
                 log.error("Failed to save mapping for existing role {} in guild {}",
                         existing.getName(), guild.getId(), e);
                 failedRoles.add(def.name());
@@ -189,10 +177,6 @@ public class BasicSetupService {
         }
     }
 
-    /**
-     * Finds an existing role with the given name that is safe to hand out. A name-matched role that is
-     * privileged or out of the bot's reach is ignored so that a fresh, permission-less role gets created.
-     */
     private Role findLinkableRoleByName(Guild guild, List<Role> roles, String name) {
         Member selfMember = guild.getSelfMember();
         return roles.stream()

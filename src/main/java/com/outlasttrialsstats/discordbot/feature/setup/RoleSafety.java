@@ -10,12 +10,6 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 
-/**
- * Decides whether an existing Discord role may be handed out automatically by the bot.
- * Linking a privileged role would let anyone who links an Outlast Trials Stats account escalate their
- * permissions, so roles that are public, managed, out of reach in the hierarchy or carry
- * moderation/administration permissions are rejected.
- */
 public final class RoleSafety {
 
     private static final Set<Permission> DANGEROUS_PERMISSIONS = Collections.unmodifiableSet(EnumSet.of(
@@ -55,16 +49,10 @@ public final class RoleSafety {
     private RoleSafety() {
     }
 
-    /**
-     * Checks a role without considering who requested the link (e.g. for name-matched roles).
-     */
     public static Optional<Violation> check(Role role, Member selfMember) {
         return check(role, selfMember, null);
     }
 
-    /**
-     * @param invoker the member who asked for the link; {@code null} skips the invoker hierarchy check
-     */
     public static Optional<Violation> check(Role role, Member selfMember, Member invoker) {
         Optional<Violation> unreachable = checkReachable(role, selfMember);
         if (unreachable.isPresent()) {
@@ -79,10 +67,6 @@ public final class RoleSafety {
         return Optional.empty();
     }
 
-    /**
-     * Checks only whether the bot can manage the role at all (not public, not managed, not above the bot),
-     * ignoring its permissions. Enough for deleting a role the bot created itself.
-     */
     public static Optional<Violation> checkReachable(Role role, Member selfMember) {
         if (role.isPublicRole()) {
             return Optional.of(Violation.PUBLIC_ROLE);

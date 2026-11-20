@@ -27,7 +27,6 @@ public class WebClientConfig {
 
     @SuppressWarnings("removal")
     public static WebClient createStatsWebClient(String baseUrl, Duration connectTimeout, Duration responseTimeout) {
-        // Lenient on purpose: a new field or enum value in the backend must not break every call.
         JsonMapper mapper = JsonMapper.builder()
                 .addModule(new JavaTimeModule())
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

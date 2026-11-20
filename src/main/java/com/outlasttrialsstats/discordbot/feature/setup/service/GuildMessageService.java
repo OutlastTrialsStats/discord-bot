@@ -38,12 +38,6 @@ public class GuildMessageService {
 
     private final Map<String, Properties> defaultsByLanguage = new ConcurrentHashMap<>();
 
-    /**
-     * Result of a custom message import.
-     *
-     * @param updated      number of keys whose stored custom message was created, changed or reset to the default
-     * @param rejectedKeys keys that were not imported because they are unknown or their value is invalid
-     */
     public record ImportResult(int updated, List<String> rejectedKeys) {
     }
 
@@ -99,7 +93,6 @@ public class GuildMessageService {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        // Properties.store escapes every entry onto a single line; drop the date comment and sort for a stable file
         return writer.toString().lines()
                 .filter(line -> !line.startsWith("#"))
                 .sorted()
@@ -125,10 +118,6 @@ public class GuildMessageService {
         }
     }
 
-    /**
-     * Returns the raw (unformatted) default message patterns for the given locale, falling back to the
-     * base bundle for keys the locale does not translate.
-     */
     private Properties getDefaults(Locale locale) {
         return defaultsByLanguage.computeIfAbsent(locale.getLanguage(), language -> {
             Properties base = load(BUNDLE_BASE + ".properties");

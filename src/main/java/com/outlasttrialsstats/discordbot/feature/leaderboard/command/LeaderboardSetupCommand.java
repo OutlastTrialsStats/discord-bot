@@ -26,7 +26,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LeaderboardSetupCommand {
 
-    /** Sending and later editing the embeds needs all of these in the target channel. */
     static final Permission[] REQUIRED_PERMISSIONS = BotChannels.SEND_AND_EDIT_EMBEDS;
 
     private final LeaderboardService leaderboardService;
@@ -60,19 +59,16 @@ public class LeaderboardSetupCommand {
         String categoryName = leaderboardService.getCategoryDisplayName(guildId, statisticType);
         int maxPages = Math.max(1, Math.min(10, event.getOption("pages").getAsInt()));
 
-        // Verify first page is available
         Optional<DiscordLeaderboardResponse> firstResponse = leaderboardService.fetchLeaderboard(statisticType, 1);
         if (firstResponse.isEmpty()) {
             hook.editOriginal(messageService.getMessage(guildId, "leaderboard.error")).queue();
             return;
         }
 
-        // Cap maxPages to actual total pages, but always post at least one (possibly empty) page
         Integer reportedPages = firstResponse.get().getTotalPages();
         int totalPages = Math.max(1, reportedPages != null ? reportedPages : 1);
         maxPages = Math.min(maxPages, totalPages);
 
-        // Post the new messages first, so a failure leaves the existing leaderboard untouched
         List<String> messageIds = new ArrayList<>();
         Optional<LeaderboardBinding> oldBinding;
         try {

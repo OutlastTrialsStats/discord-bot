@@ -24,7 +24,6 @@ public class JdaConfiguration {
                 .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES)
                 .setStatus(OnlineStatus.ONLINE)
                 .setActivity(Activity.watching("outlasttrialsstats.com/link"))
-                // Run listeners off the gateway read thread so blocking work cannot stall the websocket
                 .setEventPool(Executors.newVirtualThreadPerTaskExecutor(), true)
                 .addEventListeners(listeners.toArray())
                 .build()

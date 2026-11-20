@@ -9,19 +9,13 @@ import java.util.Optional;
 import java.util.function.Function;
 import net.dv8tion.jda.api.interactions.commands.Command.Choice;
 
-/**
- * Parses, suggests and formats leaderboard categories.
- */
 public final class LeaderboardCategories {
 
-    /** Discord accepts at most 25 autocomplete choices. */
     static final int MAX_CHOICES = 25;
 
-    /** Old category names that may still be stored in button ids of posted messages. */
     private static final Map<String, StatisticType> RENAMED = Map.of(
             "ESCALATION_PEAK", StatisticType.ESCALATION_HIGHEST_TRIAL_REACHED);
 
-    /** ESCALATION_HIGHEST_TRIAL_REACHED_WITH_TIME encodes trial * TRIAL_FACTOR + (TIME_OFFSET - seconds). */
     private static final long TRIAL_FACTOR = 4_194_304L;
     private static final long TIME_OFFSET = 1_048_576L;
 
@@ -42,9 +36,6 @@ public final class LeaderboardCategories {
                 .findFirst();
     }
 
-    /**
-     * Returns the categories whose display name or value contains {@code typed}, at most {@link #MAX_CHOICES}.
-     */
     public static List<Choice> suggest(String typed, Function<StatisticType, String> displayName) {
         String needle = typed == null ? "" : typed.trim().toLowerCase(Locale.ROOT);
         return Arrays.stream(StatisticType.values())

@@ -50,7 +50,6 @@ public class CommunityEventScheduler {
     private final Map<String, Rendered> rendered = new ConcurrentHashMap<>();
 
     @Autowired
-    // @Lazy breaks the cycle jda -> commandRouter -> communityEventSetupCommand -> scheduler -> jda
     public CommunityEventScheduler(@Lazy JDA jda, CommunityEventService service, CommunityEventEmbedFactory embedFactory) {
         this(jda, service, embedFactory, Clock.systemUTC());
     }
@@ -124,7 +123,6 @@ public class CommunityEventScheduler {
             return;
         }
 
-        // setComponents() also drops the website button that older messages still carry
         channel.editMessageEmbedsById(binding.messageId(), embed)
                 .setComponents()
                 .queue(_ -> rendered.put(binding.guildId(), next),

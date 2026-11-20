@@ -28,10 +28,6 @@ import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionE
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import org.springframework.stereotype.Component;
 
-/**
- * The {@code /setup start} wizard: role categories, then auto-nickname, then the community event channel.
- * Every step edits the same ephemeral message.
- */
 @Component
 @RequiredArgsConstructor
 public class StartBasicCommand {

@@ -31,7 +31,6 @@ import org.springframework.stereotype.Component;
 public class LeaderboardScheduler {
 
     private static final long EDIT_COOLDOWN_SECONDS = 6;
-    /** Channels are updated in parallel, but never by more than this many threads at once. */
     private static final int UPDATE_THREADS = 2;
 
     private final JDA jda;
@@ -109,10 +108,6 @@ public class LeaderboardScheduler {
         });
     }
 
-    /**
-     * Updates one page. The returned future always completes normally, so a failing page never stops the
-     * remaining pages of the channel.
-     */
     private CompletableFuture<?> editLeaderboardMessage(StandardGuildMessageChannel channel, LeaderboardBinding binding,
                                                          String messageId, int page,
                                                          Set<LeaderboardBinding> removedBindings) {

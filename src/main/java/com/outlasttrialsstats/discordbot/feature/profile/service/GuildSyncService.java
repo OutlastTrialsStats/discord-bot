@@ -31,7 +31,6 @@ public class GuildSyncService {
     private final TOTStatsApiClient statsApiClient;
     private final GuildServerRepository guildServerRepository;
 
-    /** Guilds with a full member sync currently running (shared by /sync-all and the scheduler). */
     private final Set<String> syncsInProgress = ConcurrentHashMap.newKeySet();
 
     public RoleAssignmentResult syncMember(Guild guild, Member member) {
@@ -42,10 +41,6 @@ public class GuildSyncService {
         return roleAssignmentService.assignRoles(guild, member);
     }
 
-    /**
-     * Marks a full sync of the guild as running. Returns {@code false} if one is already in progress.
-     * Every successful call must be paired with {@link #finishGuildSync(String)}.
-     */
     public boolean tryStartGuildSync(String guildId) {
         return syncsInProgress.add(guildId);
     }
@@ -54,12 +49,6 @@ public class GuildSyncService {
         syncsInProgress.remove(guildId);
     }
 
-    /**
-     * Syncs the roles of all non-bot members using the bulk profile endpoint in batches of
-     * {@value #BULK_BATCH_SIZE}. Members missing from a successful batch response are confirmed as
-     * not linked and cleaned up; members of a failed batch are counted as failed and left untouched.
-     * The verified member count is only stored if every batch succeeded.
-     */
     public GuildSyncResult syncMembers(Guild guild, List<Member> members) {
         List<Member> nonBotMembers = members.stream()
                 .filter(m -> !m.getUser().isBot())
@@ -70,7 +59,6 @@ public class GuildSyncService {
         int unverified = 0;
         int failed = 0;
         int failedBatches = 0;
-        // Loaded on the first unlinked member and reused for the whole sync
         List<String> mappedRoleIds = null;
 
         for (int i = 0; i < nonBotMembers.size(); i += BULK_BATCH_SIZE) {
@@ -79,7 +67,6 @@ public class GuildSyncService {
 
             var responseOpt = statsApiClient.getBulkProfiles(discordIds);
             if (responseOpt.isEmpty() || responseOpt.get().getProfiles() == null) {
-                // Backend unavailable: never treat this as "not linked", leave roles untouched
                 log.warn("Bulk profile lookup failed for {} members in guild {}, skipping batch",
                         batch.size(), guild.getId());
                 failedBatches++;

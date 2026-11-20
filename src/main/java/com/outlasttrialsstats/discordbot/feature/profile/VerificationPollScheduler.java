@@ -20,11 +20,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class VerificationPollScheduler {
 
-    /**
-     * Look-back window passed to the backend (allowed range 5-300). Much larger than the poll delay so that
-     * a slow poll or a transient failure does not lose verifications; duplicates are filtered via
-     * {@link #processedUserIds}.
-     */
     static final int POLL_WINDOW_SECONDS = 60;
     private static final int MAX_PROCESSED_SIZE = 1000;
 
@@ -78,12 +73,6 @@ public class VerificationPollScheduler {
         }
     }
 
-    /**
-     * Syncs the user in every guild the bot shares with them.
-     *
-     * @return true if the user was handled in every guild (synced or definitively not a member),
-     *         false if at least one guild failed and the user should be retried on the next poll
-     */
     private boolean processVerification(DiscordVerificationEntry verification, String discordUserId, long userId) {
         boolean complete = true;
 
@@ -91,7 +80,6 @@ public class VerificationPollScheduler {
             Member member = guild.getMemberById(userId);
             if (member == null) {
                 try {
-                    // The member cache only holds a few members, so ask Discord directly (scheduler thread may block)
                     member = guild.retrieveMemberById(userId).complete();
                 } catch (Exception e) {
                     if (e instanceof ErrorResponseException ere
@@ -113,7 +101,6 @@ public class VerificationPollScheduler {
             try {
                 var result = guildSyncService.syncMember(guild, member);
                 if (result.isLookupFailed()) {
-                    // Retry on the next poll while the verification is still in the window
                     complete = false;
                     log.warn("Profile lookup failed for recently verified user {} in guild {}",
                             discordUserId, guild.getId());

@@ -78,7 +78,6 @@ public class CommunityEventSetupCommand {
         hook.editOriginal(describe(guildId, publisher.publish(guild, channel, eventId), channel)).queue();
     }
 
-    /** The reply for a {@link CommunityEventMessagePublisher#publish} outcome, also used by the setup wizard. */
     public String describe(String guildId, CommunityEventMessagePublisher.Outcome outcome,
                            StandardGuildMessageChannel channel) {
         return switch (outcome) {

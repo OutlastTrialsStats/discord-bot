@@ -52,18 +52,10 @@ public class RoleAssignmentService {
         };
     }
 
-    /**
-     * Removes every role the bot manages in this guild from the member. Must only be called when the
-     * backend confirmed that the member has no linked profile (never on lookup failures).
-     */
     public RoleAssignmentResult cleanupUnverifiedMember(Guild guild, Member member) {
         return cleanupUnverifiedMember(guild, member, getMappedRoleIds(guild.getId()));
     }
 
-    /**
-     * Same as {@link #cleanupUnverifiedMember(Guild, Member)} for callers that clean up many members and
-     * load the guild's mapped role ids once via {@link #getMappedRoleIds(String)}.
-     */
     public RoleAssignmentResult cleanupUnverifiedMember(Guild guild, Member member,
                                                         Collection<String> mappedRoleIds) {
         List<String> removedRoles = new ArrayList<>();
@@ -76,7 +68,6 @@ public class RoleAssignmentService {
         return RoleAssignmentResult.notVerified(removedRoles);
     }
 
-    /** The distinct ids of every role the bot manages in the guild. */
     public List<String> getMappedRoleIds(String guildId) {
         return roleMappingService.getMappedRoles(guildId).stream()
                 .map(MappedRole::roleId)
@@ -198,10 +189,6 @@ public class RoleAssignmentService {
         }
     }
 
-    /**
-     * Normalizes a display name into a valid Discord nickname: stripped, at most
-     * {@link Member#MAX_NICKNAME_LENGTH} code points. Returns {@code null} for blank names.
-     */
     static String toNickname(String displayName) {
         if (displayName == null) return null;
         String stripped = displayName.strip();

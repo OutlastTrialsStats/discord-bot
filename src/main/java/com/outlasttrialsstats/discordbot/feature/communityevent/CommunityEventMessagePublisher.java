@@ -15,10 +15,6 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import org.springframework.stereotype.Component;
 
-/**
- * Posts the community event progress message of a guild and replaces the previous one.
- * Shared by {@code /setup event message} and the {@code /setup start} wizard.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -29,7 +25,6 @@ public class CommunityEventMessagePublisher {
     private final CommunityEventScheduler scheduler;
 
     public sealed interface Outcome {
-        /** {@code eventName} is the shown event; {@code followsCurrent} is true when no event was pinned. */
         record Posted(String eventName, boolean followsCurrent) implements Outcome {}
         record NoCurrentEvent() implements Outcome {}
         record UnknownEvent(String eventId) implements Outcome {}
@@ -37,10 +32,6 @@ public class CommunityEventMessagePublisher {
         record PostFailed() implements Outcome {}
     }
 
-    /**
-     * Posts the progress of {@code eventId}, or of the current event when it is {@code null}, in {@code channel}.
-     * The caller checks the channel permissions first.
-     */
     public Outcome publish(Guild guild, StandardGuildMessageChannel channel, String eventId) {
         String guildId = guild.getId();
         Optional<List<DiscordCommunityEvent>> events = service.getEvents();

@@ -31,7 +31,6 @@ public class SyncAllCommand {
     private final TaskExecutor taskExecutor;
     private final Clock clock;
 
-    /** Start time of the last /sync-all per guild, used for the cooldown. */
     private final Map<String, Instant> lastRunByGuild = new ConcurrentHashMap<>();
 
     @Autowired
@@ -106,7 +105,6 @@ public class SyncAllCommand {
         }
     }
 
-    /** Ends the running sync and lifts the cooldown, so an admin can retry after a failure. */
     private void release(String guildId, Instant startedAt) {
         guildSyncService.finishGuildSync(guildId);
         lastRunByGuild.remove(guildId, startedAt);

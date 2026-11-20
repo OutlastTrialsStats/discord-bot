@@ -22,11 +22,7 @@ public class RoleMappingService {
     private final EnumRoleMappingRepository enumRoleRepo;
     private final RankedRoleMappingRepository rankedRoleRepo;
 
-    // --- Enum-based mappings (Skill, Platform, AccountType) ---
 
-    /**
-     * @param botCreated {@code true} only if the bot created the role itself, so that /setup delete may delete it
-     */
     @Transactional
     public void saveEnumMapping(String guildId, RoleCategory category, String enumValue, String roleId,
                                 boolean botCreated) {
@@ -39,9 +35,6 @@ public class RoleMappingService {
         }
     }
 
-    /**
-     * @return the role id of the removed mapping, empty if there was none
-     */
     @Transactional
     public Optional<String> removeEnumMapping(String guildId, RoleCategory category, String enumValue) {
         Optional<EnumRoleMapping> existing = enumRoleRepo.findByGuildIdAndCategoryAndEnumValue(guildId, category, enumValue);
@@ -54,10 +47,6 @@ public class RoleMappingService {
                 .map(EnumRoleMapping::getRoleId);
     }
 
-    /**
-     * Re-saving a mapping with the same role (e.g. /setup basic run again, which matches the bot's own role
-     * by name) must not forget that the bot created it, otherwise /setup delete would no longer delete it.
-     */
     private static boolean keepBotCreated(String currentRoleId, boolean currentBotCreated,
                                           String newRoleId, boolean newBotCreated) {
         return newBotCreated || (currentBotCreated && newRoleId.equals(currentRoleId));
@@ -67,11 +56,7 @@ public class RoleMappingService {
         return enumRoleRepo.findByGuildIdAndCategory(guildId, category);
     }
 
-    // --- Ranked mappings (Prestige, InvasionRanking) ---
 
-    /**
-     * @param botCreated {@code true} only if the bot created the role itself, so that /setup delete may delete it
-     */
     @Transactional
     public void saveRankedMapping(String guildId, RoleCategory category, int minRank, String roleId,
                                   boolean botCreated) {
@@ -84,9 +69,6 @@ public class RoleMappingService {
         }
     }
 
-    /**
-     * @return the role id of the removed mapping, empty if there was none
-     */
     @Transactional
     public Optional<String> removeRankedMapping(String guildId, RoleCategory category, int minRank) {
         Optional<RankedRoleMapping> existing = rankedRoleRepo.findByGuildIdAndCategoryAndMinRank(guildId, category, minRank);
@@ -108,12 +90,7 @@ public class RoleMappingService {
                 guildId, category, rank);
     }
 
-    // --- Common operations ---
 
-    /**
-     * Returns every distinct mapped role of the guild. A role counts as bot-created if any of its mappings
-     * says so, because only the bot's own createRole callback ever sets the flag.
-     */
     public List<MappedRole> getMappedRoles(String guildId) {
         Map<String, Boolean> merged = new LinkedHashMap<>();
         enumRoleRepo.findByGuildId(guildId)
@@ -128,10 +105,6 @@ public class RoleMappingService {
     public record MappedRole(String roleId, boolean botCreated) {
     }
 
-    /**
-     * Returns the other categories of this guild that already use the given role. Mapping one role in
-     * several categories makes the role sync add and remove it alternately, so such links are rejected.
-     */
     public Optional<RoleCategory> findOtherCategoryUsingRole(String guildId, String roleId, RoleCategory category) {
         return Stream.concat(
                 enumRoleRepo.findByGuildIdAndRoleIdAndCategoryNot(guildId, roleId, category).stream()

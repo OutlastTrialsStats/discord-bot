@@ -58,7 +58,6 @@ public class RoleMappingCommand {
         }
     }
 
-    // --- Prestige ---
 
     private void onPrestige(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -80,7 +79,6 @@ public class RoleMappingCommand {
         replyRemoved(event, guildId, removedRoleId, messageService.getMessage(guildId, "setup.prestige_role.removed", threshold));
     }
 
-    // --- Level ---
 
     private void onLevel(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -102,7 +100,6 @@ public class RoleMappingCommand {
         replyRemoved(event, guildId, removedRoleId, messageService.getMessage(guildId, "setup.level_role.removed", threshold));
     }
 
-    // --- Skill (Reagent Rig) ---
 
     private void onSkill(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -124,7 +121,6 @@ public class RoleMappingCommand {
         replyRemoved(event, guildId, removedRoleId, messageService.getMessage(guildId, "setup.skill_role.removed", RoleConfig.skillName(reagentSkill)));
     }
 
-    // --- Invasion Ranking ---
 
     private void onInvasionRanking(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -147,7 +143,6 @@ public class RoleMappingCommand {
                 RoleConfig.INVASION_RANKING_NAMES.get(invasionRanking)));
     }
 
-    // --- Total Invasion Matches ---
 
     private void onTotalInvasionMatches(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -169,7 +164,6 @@ public class RoleMappingCommand {
         replyRemoved(event, guildId, removedRoleId, messageService.getMessage(guildId, "setup.total_invasion_matches_role.removed", threshold));
     }
 
-    // --- Season Invasion Points ---
 
     private void onSeasonInvasionPoints(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -191,7 +185,6 @@ public class RoleMappingCommand {
         replyRemoved(event, guildId, removedRoleId, messageService.getMessage(guildId, "setup.season_invasion_points_role.removed", threshold));
     }
 
-    // --- Platform ---
 
     private void onPlatform(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -214,7 +207,6 @@ public class RoleMappingCommand {
                 RoleConfig.PLATFORM_NAMES.get(platformType)));
     }
 
-    // --- Account Type ---
 
     private void onAccountType(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -237,7 +229,6 @@ public class RoleMappingCommand {
                 RoleConfig.ACCOUNT_TYPE_NAMES.get(type)));
     }
 
-    // --- Connected Account ---
 
     private void onConnectedAccount(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -260,7 +251,6 @@ public class RoleMappingCommand {
         replyRemoved(event, guildId, removedRoleId, messageService.getMessage(guildId, "setup.connected_account_role.removed"));
     }
 
-    // --- Helper ---
 
     private Role getOptionalRole(SlashCommandInteractionEvent event) {
         OptionMapping roleOption = event.getOption("role");
@@ -280,7 +270,6 @@ public class RoleMappingCommand {
             return;
         }
         if (currentRole != null && RoleSafety.isSafe(currentRole, guild.getSelfMember())) {
-            // Re-running the command without a role keeps the already mapped role instead of piling up duplicates.
             replyEphemeral(event, messageService.getMessage(guildId, messageKey, currentRole.getName(), extraArg));
             return;
         }
@@ -310,7 +299,6 @@ public class RoleMappingCommand {
             saveMapping.accept(createdRole.getId(), true);
         } catch (Exception e) {
             log.error("Failed to save mapping for created role {} in guild {}", createdRole.getName(), guildId, e);
-            // Do not leave an unmapped role behind that /setup delete would never clean up.
             createdRole.delete().queue(null, deleteError -> log.warn("Failed to delete orphaned role {} in guild {}: {}",
                     createdRole.getName(), guildId, deleteError.getMessage()));
             hook.editOriginal(createFailedMessage(guildId, createdRole.getName())).queue();
@@ -346,10 +334,6 @@ public class RoleMappingCommand {
         return messageService.getMessage(guildId, "setup.role_mapping.create_failed", roleName);
     }
 
-    /**
-     * The role sync only manages mapped roles, so a role that is no longer mapped stays on everyone who has it.
-     * Appends a hint for the admin when a mapping was re-pointed away from a role that still exists.
-     */
     private String withOldRoleNotice(String guildId, Role previousRole, Role newRole, String message) {
         if (previousRole == null || previousRole.getId().equals(newRole.getId())) {
             return message;

@@ -54,12 +54,10 @@ public class CommunityEventEmbedFactory {
                     render.message("community_event.rate", render.number(event.getRatePerHour())), true);
         }
         if (event.getSampledAt() != null) {
-            // A field (unlike the footer) renders the timestamp in every viewer's own time zone
             embed.addField(render.message("community_event.field.updated"),
                     TimeFormat.TIME_SHORT.format(event.getSampledAt()), true);
         }
         if (!embed.getFields().isEmpty()) {
-            // Discord trims trailing blank lines, so a zero-width space keeps a gap above the fields
             lines.add(ZERO_WIDTH_SPACE);
         }
         embed.setDescription(String.join("\n", lines));

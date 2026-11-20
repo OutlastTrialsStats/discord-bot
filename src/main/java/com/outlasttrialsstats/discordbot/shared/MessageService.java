@@ -25,7 +25,6 @@ public class MessageService {
     private final GuildServerRepository guildServerRepository;
     private final GuildMessageRepository guildMessageRepository;
 
-    /** What is cached per guild: its language and its custom messages. */
     private record GuildSettings(Locale locale, Map<String, String> customMessages) {
     }
 

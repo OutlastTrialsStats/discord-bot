@@ -60,7 +60,6 @@ public class LeaderboardCommand {
         reply.queue();
     }
 
-    /** Suggests categories for the "category" option of /leaderboard and /setup leaderboard. */
     public void onCategoryAutoComplete(CommandAutoCompleteInteractionEvent event) {
         Guild guild = event.getGuild();
         event.replyChoices(LeaderboardCategories.suggest(event.getFocusedOption().getValue(),

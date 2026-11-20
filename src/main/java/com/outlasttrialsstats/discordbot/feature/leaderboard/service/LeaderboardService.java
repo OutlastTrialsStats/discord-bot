@@ -33,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class LeaderboardService {
 
-    /** Discord allows at most 100 user ids per member chunk request. */
     static final int MEMBER_CHUNK_SIZE = 100;
     private static final Duration MEMBER_RETRIEVE_TIMEOUT = Duration.ofSeconds(5);
     private static final int MAX_NAME_CODE_POINTS = 20;
@@ -88,7 +87,6 @@ public class LeaderboardService {
             for (DiscordLeaderboardEntry entry : entries) {
                 lines.add(formatEntry(guildId, category, entry, guildMemberIds, maxRankWidth));
             }
-            // The title and footer are already set, so embed.length() is what they use of the total limit.
             int budget = Math.min(MessageEmbed.DESCRIPTION_MAX_LENGTH,
                     MessageEmbed.EMBED_MAX_LENGTH_BOT - embed.length());
             embed.setDescription(buildDescription(guildId, lines, Math.max(0, budget)));
@@ -97,17 +95,12 @@ public class LeaderboardService {
         return embed.build();
     }
 
-    /**
-     * Joins the entry lines without exceeding {@code budget} characters. Lines that do not fit are dropped
-     * and replaced by a short indicator saying how many entries were left out.
-     */
     private String buildDescription(String guildId, List<String> lines, int budget) {
         int totalLength = lines.stream().mapToInt(String::length).sum();
         if (totalLength <= budget) {
             return String.join("", lines);
         }
 
-        // The indicator for all lines is at least as long as any shorter one, so reserving it is always enough.
         int reserve = truncationIndicator(guildId, lines.size()).length();
         StringBuilder description = new StringBuilder();
         int shown = 0;
@@ -127,7 +120,6 @@ public class LeaderboardService {
         return indicator != null && !indicator.isBlank() ? indicator : TRUNCATION_FALLBACK;
     }
 
-    /** Cuts {@code text} to at most {@code maxChars} UTF-16 chars without splitting a surrogate pair. */
     private static String truncateChars(String text, int maxChars) {
         if (text.length() <= maxChars) {
             return text;
@@ -139,12 +131,6 @@ public class LeaderboardService {
         return text.substring(0, end);
     }
 
-    /**
-     * Resolves which of the page's Discord users are members of the guild. The member cache only holds a
-     * handful of members, so the ids are requested from the gateway in one chunk request per 100 ids.
-     * This blocks, which is fine because all callers run on scheduler or event-pool threads, never on the
-     * gateway thread. On failure the member cache is used as a fallback.
-     */
     private Set<String> resolveGuildMemberIds(Guild guild, List<DiscordLeaderboardEntry> entries) {
         if (guild == null) {
             return Set.of();
@@ -157,7 +143,6 @@ public class LeaderboardService {
                 try {
                     requestedIds.add(Long.parseUnsignedLong(discordUserId));
                 } catch (NumberFormatException ignored) {
-                    // not a snowflake: the entry just gets no mention
                 }
             }
         }
@@ -221,7 +206,6 @@ public class LeaderboardService {
 
         int ranking = entry.getRanking() != null ? entry.getRanking() : 0;
         long value = entry.getValue() != null ? entry.getValue() : 0L;
-        // Passed as a String: MessageFormat would group a number ("1,234"), which breaks the padding above
         String rankPadding = " ".repeat(maxRankWidth - String.valueOf(ranking).length());
         String formattedValue = LeaderboardCategories.formatValue(category, value);
 
@@ -229,20 +213,11 @@ public class LeaderboardService {
                 rankPadding, String.valueOf(ranking), displayName, mention, formattedValue) + "\n";
     }
 
-    /**
-     * Escapes markdown in a player name, including single tokens and the brackets of masked links.
-     * Backslashes are doubled first so a trailing one cannot escape the surrounding formatting.
-     */
     static String escapeName(String name) {
         String escaped = MarkdownSanitizer.escape(name.replace("\\", "\\\\"), true);
         return escaped.replace("[", "\\[").replace("]", "\\]");
     }
 
-    /**
-     * Creates or replaces the binding for the guild and category.
-     *
-     * @return a snapshot of the binding as it was before, so the caller can delete its old messages
-     */
     @Transactional
     public Optional<LeaderboardBinding> saveBinding(String guildId, StatisticType category, String channelId,
                                                     List<String> messageIds, int maxPages) {
@@ -262,16 +237,11 @@ public class LeaderboardService {
         return Optional.empty();
     }
 
-    /**
-     * Removes the binding only if it still references {@code messageId}. A stale failure for a message
-     * that has since been replaced by a new setup must not delete the new binding.
-     */
     @Transactional
     public Optional<LeaderboardBinding> removeBindingIfContainsMessage(Long bindingId, String messageId) {
         return removeBindingIf(bindingId, binding -> binding.getMessageIds().contains(messageId));
     }
 
-    /** Removes the binding only if it still points to {@code channelId}. */
     @Transactional
     public Optional<LeaderboardBinding> removeBindingIfInChannel(Long bindingId, String channelId) {
         return removeBindingIf(bindingId, binding -> channelId.equals(binding.getChannelId()));
@@ -286,7 +256,6 @@ public class LeaderboardService {
                 .map(this::delete);
     }
 
-    /** Removes every binding that references one of the given messages. */
     @Transactional
     public List<LeaderboardBinding> removeBindingsByMessageIds(Collection<String> messageIds) {
         if (messageIds.isEmpty()) {

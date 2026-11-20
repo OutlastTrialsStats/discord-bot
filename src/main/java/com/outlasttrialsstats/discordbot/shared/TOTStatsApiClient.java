@@ -17,12 +17,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
-/**
- * Blocking facade over the Outlast Trials Stats backend.
- * <p>
- * Non-2xx responses are never decoded as a body: they surface as errors and are mapped to
- * {@link Optional#empty()} (or {@link ProfileLookup.Failed} for profile lookups).
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -42,13 +36,6 @@ public class TOTStatsApiClient {
                 .bodyToMono(DiscordLeaderboardResponse.class), "leaderboard for category " + category);
     }
 
-    /**
-     * Looks up the profile linked to a Discord user.
-     *
-     * @return {@link ProfileLookup.Found} on success, {@link ProfileLookup.NotLinked} only on HTTP 404,
-     * {@link ProfileLookup.Failed} for any other error (5xx, 429, other 4xx, timeouts, decode errors,
-     * empty body)
-     */
     public ProfileLookup getProfile(String discordUserId) {
         try {
             return statsWebClient
@@ -70,9 +57,6 @@ public class TOTStatsApiClient {
         }
     }
 
-    /**
-     * @return the bulk response, or {@link Optional#empty()} if the request failed for any reason
-     */
     public Optional<DiscordBulkProfileResponse> getBulkProfiles(List<String> discordUserIds) {
         var request = new DiscordBulkProfileRequest().discordUserIds(discordUserIds);
         return blockOrEmpty(statsWebClient

@@ -18,11 +18,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import org.springframework.stereotype.Component;
 
-/**
- * Removes the bot's role setup. Only roles the bot created itself are deleted from Discord; roles that
- * were linked by an admin or matched by name are just unlinked. A mapping is only removed once its role
- * was deleted (or unlinked), so a failed deletion can be retried.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -52,12 +47,10 @@ public class DeleteCommand {
         }
 
         Member selfMember = guild.getSelfMember();
-        // Starts at 1 as a sentinel so the reply cannot be sent before every deletion has been queued.
         AtomicInteger pending = new AtomicInteger(1);
         AtomicInteger deleted = new AtomicInteger(0);
         AtomicInteger unlinked = new AtomicInteger(0);
         AtomicInteger failed = new AtomicInteger(0);
-        // Roles whose mapping may go: deleted or unlinked, never the ones whose deletion failed.
         Collection<String> removableRoleIds = new ConcurrentLinkedQueue<>();
 
         Runnable taskDone = () -> {
@@ -73,7 +66,6 @@ public class DeleteCommand {
             Role role = guild.getRoleById(roleId);
 
             if (role == null || !mappedRole.botCreated()) {
-                // Already gone, or not ours to delete: only drop the mapping.
                 removableRoleIds.add(roleId);
                 unlinked.incrementAndGet();
                 continue;

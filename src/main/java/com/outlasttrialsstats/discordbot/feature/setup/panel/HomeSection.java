@@ -59,14 +59,14 @@ public class HomeSection implements PanelSection {
 
         return new PanelView(null, List.of(embed.build()), List.of(
                 ActionRow.of(
-                        navButton(guildId, RolesSection.ID, "setup.panel.section.roles"),
-                        navButton(guildId, EventSection.ID, "setup.panel.section.event"),
-                        navButton(guildId, LeaderboardsSection.ID, "setup.panel.section.leaderboards")),
-                ActionRow.of(
-                        navButton(guildId, GeneralSection.ID, "setup.panel.section.general"),
-                        navButton(guildId, MessagesSection.ID, "setup.panel.section.messages"),
                         Button.success(PanelAction.id(ID, "wizard"),
-                                support.message(guildId, "setup.panel.section.wizard")))));
+                                support.message(guildId, "setup.panel.section.wizard")),
+                        navButton(guildId, RolesSection.ID, "setup.panel.section.roles"),
+                        navButton(guildId, EventSection.ID, "setup.panel.section.event")),
+                ActionRow.of(
+                        navButton(guildId, LeaderboardsSection.ID, "setup.panel.section.leaderboards"),
+                        navButton(guildId, GeneralSection.ID, "setup.panel.section.general"),
+                        navButton(guildId, MessagesSection.ID, "setup.panel.section.messages"))));
     }
 
     private Button navButton(String guildId, String section, String labelKey) {
